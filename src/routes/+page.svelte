@@ -17,6 +17,7 @@
     displayRun,
     currentRunId,
     currentRun,
+    trees,
 	} from '../stores/store';
 
 	let renderGraphics = true;
@@ -87,7 +88,7 @@
 			</div>
 			<div class="statistic !w-20f">
 				<label>trees</label>
-				<span>{$currentRun?.trees.length || 0}</span>
+				<span>{$trees.length || 0}</span>
 			</div>
       <div class="statistic !w-2f0">
         <label>species</label>
@@ -140,11 +141,11 @@
 
           {#if renderGraphics}
             <!-- trunks -->
-            {#each $livingTrees as tree}
+            {#each $trees as tree}
               <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
             {/each}
             <!-- foliage canopies -->
-            {#each $livingTrees as tree}
+            {#each $trees as tree}
               {#if colorMode === 'colorized'}
                 <circle cx={tree.x} cy={tree.y} r={tree.radius} fill={tree.color} opacity="0.3" />
               {:else if colorMode === 'shaded'}
@@ -159,7 +160,7 @@
               {/if}
             {/each}
             <!-- tree outlines and text overlays -->
-            {#each $livingTrees as tree}
+            {#each $trees as tree}
               <circle
                 cx={tree.x}
                 cy={tree.y}

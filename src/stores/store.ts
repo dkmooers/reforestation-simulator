@@ -85,10 +85,6 @@ export const currentRun = derived(
   [runs, currentRunId],
   ([runs, currentRunId]) => runs.find(run => run.id === currentRunId)
 )
-// export const livingTrees = derived(
-//   currentRun,
-//   currentRun => currentRun?.trees?.filter(tree => !tree.isDead) || []
-// )
 
 type Run = {
   id: number
@@ -98,7 +94,7 @@ type Run = {
     biodiversity: number[],
   },
   trees: Tree[],
-  deadTrees: Tree[],
+  // deadTrees: Tree[],
 }
 
 const width = 490; // 418x258 feet is 1 hectare, or 490x220, or 328x328
@@ -109,27 +105,24 @@ const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 2;
 
-// export const trees = writable<Tree[]>([])
+export const trees = writable<Tree[]>([])
 export const numSpecies = derived(
-  currentRun,
-  currentRun => Object.keys(countBy(currentRun?.trees, 'speciesId'))?.length || 0
+  trees,
+  trees => Object.keys(countBy(trees, 'speciesId'))?.length || 0
 )
-// const deadTrees = writable<Tree[]>([])
+const deadTrees = writable<Tree[]>([])
 export const year = writable(0);
 export const carbon = derived(
-  currentRun,
+  [trees, deadTrees],
   () => {
     return calculateCarbon()
   }
 )
 export const biodiversity = derived(
-  currentRun,
-  currentRun => {
-    if (!currentRun) {
-      return 0
-    }
-    const numTreesBySpecies = countBy(currentRun.trees, 'speciesId')
-    const numTrees = currentRun.trees.length
+  trees,
+  trees => {
+    const numTreesBySpecies = countBy(trees, 'speciesId')
+    const numTrees = trees.length
     const arrayOfSpeciesCounts = Object.keys(numTreesBySpecies).map(key => numTreesBySpecies[key])
     const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)
     const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
@@ -140,10 +133,10 @@ export const biodiversity = derived(
 
 const calculateCarbon = () => {
   let carbonSum = 0
-  get(currentRun)?.trees.forEach(tree => {
+  get(trees).forEach(tree => {
     carbonSum += tree.radius * 100
   })
-  get(currentRun)?.deadTrees.forEach(tree => {
+  get(deadTrees).forEach(tree => {
     carbonSum += tree.radius * 100
   })
   return carbonSum 
@@ -153,7 +146,7 @@ const getRandomTreeSpecies = () => {
   return treeSpecies[Math.floor(Math.random() * treeSpecies.length)]
 }
 
-const getTreeSpeciesById = (id: string): TreeSpecies | undefined => {
+const getTreeSpeciesById = (id: string): TreeSpecies => {
   return treeSpecies.find(species => species.id === id);
 }
 
@@ -168,17 +161,15 @@ export const reset = () => {
   // }
   const newRunId = (get(currentRunId) || 0) + 1
 
-  runs.update(prevRuns => [...prevRuns, {
-    id: newRunId,
-    yearlyData: {
-      carbon: [0],
-      trees: [0],
-      biodiversity: [0],
-    },
-    trees: [],
-    deadTrees: [],
-  }])
+  // runs.update(prevRuns => [...prevRuns, {
+  //   id: newRunId , yearlyData: {
+  //   carbon: [0],
+  //   trees: [0],
+  //   biodiversity: [0],
+  // }}])
   currentRunId.set(newRunId)
+  trees.set([])
+  deadTrees.set([])
   year.set(0)
 }
 
@@ -200,8 +191,7 @@ export const stepNYears = (numYears: number) => {
   times(numYears, (index) => {
     delay(() => {
       year.update(prevYear => prevYear + 1);
-      const prevTrees = get(currentRun)?.trees || [];
-      updateTreesTo(prevTrees.map(tree => {
+      trees.update(prevTrees => prevTrees.map(tree => {
         const species = treeSpecies.find(species => species.id === tree.speciesId)
         if (species) {
           return {
@@ -213,7 +203,6 @@ export const stepNYears = (numYears: number) => {
           return tree
         }
       }))
-
       // calculate shade + health
 
       const newCarbon = calculateCarbon()
@@ -226,7 +215,7 @@ export const stepNYears = (numYears: number) => {
           ...run,
           yearlyData: {
             carbon: [...run.yearlyData.carbon, newCarbon],
-            trees: [...run.yearlyData.trees, get(currentRun)?.trees?.length || 0],
+            trees: [...run.yearlyData.trees, get(trees).length],
             biodiversity: [...run.yearlyData.biodiversity, 1]
           }
         }
@@ -242,9 +231,9 @@ export const stepNYears = (numYears: number) => {
 }
 
 export const pruneOverflowTrees = () => {
-  updateTreesTo(get(currentRun)?.trees.filter(tree => {
+  trees.update(prevTrees => prevTrees.filter(tree => {
     return !(tree.x < 0 || tree.x > width || tree.y < 0 || tree.y > height)
-  }) || [])
+  }))
 }
 
 const calculateTreeHealth = () => {
@@ -258,7 +247,14 @@ const calculateTreeHealth = () => {
 
   // OR WAIT... can we just naively get all overlapping trees, calculate the radius diff, and approximate the overlap?
 
-  const newTrees = get(currentRun)?.trees?.map(baseTree => {
+
+  // get(trees).forEach(tree => {
+  //   // 
+  // })
+
+  const prevTrees = get(trees)
+
+  const newTrees = prevTrees.map(baseTree => {
     // 
     const overlappingTrees = getOverlappingTreesForTree(baseTree);
     // calculate overlaps
@@ -290,36 +286,35 @@ const calculateTreeHealth = () => {
       health,
       isDead: health < 0 || baseTree.age > species.lifespan
     }
-  }) || [];
-
-  // updateTreesTo(newTrees || [])
+  });
 
   const newlyDeadTrees = newTrees.filter(tree => tree.isDead)
   const livingTrees = newTrees.filter(tree => !tree.isDead)
 
-  updateTreesTo(livingTrees)
-  updateDeadTreesTo([...get(currentRun)?.deadTrees || [], ...newlyDeadTrees])
+  trees.set(livingTrees)
+  deadTrees.update(prevDeadTrees => [...prevDeadTrees, ...newlyDeadTrees])
 }
 
 // filter out dead trees
 export const propagateSeeds = () => {
   const seedlings: Tree[] = []
-
-  get(currentRun)?.trees?.forEach(tree => {
-    // send out random number of seedlings
-    if (tree.age >= minReproductiveAge) {
-      times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.age) / 3), () => {
-        seedlings.push({
-          ...tree,
-          age: 0,
-          radius: 0,
-          x: tree.x + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
-          y: tree.y + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
+  trees.update(prevTrees => {
+    prevTrees.forEach(tree => {
+      // send out random number of seedlings
+      if (tree.age >= minReproductiveAge) {
+        times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.age) / 3), () => {
+          seedlings.push({
+            ...tree,
+            age: 0,
+            radius: 0,
+            x: tree.x + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
+            y: tree.y + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
+          })
         })
-      })
-    }
+      }
+    })
+    return [...prevTrees, ...seedlings]
   })
-  updateTreesTo([...get(currentRun)?.trees || [], ...seedlings])
   pruneOverflowTrees()
 }
 
@@ -331,18 +326,18 @@ const getDistanceBetweenTwoTrees = (tree1: Tree, tree2: Tree) => {
 }
 
 const getOverlappingTreesForTree = (baseTree: Tree) => {
-  const overlappingTrees = get(currentRun)?.trees.filter(tree => {
+  const overlappingTrees = get(trees).filter(tree => {
     if (tree === baseTree) { // skip this tree
       return false
     }
     const distance = getDistanceBetweenTwoTrees(baseTree, tree)
     return distance < baseTree.radius + tree.radius
   })
-  return overlappingTrees || []
+  return overlappingTrees
 }
 
 const getNearestTreesForTree = (baseTree: Tree): Array<Tree & { distance: number }> => {
-  const treesByDistance = get(currentRun)?.trees.map(tree => {
+  const treesByDistance = get(trees).map(tree => {
     if (tree === baseTree) { // skip this tree
       return false
     }
@@ -356,25 +351,24 @@ const getNearestTreesForTree = (baseTree: Tree): Array<Tree & { distance: number
 }
 
 const areAnyOverlappingTrees = () => {
-  return get(currentRun)?.trees.some(baseTree => {
+  return get(trees).some(baseTree => {
     return getOverlappingTreesForTree(baseTree).length > 0
   })
 }
 
 export const declusterTrees = () => {
   times(50, () => {
-    const currentTrees = get(currentRun)?.trees
-    currentTrees?.forEach(baseTree => {
+    const currentTrees = get(trees)
+    currentTrees.forEach(baseTree => {
       const nearestTrees = getNearestTreesForTree(baseTree)
       // for each neartree... move this one in the opposite direction
       nearestTrees.forEach(nearTree => {
-
-        updateTreesTo(get(currentRun)?.trees?.map(tree => {
-          if (tree === baseTree) {
+        trees.update(prevTrees => prevTrees.map(prevTree => {
+          if (prevTree === baseTree) {
             // find direction vector toward nearTree
             const vector = {
-              x: nearTree.x - tree.x,
-              y: nearTree.y - tree.y
+              x: nearTree.x - prevTree.x,
+              y: nearTree.y - prevTree.y
             }
             const magnitude = Math.sqrt(vector.x * vector.x + vector.y * vector.y)
             const normalizedVector = {
@@ -383,41 +377,27 @@ export const declusterTrees = () => {
             }
             // move away from nearTree
             const repulsion = 1
-            tree.x -= normalizedVector.x * repulsion
-            tree.y -= normalizedVector.y * repulsion
+            prevTree.x -= normalizedVector.x * repulsion
+            prevTree.y -= normalizedVector.y * repulsion
           }
-          return tree
-        }) || [])
-
-
+          return prevTree
+        }))
       })
     })
   }) 
 }
 
-export const updateTreesTo = (newTrees: Tree[]) => {
-  runs.update(prevRuns => prevRuns.map(run => {
-    if (run.id !== get(currentRunId)) {
-      return run;
-    }
-    return {
-      ...run,
-      trees: newTrees
-    }
-  }))
-}
-
-export const updateDeadTreesTo = (newDeadTrees: Tree[]) => {
-  runs.update(prevRuns => prevRuns.map(run => {
-    if (run.id !== get(currentRunId)) {
-      return run;
-    }
-    return {
-      ...run,
-      trees: newDeadTrees
-    }
-  }))
-}
+// export const updateTreesTo = (newTrees: Tree[]) => {
+//   runs.update(prevRuns => prevRuns.map(run => {
+//     if (run.id !== get(currentRunId)) {
+//       return run;
+//     }
+//     return {
+//       ...run,
+//       trees: newTrees
+//     }
+//   }))
+// }
 
 export const calculateOverlaps = () => {
   while (areAnyOverlappingTrees()) {
@@ -448,7 +428,7 @@ export const calculateOverlaps = () => {
         })
 
         if (updatedTrees) {
-          updateTreesTo(updatedTrees)
+          trees.set(updatedTrees)
         }
 
       })
@@ -472,6 +452,6 @@ export const addNRandomTrees = (numTrees: number) => {
       sizeMultiplier: Math.random() / 2 + 0.5,
     })
   }
-  updateTreesTo([...get(currentRun)?.trees || [], ...newTrees])
+  trees.update(prevTrees => [...prevTrees, ...newTrees])
   declusterTrees()
 }
