@@ -1,6 +1,6 @@
 <script>
   import * as Pancake from '@sveltejs/pancake';
-  import { yearlyCarbon, yearlyTrees, yearlyBiodiversity } from '../stores/store';
+  import { yearlyCarbon, yearlyTrees, yearlyBiodiversity, runs, carbon, currentRunId } from '../stores/store';
   import { get } from 'svelte/store';
   import { insolationData } from '../data/insolation.js';
   import { draw } from "svelte/transition"
@@ -19,6 +19,8 @@
   const weightedAvgDays = 28
   let points = []
 
+  const numYears = 50
+
   // let points = insolationData.days.map((day, index) => {
   //   if (weightedAvgValues.length >= weightedAvgDays) {
   //     weightedAvgValues.shift()
@@ -35,10 +37,15 @@
   // console.log(points)
 
   let minx = 0;
-  let maxx = 100;
+  let maxx = numYears;
   let miny = 0;
   let maxy = 1000;
   let highest;
+
+  $: otherRunsCarbon = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
+    date: index,
+    carbon: carbonValue / 2000,
+  })))
 
   $: {
     points = $yearlyCarbon?.map((carbonValue, index) => {
@@ -50,8 +57,10 @@
       // const weightedAvg = weightedAvgValues.reduce((a, b) => a + b, 0) / weightedAvgValues.length
       return {
         date: index,
-        avg: carbonValue / 2000,
-        trend: $yearlyTrees[index],
+        carbon: carbonValue / 2000,
+        trees: $yearlyTrees[index],
+
+        // firstRunCarbon: ($runs?.[0]?.yearlyData?.carbon?.[index] || 0) / 2000,
         // date: 2021 + index / 365,
         // trend: weightedAvg,
         // avg: scaledSolarEnergy.toFixed(2)
@@ -60,7 +69,7 @@
     // console.log(points)
     if (points?.length > 1) {
       minx = points?.[0]?.date;
-      maxx = Math.max(100, points?.[points.length - 1]?.date);
+      maxx = Math.max(numYears, points?.[points.length - 1]?.date);
       for (let i = 0; i < points.length; i += 1) {
         const point = points[i];
 
@@ -115,12 +124,18 @@
           <path class="avg scatter" {d} />
         </Pancake.SvgScatterplot>
 
-        <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.avg}" let:d>
-          <path class="trend" {d} />
+        <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.carbon}" let:d>
+          <path class="carbon active" {d} />
         </Pancake.SvgLine>
 
-        <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.trend}" let:d>
-          <path class="avg" {d} />
+        {#each otherRunsCarbon as carbonData}
+          <Pancake.SvgLine data={carbonData} x="{d => d.date}" y="{d => d.carbon}" let:d>
+            <path class="carbon" {d} />
+          </Pancake.SvgLine>
+        {/each}
+
+        <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.trees}" let:d>
+          <path class="trees" {d} />
         </Pancake.SvgLine>
       </Pancake.Svg>
     {/if}
@@ -235,8 +250,8 @@
     font-size: 1.4em;
   }
 
-  path.avg {
-    stroke: #676778;
+  path.trees {
+    stroke: #aea798;
     opacity: 0.5;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -248,12 +263,18 @@
     stroke-width: 3px;
   }
 
-  path.trend {
+  path.carbon {
     stroke: #16c264;/*#ff3e00;*/
+    opacity: 0.45;
     stroke-linejoin: round;
     stroke-linecap: round;
-    stroke-width: 2px;
+    stroke-width: 1px;
     fill: none;
+  }
+
+  path.carbon.active {
+    stroke-width: 2px;
+    opacity: 1;
   }
 
   .focus {

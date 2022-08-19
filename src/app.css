@@ -19,7 +19,7 @@ h1 {
 }
 
 button {
-  @apply text-sm;
+  @apply text-sm flex items-center space-x-1;
   border: none;
   /* background-color: #5d4e3c; */
   background-color: #564a3d;

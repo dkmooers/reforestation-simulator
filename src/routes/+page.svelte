@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import Chart from '../components/Chart.svelte';
+  import Slider from '../components/Slider.svelte';
 
 	import {
 		addNRandomTrees,
@@ -18,10 +20,24 @@
     currentRunId,
     currentRun,
     trees,
+    isRunning,
+    clearRunHistory,
 	} from '../stores/store';
 
 	let renderGraphics = true;
   let colorMode = 'colorized';
+
+  onMount(() => {
+    window.addEventListener('keydown', function(event) {
+        const key = event.key; // "ArrowRight", "ArrowLeft", "ArrowUp", or "ArrowDown"
+        if (key === 'ArrowRight') {
+          console.log('right')
+        } else if (key === 'ArrowLeft') {
+          console.log('left')
+        }
+    });
+  })
+
 </script>
 
 <div
@@ -52,23 +68,36 @@
 	<div class="flex items-end flex-wrap">
 
     <div class="flex flex-col max-w-md mr-6">
-      <div class="italic leading-tight mb-4 opacity-60 text-sm">An app design showcase with a simplified biological tree growth model, propagation model, and carbon calculation model.</div>
+      <div class="italic leading-tight mb-4 opacity-60 text-sm">An app design prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div>
 
       <!-- Buttons -->
-      <div class="mr-6">
-        <div class="whitespace-nowrap" >
+      <div class="mr-6 mb-[4px]">
+        <div class="whitespace-nowrap flex" >
           <button
             class="text-black text-opacity-75"
             style="background: var(--accentColor);"
             on:click={() => {
               run();
-            }}>Run</button
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              <span>Run</span>
+            </button
           >
           <button on:click={() => stepNYears(1)}>+1 year</button>
           <button on:click={() => stepNYears(5)}>+5 years</button>
           <button on:click={() => stepNYears(10)}>+10 years</button>
           <button on:click={() => stepNYears(50)}>+50 years</button>
-          <button on:click={() => reset()}>Reset</button>
+          <button on:click={() => {
+            reset()
+            clearRunHistory()
+          }}>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
+            </svg>
+            <span>Reset</span>
+          </button>
         </div>
         <!-- <div class="whitespace-nowrap">
           <button on:click={() => addNRandomTrees(100)}>Plant Trees</button>
@@ -130,6 +159,12 @@
     <!-- Diagram -->
     <div class="mb-4 flex">
       <div class="flex-grow">
+
+        {#if $isRunning}
+          Running...
+        {:else}
+
+
         <svg viewBox="0 0 490 140" class="rounded w-full" style="background: #efe1db;">
           <defs>
             <radialGradient id="treeGradient">
@@ -194,6 +229,8 @@
             {/each}
           {/if}
         </svg>
+        <!-- <Slider min={0} max={100} bind:value={$year} /> -->
+        {/if}
       </div>
 
 

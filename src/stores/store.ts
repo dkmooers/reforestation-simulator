@@ -79,6 +79,7 @@ const currentScenario = derived(
   scenarios => last(scenarios)
 )
 
+export const isRunning = writable(false)
 export const runs = writable<Run[]>([])
 export const currentRunId = writable<number>(0)
 export const currentRun = derived(
@@ -171,11 +172,8 @@ const loadRun = (runId: number) => {
   }
 }
 
-export const reset = () => {
+export const reset = (opts?: { initialTrees?: Tree[]} ) => {
 
-  // if (get(currentRunId) > 0) {
-  //   runs.update(prevRuns => [...prevRuns, get(currentRun)])
-  // }
   const newRunId = (get(currentRunId) || 0) + 1
 
   runs.update(prevRuns => [...prevRuns, {
@@ -193,9 +191,16 @@ export const reset = () => {
   yearlyCarbon.set([])
   yearlyTrees.set([])
   yearlyBiodiversity.set([])
-  trees.set([])
+
+  trees.set(opts?.initialTrees ?? [])
   deadTrees.set([])
+
   year.set(0)
+}
+
+export const clearRunHistory = () => {
+  runs.set([])
+  currentRunId.set(0)
 }
 
 const msPerFrame = 33.33
@@ -203,13 +208,32 @@ const msPerFrame = 33.33
 export const elapsedTime = writable(0)
 
 export const run = () => {
+  isRunning.set(true)
   const startTime = new Date().getTime()
   elapsedTime.set(0)
-  reset();
-  addNRandomTrees(100);
-  stepNYears(50);
+
+  // run each new scenario
+  // times(3, () => {
+    reset()
+    const initialTrees = addNRandomTrees(100)
+    runScenario()
+
+    // re-run this scenario X more times
+    // times(2, () => {
+    //   reset()
+    //   trees.set(initialTrees)
+    //   runScenario()
+    // })
+  // })
+
+  isRunning.set(false)
+
   const endTime = new Date().getTime()
   elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
+}
+
+const runScenario = () => {
+  stepNYears(50);
 }
 
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
@@ -478,21 +502,33 @@ export const calculateOverlaps = () => {
   }
 }
 
-export const addNRandomTrees = (numTrees: number) => {
-  const newTrees: Tree[] = [];
-  for (let index = 0; index < numTrees; index++) {
-    const species = getRandomTreeSpecies();
-    newTrees.push({
-      speciesId: species.id,
-      color: species.color,
-      x: Math.random() * width,
-      y: Math.random() * height,
-      health: 1,
-      radius: 0,
-      age: 0,
-      sizeMultiplier: Math.random() / 2 + 0.5,
-    })
-  }
-  trees.update(prevTrees => [...prevTrees, ...newTrees])
-  declusterTrees()
+export const addNRandomTrees = (numTrees: number): Tree[] => {
+
+  let remainingTreesToPlant = numTrees - get(trees).length
+
+  // while (remainingTreesToPlant > 0) {
+    const newTrees: Tree[] = [];
+    for (let index = 0; index < remainingTreesToPlant; index++) {
+      const species = getRandomTreeSpecies();
+      newTrees.push({
+        speciesId: species.id,
+        color: species.color,
+        x: Math.random() * width,
+        y: Math.random() * height,
+        health: 1,
+        radius: 0,
+        age: 0,
+        sizeMultiplier: Math.random() / 2 + 0.5,
+      })
+    }
+    trees.update(prevTrees => [...prevTrees, ...newTrees])
+    declusterTrees()
+    if (remainingTreesToPlant > 0) {
+      addNRandomTrees(remainingTreesToPlant)
+    }
+    // remainingTreesToPlant -= 
+  // }
+  // return initially planted trees
+  return get(trees)
+
 }
