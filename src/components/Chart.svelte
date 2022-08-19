@@ -1,6 +1,6 @@
 <script>
   import * as Pancake from '@sveltejs/pancake';
-  import { currentRun, trees } from '../stores/store';
+  import { yearlyCarbon, yearlyTrees, yearlyBiodiversity } from '../stores/store';
   import { get } from 'svelte/store';
   import { insolationData } from '../data/insolation.js';
   import { draw } from "svelte/transition"
@@ -41,7 +41,7 @@
   let highest;
 
   $: {
-    points = $currentRun?.yearlyData?.carbon?.map((carbonValue, index) => {
+    points = $yearlyCarbon?.map((carbonValue, index) => {
       // if (weightedAvgValues.length >= weightedAvgDays) {
       //   weightedAvgValues.shift()
       // }
@@ -51,7 +51,7 @@
       return {
         date: index,
         avg: carbonValue / 2000,
-        trend: $currentRun.yearlyData.trees[index],
+        trend: $yearlyTrees[index],
         // date: 2021 + index / 365,
         // trend: weightedAvg,
         // avg: scaledSolarEnergy.toFixed(2)

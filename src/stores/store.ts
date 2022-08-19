@@ -94,8 +94,12 @@ type Run = {
     biodiversity: number[],
   },
   trees: Tree[],
-  // deadTrees: Tree[],
+  deadTrees: Tree[],
 }
+
+export const yearlyCarbon = writable([0])
+export const yearlyTrees = writable([0])
+export const yearlyBiodiversity = writable([0])
 
 const width = 490; // 418x258 feet is 1 hectare, or 490x220, or 328x328
 const height = 220;
@@ -127,7 +131,7 @@ export const biodiversity = derived(
     const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)
     const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
     // return Math.log(Math.log(1 - rawBiodiversity + 1.718) + 1.718)
-    return Math.pow(1 - rawBiodiversity, 500).toFixed(3)
+    return Math.pow(1 - rawBiodiversity, 500)//.toFixed(3)
   }
 )
 
@@ -152,6 +156,19 @@ const getTreeSpeciesById = (id: string): TreeSpecies => {
 
 export const displayRun = (runId: number) => {
   currentRunId.set(runId)
+  // load all its data
+  loadRun(runId)
+}
+
+const loadRun = (runId: number) => {
+  const run = get(runs).find(run => run.id === runId)
+  if (run) {
+    yearlyCarbon.set(run.yearlyData.carbon)
+    yearlyTrees.set(run.yearlyData.trees)
+    yearlyBiodiversity.set(run.yearlyData.biodiversity)
+    trees.set(run.trees)
+    deadTrees.set(run.deadTrees)
+  }
 }
 
 export const reset = () => {
@@ -161,13 +178,21 @@ export const reset = () => {
   // }
   const newRunId = (get(currentRunId) || 0) + 1
 
-  // runs.update(prevRuns => [...prevRuns, {
-  //   id: newRunId , yearlyData: {
-  //   carbon: [0],
-  //   trees: [0],
-  //   biodiversity: [0],
-  // }}])
+  runs.update(prevRuns => [...prevRuns, {
+    id: newRunId,
+    yearlyData: {
+      carbon: [0],
+      trees: [0],
+      biodiversity: [0],
+    },
+    trees: [],
+    deadTrees: [],
+  }])
+
   currentRunId.set(newRunId)
+  yearlyCarbon.set([])
+  yearlyTrees.set([])
+  yearlyBiodiversity.set([])
   trees.set([])
   deadTrees.set([])
   year.set(0)
@@ -182,13 +207,14 @@ export const run = () => {
   elapsedTime.set(0)
   reset();
   addNRandomTrees(100);
-  stepNYears(100);
+  stepNYears(50);
   const endTime = new Date().getTime()
   elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
 }
 
-export const stepNYears = (numYears: number) => {
-  times(numYears, (index) => {
+export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
+
+  if (get(year) < numYears) {
     delay(() => {
       year.update(prevYear => prevYear + 1);
       trees.update(prevTrees => prevTrees.map(tree => {
@@ -207,27 +233,42 @@ export const stepNYears = (numYears: number) => {
 
       const newCarbon = calculateCarbon()
 
-      runs.update(prevRuns => prevRuns.map(run => {
-        if (run.id !== get(currentRunId)) {
-          return run;
-        }
-        return {
-          ...run,
-          yearlyData: {
-            carbon: [...run.yearlyData.carbon, newCarbon],
-            trees: [...run.yearlyData.trees, get(trees).length],
-            biodiversity: [...run.yearlyData.biodiversity, 1]
-          }
-        }
-      }))
+      yearlyCarbon.update(data => [...data, newCarbon])
+      yearlyTrees.update(data => [...data, get(trees).length])
+      yearlyBiodiversity.update(data => [...data, get(biodiversity)])
 
       // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
       // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
       calculateTreeHealth()
       propagateSeeds()
 
-    }, msPerFrame * (index + 1), index);
-  })
+      stepNYears(numYears, currentRunYear - 1)
+
+    }, msPerFrame);
+
+    
+  } else {
+    // store the run data after the run is over
+    runs.update(prevRuns => prevRuns.map(run => {
+      if (run.id !== get(currentRunId)) {
+        return run;
+      }
+      return {
+        ...run,
+        yearlyData: {
+          carbon: get(yearlyCarbon),
+          trees: get(yearlyTrees),
+          biodiversity: get(yearlyBiodiversity),
+        },
+        trees: get(trees),
+        deadTrees: get(deadTrees),
+      }
+    }))
+  }
+
+
+  // times(numYears, (index) => {
+  //   // oops, this doesn't dynamicall adjust framerate, it schedules them all at once assuming a constant framerate!
 }
 
 export const pruneOverflowTrees = () => {
