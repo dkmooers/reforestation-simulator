@@ -39,7 +39,7 @@
   let minx = 0;
   let maxx = numYears;
   let miny = 0;
-  let maxy = 1000;
+  let maxy = 1500;
   let highest;
 
   $: otherRunsCarbon = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
@@ -194,7 +194,7 @@
   .grid-line {
     position: relative;
     display: block;
-    opacity: 0.7;
+    opacity: 0.3;
     border-color: rgb(230 201 166) !important;
   }
 

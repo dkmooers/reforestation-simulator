@@ -10,8 +10,9 @@ html, body {
   --textColor: rgb(230 201 166);
   --backgroundColor: rgb(33 31 30);
   --accentColor: rgb(22, 194, 100);
-  background: var(--backgroundColor);
-  color: var(--textColor); 
+  /* background: var(--backgroundColor); */
+  @apply bg-stone-900 text-stone-200;
+  /* color: var(--textColor);  */
 }
 
 h1 {
@@ -19,7 +20,7 @@ h1 {
 }
 
 button {
-  @apply text-sm flex items-center space-x-1;
+  @apply text-sm flex items-center space-x-1  transition-colors mr-2;
   border: none;
   /* background-color: #5d4e3c; */
   background-color: #564a3d;
@@ -28,7 +29,6 @@ button {
   padding: 0.25rem 0.5rem;
   cursor: pointer;
   border-radius: 0.25rem;
-  margin-right: 0.25rem;
   transition: background-color 0.15s;
 }
 
@@ -37,10 +37,8 @@ button:hover {
 }
 
 label {
-  @apply text-sm
+  @apply text-sm text-stone-400
 }
-
-
 
 .flex {
   display: flex;

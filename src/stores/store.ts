@@ -31,14 +31,14 @@ const treeSpecies: TreeSpecies[] = [
     shadeTolerance: 0.4,
     lifespan: 200,
   },
-  {
-    id: 'maple',
-    color: 'rebeccapurple',
-    growthRate: 1.5,
-    maxRadius: 80,
-    shadeTolerance: 0.45,
-    lifespan: 400,
-  },
+  // {
+  //   id: 'maple',
+  //   color: 'rebeccapurple',
+  //   growthRate: 1.0,
+  //   maxRadius: 80,
+  //   shadeTolerance: 0.45,
+  //   lifespan: 400,
+  // },
   {
     id: 'linden',
     color: 'green',
@@ -86,6 +86,25 @@ export const currentRun = derived(
   [runs, currentRunId],
   ([runs, currentRunId]) => runs.find(run => run.id === currentRunId)
 )
+export const averageCarbonAcrossRuns = derived(
+  runs, 
+  runs => runs.reduce((runningTotal, run) => (last(run.yearlyData.carbon) || 0) + runningTotal, 0) / (runs.length || 1)
+)
+export const runIdWithHighestCarbon = derived(
+  runs,
+  runs => {
+    let maxCarbon = 0
+    let maxCarbonRunId = 0
+    runs.forEach(run => {
+      const carbon = last(run.yearlyData.carbon) || 0
+      if (carbon > maxCarbon) {
+        maxCarbon = carbon
+        maxCarbonRunId = run.id
+      }
+    })
+    return maxCarbonRunId
+  }
+)
 
 type Run = {
   id: number
@@ -118,10 +137,12 @@ export const numSpecies = derived(
 const deadTrees = writable<Tree[]>([])
 export const year = writable(0);
 export const carbon = derived(
-  [trees, deadTrees],
-  () => {
-    return calculateCarbon()
-  }
+  yearlyCarbon,
+  yearlyCarbon => last(yearlyCarbon) ?? 0
+  // [trees, deadTrees],
+  // () => {
+  //   return calculateCarbon()
+  // }
 )
 export const biodiversity = derived(
   trees,
@@ -174,7 +195,9 @@ const loadRun = (runId: number) => {
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
 
-  const newRunId = (get(currentRunId) || 0) + 1
+  const mostRecentRunId = last(get(runs))?.id || 0
+  const newRunId = mostRecentRunId + 1
+  // const newRunId = (get(currentRunId) || 0) + 1
 
   runs.update(prevRuns => [...prevRuns, {
     id: newRunId,
@@ -203,30 +226,37 @@ export const clearRunHistory = () => {
   currentRunId.set(0)
 }
 
-const msPerFrame = 33.33
-// const msPerFrame = 1
+// const msPerFrame = 33.33
+const msPerFrame = 1
 export const elapsedTime = writable(0)
 
-export const run = () => {
+export const runSimulation = () => {
+  runs.set([])
   isRunning.set(true)
   const startTime = new Date().getTime()
   elapsedTime.set(0)
 
-  // run each new scenario
-  // times(3, () => {
-    reset()
-    const initialTrees = addNRandomTrees(100)
-    runScenario()
+  // just repeat new runs N times
+  times(5, () => {
+    // setTimeout(() => {
+      console.log(get(isRunning))
 
-    // re-run this scenario X more times
-    // times(2, () => {
-    //   reset()
-    //   trees.set(initialTrees)
-    //   runScenario()
-    // })
-  // })
+      // run each new scenario
+      // times(3, () => {
+        reset()
+        const initialTrees = addNRandomTrees(100)
+        runScenario()
 
-  isRunning.set(false)
+        // re-run this scenario X more times
+        // times(2, () => {
+        //   reset()
+        //   trees.set(initialTrees)
+        //   runScenario()
+        // })
+      // })
+    // }, 1000)
+  })
+
 
   const endTime = new Date().getTime()
   elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
@@ -239,7 +269,7 @@ const runScenario = () => {
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
   if (get(year) < numYears) {
-    delay(() => {
+    // delay(() => {
       year.update(prevYear => prevYear + 1);
       trees.update(prevTrees => prevTrees.map(tree => {
         const species = treeSpecies.find(species => species.id === tree.speciesId)
@@ -268,8 +298,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
       stepNYears(numYears, currentRunYear - 1)
 
-    }, msPerFrame);
-
+    // }, msPerFrame);
     
   } else {
     // store the run data after the run is over
@@ -288,6 +317,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
         deadTrees: get(deadTrees),
       }
     }))
+    isRunning.set(false)
+
   }
 
 
