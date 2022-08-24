@@ -1,6 +1,14 @@
 import { derived, get, writable } from "svelte/store"
 import { times, delay, sortBy, take, countBy, last } from "lodash"
 
+let syncWorker: Worker | undefined = undefined;
+
+export const loadWorker = async () => {
+  const SyncWorker = await import('../lib/simulation.worker?worker');
+  syncWorker = new SyncWorker.default();
+  syncWorker.postMessage({});
+};
+
 type Tree = {
   x: number
   y: number
@@ -31,14 +39,14 @@ const treeSpecies: TreeSpecies[] = [
     shadeTolerance: 0.4,
     lifespan: 200,
   },
-  // {
-  //   id: 'maple',
-  //   color: 'rebeccapurple',
-  //   growthRate: 1.0,
-  //   maxRadius: 80,
-  //   shadeTolerance: 0.45,
-  //   lifespan: 400,
-  // },
+  {
+    id: 'maple',
+    color: 'rebeccapurple',
+    growthRate: 1.0,
+    maxRadius: 80,
+    shadeTolerance: 0.45,
+    lifespan: 400,
+  },
   {
     id: 'linden',
     color: 'green',

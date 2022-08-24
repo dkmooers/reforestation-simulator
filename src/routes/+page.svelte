@@ -4,6 +4,7 @@
   import Slider from '../components/Slider.svelte';
 
 	import {
+    loadWorker,
 		addNRandomTrees,
 		calculateOverlaps,
 		runSimulation,
@@ -38,6 +39,7 @@
           console.log('left')
         }
     });
+    loadWorker()
   })
 
 </script>
