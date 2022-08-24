@@ -239,13 +239,13 @@ const msPerFrame = 1
 export const elapsedTime = writable(0)
 
 export const runSimulation = () => {
-  runs.set([])
+  // runs.set([])
   isRunning.set(true)
   const startTime = new Date().getTime()
   elapsedTime.set(0)
 
   // just repeat new runs N times
-  times(5, () => {
+  // times(5, () => {
     // setTimeout(() => {
       console.log(get(isRunning))
 
@@ -263,7 +263,7 @@ export const runSimulation = () => {
         // })
       // })
     // }, 1000)
-  })
+  // })
 
 
   const endTime = new Date().getTime()
@@ -277,7 +277,7 @@ const runScenario = () => {
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
   if (get(year) < numYears) {
-    // delay(() => {
+    delay(() => {
       year.update(prevYear => prevYear + 1);
       trees.update(prevTrees => prevTrees.map(tree => {
         const species = treeSpecies.find(species => species.id === tree.speciesId)
@@ -306,7 +306,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
       stepNYears(numYears, currentRunYear - 1)
 
-    // }, msPerFrame);
+    }, msPerFrame);
     
   } else {
     // store the run data after the run is over

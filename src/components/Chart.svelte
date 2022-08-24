@@ -42,9 +42,10 @@
   let maxy = 1500;
   let highest;
 
-  $: otherRunsCarbon = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
+  $: otherRunsData = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
     date: index,
     carbon: carbonValue / 2000,
+    trees: run.yearlyData.trees[index],
   })))
 
   $: {
@@ -128,14 +129,17 @@
           <path class="carbon active" {d} />
         </Pancake.SvgLine>
 
-        {#each otherRunsCarbon as carbonData}
-          <Pancake.SvgLine data={carbonData} x="{d => d.date}" y="{d => d.carbon}" let:d>
+        {#each otherRunsData as data}
+          <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
             <path class="carbon" {d} />
+          </Pancake.SvgLine>
+          <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.trees}" let:d>
+            <path class="trees" {d} />
           </Pancake.SvgLine>
         {/each}
 
         <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.trees}" let:d>
-          <path class="trees" {d} />
+          <path class="trees active" {d} />
         </Pancake.SvgLine>
       </Pancake.Svg>
     {/if}
@@ -252,11 +256,16 @@
 
   path.trees {
     stroke: #aea798;
-    opacity: 0.5;
+    opacity: 0.3;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;
     fill: none;
+  }
+
+  path.trees.active {
+    opacity: 1;
+    stroke-width: 2px;
   }
 
   path.scatter {
@@ -265,7 +274,7 @@
 
   path.carbon {
     stroke: #16c264;/*#ff3e00;*/
-    opacity: 0.45;
+    opacity: 0.3;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;
