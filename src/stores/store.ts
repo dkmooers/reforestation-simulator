@@ -233,6 +233,7 @@ export const runSimulation = () => {
 
   syncWorker?.postMessage({action: 'runSimulation'})
   syncWorker2?.postMessage({action: 'runSimulation'})
+  syncWorker3?.postMessage({action: 'runSimulation'})
 
   // runs.set([])
   isRunning.set(true)
