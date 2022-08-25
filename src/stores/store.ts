@@ -1,15 +1,58 @@
 import { derived, get, writable } from "svelte/store"
 import { times, delay, sortBy, take, countBy, last } from "lodash"
+import { treeSpecies, type TreeSpecies } from "$lib/treeSpecies";
 
 let syncWorker: Worker | undefined = undefined;
+let syncWorker2: Worker | undefined = undefined;
+let syncWorker3: Worker | undefined = undefined;
+
+const handleMessage = (e) => {
+  if (e.data.type === 'runData') {
+    const runData = e.data.value as Run;
+    console.log('worker 2: RUN DATA RECEIVED:', runData)
+    isRunning.set(false)
+    trees.set(runData.trees)
+    deadTrees.set(runData.deadTrees)
+    yearlyTrees.set(runData.yearlyData.trees)
+    yearlyBiodiversity.set(runData.yearlyData.biodiversity)
+    yearlyCarbon.set(runData.yearlyData.carbon)
+    runs.update(prevRuns => [...prevRuns, runData])
+  }
+}
 
 export const loadWorker = async () => {
+
   const SyncWorker = await import('../lib/simulation.worker?worker');
+  
   syncWorker = new SyncWorker.default();
-  syncWorker.postMessage({});
+  syncWorker.postMessage({message: 'bingo'});
+  syncWorker.onmessage = (e) => {
+    handleMessage(e)
+  }
+
+  syncWorker2 = new SyncWorker.default();
+  syncWorker2.postMessage({message: 'bingo'});
+  syncWorker2.onmessage = (e) => {
+    handleMessage(e)
+  }
+
+
+  syncWorker3 = new SyncWorker.default();
+  syncWorker3.postMessage({message: 'bingo'});
+  syncWorker3.onmessage = (e) => {
+    handleMessage(e);
+  }
+
 };
 
-type Tree = {
+// syncWorkeronmessage = (e) => {
+//   console.log('Message received from main script');
+//   const workerResult = `Result: ${e.data[0] * e.data[1]}`;
+//   console.log('Posting message back to main script');
+//   postMessage(workerResult);
+// }
+
+export type Tree = {
   x: number
   y: number
   radius: number
@@ -20,58 +63,6 @@ type Tree = {
   health: number // 0 to 1
   isDead?: boolean
 }
-
-type TreeSpecies = {
-  id: string
-  color: string
-  growthRate: number
-  maxRadius: number
-  shadeTolerance: number // 0 to 1
-  lifespan: number
-}
-
-const treeSpecies: TreeSpecies[] = [
-  {
-    id: 'oak',
-    color: 'red',
-    growthRate: 1,
-    maxRadius: 100,
-    shadeTolerance: 0.4,
-    lifespan: 200,
-  },
-  {
-    id: 'maple',
-    color: 'rebeccapurple',
-    growthRate: 1.0,
-    maxRadius: 80,
-    shadeTolerance: 0.45,
-    lifespan: 400,
-  },
-  {
-    id: 'linden',
-    color: 'green',
-    growthRate: 0.6,
-    maxRadius: 80,
-    shadeTolerance: 0.5,
-    lifespan: 150,
-  },
-  {
-    id: 'hickory',
-    color: 'teal',
-    growthRate: 0.8,
-    maxRadius: 60,
-    shadeTolerance: 0.5,
-    lifespan: 500,
-  },
-  {
-    id: 'hazel',
-    color: 'blue',
-    growthRate: 0.8,
-    maxRadius: 15,
-    shadeTolerance: 0.65,
-    lifespan: 80,
-  }
-]
 
 type Scenario = {
   speciesProbabilities: Array<{
@@ -129,8 +120,8 @@ export const yearlyCarbon = writable([0])
 export const yearlyTrees = writable([0])
 export const yearlyBiodiversity = writable([0])
 
-const width = 490; // 418x258 feet is 1 hectare, or 490x220, or 328x328
-const height = 220;
+const width = 612; // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
+const height = 176;
 const minReproductiveAge = 10;
 const growthMultiplier = 2;
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
@@ -239,6 +230,10 @@ const msPerFrame = 1
 export const elapsedTime = writable(0)
 
 export const runSimulation = () => {
+
+  syncWorker?.postMessage({action: 'runSimulation'})
+  syncWorker2?.postMessage({action: 'runSimulation'})
+
   // runs.set([])
   isRunning.set(true)
   const startTime = new Date().getTime()
@@ -251,9 +246,9 @@ export const runSimulation = () => {
 
       // run each new scenario
       // times(3, () => {
-        reset()
-        const initialTrees = addNRandomTrees(100)
-        runScenario()
+        // reset()
+        // const initialTrees = addNRandomTrees(100)
+        // runScenario()
 
         // re-run this scenario X more times
         // times(2, () => {

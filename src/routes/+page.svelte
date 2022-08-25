@@ -3130,7 +3130,7 @@
     <!-- Diagram -->
     <div class="mb-4 flex">
       <div class="flex-grow rounded flex items-center justify-center" style="background: #efe1db;">
-          <svg viewBox="0 0 490 140" class=" w-full" >
+          <svg viewBox="0 0 612 176" class=" w-full" >
             <defs>
               <radialGradient id="treeGradient">
                 <stop offset="0%" stop-color="rgba(20,100,20,1)" />
