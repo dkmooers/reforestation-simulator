@@ -19,7 +19,7 @@
   const weightedAvgDays = 28
   let points = []
 
-  const numYears = 50
+  const numYears = 100
 
   // let points = insolationData.days.map((day, index) => {
   //   if (weightedAvgValues.length >= weightedAvgDays) {

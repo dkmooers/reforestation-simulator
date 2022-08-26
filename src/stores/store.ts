@@ -5,18 +5,77 @@ import { treeSpecies, type TreeSpecies } from "$lib/treeSpecies";
 let syncWorker: Worker | undefined = undefined;
 let syncWorker2: Worker | undefined = undefined;
 let syncWorker3: Worker | undefined = undefined;
+let syncWorker4: Worker | undefined = undefined;
 
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
+    // console.log(e)
     const runData = e.data.value as Run;
-    console.log('worker 2: RUN DATA RECEIVED:', runData)
-    isRunning.set(false)
+    // console.log('worker 2: RUN DATA RECEIVED:', runData)
+    // isRunning.set(false)
     trees.set(runData.trees)
     deadTrees.set(runData.deadTrees)
     yearlyTrees.set(runData.yearlyData.trees)
     yearlyBiodiversity.set(runData.yearlyData.biodiversity)
     yearlyCarbon.set(runData.yearlyData.carbon)
-    runs.update(prevRuns => [...prevRuns, runData])
+    year.set(runData.yearlyData.carbon.length)
+
+    runs.update(prevRuns => {
+      const lastRunId = last(get(runs))?.id || 0
+      return [
+        ...prevRuns,
+        {
+          ...runData,
+          id: lastRunId + 1
+        }
+      ]
+    })
+
+
+  } else if (e.data.type === 'updatedRun') {
+    // console.log('updatedRun')
+
+    const updatedRun = e.data.value as Run
+
+    // if this run is not in runs yet, add it
+    if (!get(runs).find(run => run.id === updatedRun.id)) {
+      runs.update(prevRuns => [...prevRuns, updatedRun])
+      currentRunId.set(updatedRun.id)
+    }
+    else {
+
+      year.set(updatedRun.yearlyData.biodiversity.length)
+      yearlyTrees.set(updatedRun.yearlyData.trees)
+      yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
+      yearlyCarbon.set(updatedRun.yearlyData.carbon)
+      // carbon.set(last(updatedRun.yearlyData.carbon))
+
+      // only render trees every Nth year step to avoid choking the graphics engine
+      if (updatedRun.yearlyData.biodiversity.length % 4 === 0) {
+        trees.set(updatedRun.trees)
+      }
+      // update everything else every single year
+      runs.update(prevRuns => prevRuns.map((run, index) => {
+        if (run.id === updatedRun.id) {
+          return updatedRun
+        } else {
+          return run
+        }
+      }))
+
+    }
+  } else if (e.data.type === 'success') {
+    // isRunning.set(false)
+
+    // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
+    const numRuns = get(runs).length
+    const maxRuns = 10
+    // ask this worker to do another run if we're not at max runs yet
+    if (numRuns < maxRuns) {
+      e.srcElement.postMessage({action: 'runSimulation'})
+    } else if (numRuns === maxRuns + 3) {
+      isRunning.set(false);
+    }
   }
 }
 
@@ -25,21 +84,24 @@ export const loadWorker = async () => {
   const SyncWorker = await import('../lib/simulation.worker?worker');
   
   syncWorker = new SyncWorker.default();
-  syncWorker.postMessage({message: 'bingo'});
+  syncWorker.postMessage('ping')
   syncWorker.onmessage = (e) => {
     handleMessage(e)
   }
 
   syncWorker2 = new SyncWorker.default();
-  syncWorker2.postMessage({message: 'bingo'});
   syncWorker2.onmessage = (e) => {
     handleMessage(e)
   }
 
 
   syncWorker3 = new SyncWorker.default();
-  syncWorker3.postMessage({message: 'bingo'});
   syncWorker3.onmessage = (e) => {
+    handleMessage(e);
+  }
+
+  syncWorker4 = new SyncWorker.default();
+  syncWorker4.onmessage = (e) => {
     handleMessage(e);
   }
 
@@ -102,6 +164,21 @@ export const runIdWithHighestCarbon = derived(
       }
     })
     return maxCarbonRunId
+  }
+)
+export const runIdWithHighestBiodiversity = derived(
+  runs,
+  runs => {
+    let maxBiodiversity = 0
+    let maxBiodiversityRunId = 0
+    runs.forEach(run => {
+      const biodiversity = last(run.yearlyData.biodiversity) || 0
+      if (biodiversity > maxBiodiversity) {
+        maxBiodiversity = biodiversity
+        maxBiodiversityRunId = run.id
+      }
+    })
+    return maxBiodiversityRunId
   }
 )
 
@@ -234,6 +311,7 @@ export const runSimulation = () => {
   syncWorker?.postMessage({action: 'runSimulation'})
   syncWorker2?.postMessage({action: 'runSimulation'})
   syncWorker3?.postMessage({action: 'runSimulation'})
+  syncWorker4?.postMessage({action: 'runSimulation'})
 
   // runs.set([])
   isRunning.set(true)

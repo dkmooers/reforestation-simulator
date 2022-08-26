@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Chart from '../components/Chart.svelte';
   import Slider from '../components/Slider.svelte';
+  import Modal from '../components/Modal.svelte';
 
 	import {
     loadWorker,
@@ -15,6 +16,7 @@
 		carbon,
     averageCarbonAcrossRuns,
     runIdWithHighestCarbon,
+    runIdWithHighestBiodiversity,
 		biodiversity,
 		pruneOverflowTrees,
 		declusterTrees,
@@ -28,6 +30,7 @@
 	} from '../stores/store';
 
 	let renderGraphics = true;
+  let showTreeLabels = false;
   let colorMode = 'colorized';
 
   onMount(() => {
@@ -47,6 +50,7 @@
 <div
   class="flex flex-col items-stretch h-screen p-4 overflow-hidden"
 >
+  <Modal />
   <div class="flex items-start space-x-6">
     <!-- <div class="flex"> -->
       <h1 class="whitespace-nowrap mb-1 flex">
@@ -2998,7 +3002,7 @@
         <span>Tree Growth Simulator</span>
         
       </h1>
-      <div class="italic leading-tight mb-4 opacity-60 text-sm">An app design prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div>
+      <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div>
 
     <!-- </div> -->
     
@@ -3006,6 +3010,10 @@
       <label class="flex items-center whitespace-nowrap">
         Render graphics
         <input type="checkbox" bind:checked={renderGraphics} />
+      </label>
+      <label class="flex items-center whitespace-nowrap">
+        Show tree labels
+        <input type="checkbox" bind:checked={showTreeLabels} />
       </label>
       <span class="opacity-30">•</span>
       <label class="whitespace-nowrap">
@@ -3027,23 +3035,26 @@
       <div class="mr-6 mb-[4px]">
         <div class="whitespace-nowrap flex" >
           <button
-            class="text-black text-opacity-75"
+            class="text-black text-opacity-75 {$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
             style="background: var(--accentColor);"
+            disabled={$isRunning}
             on:click={() => {
               // reset();
               runSimulation();
             }}
           >
-            {#if $isRunning}
-              <svg class="animate-spin mr-1 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            {:else}
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-              </svg>
-            {/if}
+            <span class="w-5">
+              {#if $isRunning}
+                <svg class="animate-spin mr-1 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              {:else}
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+              {/if}
+            </span>
 
             <span>Run</span>
           </button>
@@ -3051,7 +3062,7 @@
           <button on:click={() => stepNYears(5)}>+5 years</button>
           <button on:click={() => stepNYears(10)}>+10 years</button>
           <button on:click={() => stepNYears(50)}>+50 years</button> -->
-          <button on:click={() => {
+          <button class="{$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" on:click={() => {
             reset()
             clearRunHistory()
           }}>
@@ -3099,7 +3110,7 @@
 			</div>
 			<div class="statistic">
 				<label>biodiversity</label>
-				<span>{(Number($biodiversity) * 100).toFixed(1)}%</span>
+				<span style="color: var(--biodiversity)">{(Number($biodiversity) * 100).toFixed(1)}%</span>
 			</div>
       <div class="statistic !w-24">
         <label>area (ha)</label>
@@ -3112,18 +3123,34 @@
 
     <div class="flex space-x-2 items-end">
       <div class="opacity-80 text-sm pb-[5px]">Run:</div>
-      {#each $runs as run}
+      {#if $runs.length === 0}
         <div class="flex flex-col items-center justify-end">
-          {#if run.id === $runIdWithHighestCarbon}
-            <div style="color: var(--accentColor;">•</div>
-          {/if}
+          <div style="color: var(--accentColor);" class:opacity-10={true}>•</div>
           <div
-            on:click={() => displayRun(run.id)}
             class="text-sm rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-5 hover:bg-opacity-20 cursor-pointer"
-            style={run.id === $currentRunId ? 'background: var(--accentColor); color: var(--backgroundColor);' : ''}
-          >{run.id}</div>
+            style={'background: var(--accentColor); color: var(--backgroundColor);'}
+          >1</div>
         </div>
-      {/each}
+      {:else}
+        {#each $runs as run, index}
+          <div class="flex flex-col items-center justify-end">
+            <div class="flex leading-tight">
+
+            <!-- {#if run.id === $runIdWithHighestCarbon} -->
+              <div style="color: var(--accentColor);" class:opacity-10={run.id !== $runIdWithHighestCarbon}>•</div>
+            <!-- {/if} -->
+            <!-- {#if run.id === $runIdWithHighestBiodiversity} -->
+              <div style="color: var(--biodiversity);" class:opacity-10={run.id !== $runIdWithHighestBiodiversity}>•</div>
+            <!-- {/if} -->
+            </div>
+            <div
+              on:click={() => displayRun(run.id)}
+              class="text-sm rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-5 hover:bg-opacity-20 cursor-pointer"
+              style={run.id === $currentRunId ? 'background: var(--accentColor); color: var(--backgroundColor);' : ''}
+            >{index + 1}</div>
+          </div>
+        {/each}
+      {/if}
     </div>
 
 
@@ -3170,27 +3197,29 @@
                   fill="transparent"
                   stroke-width="0.5"
                 />
-                <text
-                  x={tree.x - 4}
-                  y={tree.y - 3}
-                  style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
-                >
-                <text
-                  x={tree.x - 4}
-                  y={tree.y + 1}
-                  style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age}y</text
-                >
-                <text
-                  x={tree.x - 4}
-                  y={tree.y + 5}
-                  style="z-index: 10; font-family: monospace; font-size: 4px;"
-                  >{tree.health.toFixed(1)}</text
-                >
-                <!-- <text
-                x={tree.x - 6}
-                y={tree.y + 6}
-                style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.radius.toFixed(1) * 2}ft</text
-              > -->
+                {#if showTreeLabels}
+                  <text
+                    x={tree.x - 4}
+                    y={tree.y - 3}
+                    style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
+                  >
+                  <text
+                    x={tree.x - 4}
+                    y={tree.y + 1}
+                    style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age}y</text
+                  >
+                  <text
+                    x={tree.x - 4}
+                    y={tree.y + 5}
+                    style="z-index: 10; font-family: monospace; font-size: 4px;"
+                    >{tree.health.toFixed(1)}</text
+                  >
+                {/if}
+                  <!-- <text
+                  x={tree.x - 6}
+                  y={tree.y + 6}
+                  style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.radius.toFixed(1) * 2}ft</text
+                > -->
               {/each}
             {/if}
           </svg>
@@ -3205,8 +3234,6 @@
       <Chart />
     </div>
   <!-- </div> -->
-
-
 </div>
 
 <style>

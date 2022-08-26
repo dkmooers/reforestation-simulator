@@ -130,7 +130,8 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   //   deadTrees: [],
   // }])
 
-  currentRunId.update(lastRunId => lastRunId + 1)
+  currentRunId.set(Math.round(Math.random() * 1000000000))
+  // currentRunId.update(lastRunId => lastRunId + 1)
   yearlyCarbon.set([])
   yearlyTrees.set([])
   yearlyBiodiversity.set([])
@@ -172,11 +173,13 @@ export const runSimulation = () => {
         const initialTrees = addNRandomTrees(100)
 
         // currentRunId.set()
-        const runData = runScenario()
+        // const runData = runScenario()
+        runScenario()
 
-        console.log(runData)
+        // console.log(runData)
 
-        postMessage({type: 'runData', value: runData})
+        postMessage({type: 'success'})
+
 
         // re-run this scenario X more times
         // times(2, () => {
@@ -193,15 +196,15 @@ export const runSimulation = () => {
   // elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
 }
 
-const runScenario = (): Run => {
-  return stepNYears(50);
+const runScenario = () => {
+  stepNYears(100);
 }
 
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
 
   for (let index = 0; index < numYears; index++) {
-    console.log('step at year:', get(year))
+    // console.log('step at year:', get(year))
 
     // const element = array[index];
     
@@ -228,6 +231,24 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       yearlyCarbon.update(data => [...data, newCarbon])
       yearlyTrees.update(data => [...data, get(trees).length])
       yearlyBiodiversity.update(data => [...data, get(biodiversity)])
+
+
+      const sendLiveUpdates = false
+      if (sendLiveUpdates) {
+        const updatedRun: Run = {
+          trees: get(trees),
+          deadTrees: get(deadTrees),
+          id: get(currentRunId),
+          yearlyData: {
+            carbon: get(yearlyCarbon),
+            trees: get(yearlyTrees),
+            biodiversity: get(yearlyBiodiversity),
+          }
+        }
+
+        postMessage({type: 'updatedRun', value: updatedRun})
+      }
+      
 
       // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
       // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
@@ -256,6 +277,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       deadTrees: get(deadTrees),
     }
 
+    postMessage({type: 'runData', value: runData})
+
     // runs.update(prevRuns => prevRuns.map(run => {
     //   if (run.id !== get(currentRunId)) {
     //     return run;
@@ -272,8 +295,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
     //   }
     // }))
     // isRunning.set(false)
-    return runData
-    // return Promise.resolve({data: runData})
+    // return runData
+    return 'Complete'
   }
 
 

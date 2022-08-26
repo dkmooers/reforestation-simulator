@@ -10,6 +10,7 @@ html, body {
   --textColor: rgb(230 201 166);
   --backgroundColor: rgb(33 31 30);
   --accentColor: rgb(22, 194, 100);
+  --biodiversity: yellow;
   /* background: var(--backgroundColor); */
   @apply bg-stone-900 text-stone-200;
   /* color: var(--textColor);  */
