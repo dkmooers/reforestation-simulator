@@ -2999,10 +2999,11 @@
             C1643.86,2224.1799,1647.13,2222.55,1648.4399,2219.3201z"></path>
         </g>
         </svg>
-        <span>Tree Growth Simulator</span>
+        <span>Reforestation Simulator</span>
+        <!-- <span class="rounded-full bg-white text-base h-6 w-6">?</span> -->
         
       </h1>
-      <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div>
+      <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
 
     <!-- </div> -->
     
@@ -3100,10 +3101,10 @@
 				<label>carbon (tons)</label>
 				<span style="color: var(--accentColor)">{Math.round($carbon / 2000)}</span>
 			</div>
-      <div class="statistic !w-24">
-        <label>avg carbon</label>
-        <span style="color: var(--accentColor)">{Math.round($averageCarbonAcrossRuns / 2000)}</span>
-      </div>
+      <!-- <div class="statistic !w-36">
+        <label>avg carbon (all runs)</label>
+        <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
+      </div> -->
 			<div class="statistic !w-20">
 				<label>tons / year</label>
 				<span>{Math.round($carbon / 2000 / $year) || 0}</span>

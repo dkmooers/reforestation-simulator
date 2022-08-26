@@ -4,6 +4,7 @@
   import { get } from 'svelte/store';
   import { insolationData } from '../data/insolation.js';
   import { draw } from "svelte/transition"
+  import { last } from 'lodash';
 
   // const data = tsv
   //   .split('\n')
@@ -41,6 +42,10 @@
   let miny = 0;
   let maxy = 1500;
   let highest;
+
+  $: {
+    maxy = $runs.map(run => last(run.yearlyData.carbon)).reduce((acc, o) => o > acc ? o : acc, 0) / 2000 ?? maxy
+  }
 
   $: otherRunsData = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
     date: index,

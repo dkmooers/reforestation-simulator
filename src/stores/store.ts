@@ -69,11 +69,11 @@ const handleMessage = (e) => {
 
     // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
     const numRuns = get(runs).length
-    const maxRuns = 10
+    const maxRuns = 17
     // ask this worker to do another run if we're not at max runs yet
     if (numRuns < maxRuns) {
       e.srcElement.postMessage({action: 'runSimulation'})
-    } else if (numRuns === maxRuns + 3) {
+    } else if (numRuns >= maxRuns + 3) {
       isRunning.set(false);
     }
   }
