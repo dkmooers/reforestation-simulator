@@ -36,6 +36,7 @@
   import { prettifyNumber } from '$lib/helpers';
   import { sortBy, reverse } from 'lodash';
   import { last } from 'lodash';
+  import Tooltip from '../components/Tooltip.svelte';
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
@@ -67,15 +68,10 @@
         <h1 class="whitespace-nowrap mb-1 flex flex-grow items-center">
           <TreeIcon />
           <span>Reforestation Simulator</span>
-          <div class="relative group mt-[0.35rem] pr-2 cursor-pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 ml-3 text-[#ad8c6a] group-hover:text-white transition-colors cursor-pointer">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
-            </svg>
-            <div class=" z-10 w-64 max-w-2xl whitespace-normal text-base absolute top-0 left-10 invisible group-hover:visible transition-opacity opacity-0 group-hover:opacity-100 bg-black bg-opacity-70 backdrop-blur px-4 py-3 rounded shadow-lg">
-              A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
-              <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
-            </div>
-          </div>
+          <Tooltip>
+            A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
+            <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+          </Tooltip>
 
 
           <!-- <span class="rounded-full bg-[#ad8c6a] text-base h-6 w-6">?</span> -->
@@ -224,7 +220,7 @@
           >1</div>
         </div>
         {#if !$isRunning}
-          <div transition:fade class="text-[#ad8c6a] text-sm mb-1">Click Run to run the simulation</div>
+          <div transition:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
         {/if}
       {:else}
         {#each $runs as run, index}
@@ -337,7 +333,12 @@
 
 
     <!-- Species breakdown bar chart -->
-    <div class="text-xs mb-1">Initial planting species breakdown:</div>
+    <div class="text-xs mb-1 flex items-center opacity-0 transition-opacity" class:!opacity-100={$runs?.filter(run => run.isComplete).length > 0}>
+      Initial planting species breakdown:
+      <Tooltip>
+        <small>The percentages of each species initially planted in this run</small>
+      </Tooltip>
+    </div>
       <div class="h-4">
         {#if $currentRun?.scenario}
           <div class="bg-white flex rounded">
@@ -365,24 +366,27 @@
     <!-- </div> -->
   </div>
 
-  <div class="py-4 flex-shrink relative">
+  <div class="py-4 flex-shrink relative bg-[#2a2421]">
     <!-- {#if isSidebarOpen} -->
-      <div class={isSidebarOpen ? 'w-48' : 'w-0'} style="transition: width 0.2s;">
-        <table class="border-collapse text-sm mr-4">
-          <thead><th>Run</th><th>Fitness</th><th>Carbon</th></thead>
-          {#each reverse(sortBy($runs.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
-            <tr>
-              <td class="cursor-pointer text-right text-[#ad8c6a] hover:text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
-              <td class="text-right" class:text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness}</td>
-              <td class="text-right" class:text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
-            </tr>
-          {/each}
-        </table>
+      <div class="{isSidebarOpen ? 'w-48' : 'w-0'}" style="transition: width 0.2s; ">
+        <div class="px-4">
+          <table class="border-collapse text-sm">
+            <thead><th>Run</th><th>Fitness</th><th>Carbon</th></thead>
+            {#each reverse(sortBy($runs.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
+              <tr>
+                <td class="cursor-pointer text-right text-[#ad8c6a] hover:text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
+                <td class="text-right" class:text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness}</td>
+                <td class="text-right" class:text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
+              </tr>
+            {/each}
+          </table>
+        </div>
+        
       </div>
     <!-- {/if} -->
     <div class="absolute -left-8 w-8 top-14 flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
-      <div class="rotate-90 mt-5 text-sm">Rank</div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-4 mb-1 w-6 h-6 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
+      <div class="rotate-90 mt-6 text-sm">Ranking</div>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-5 mb-1 w-5 h-5 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
         <path fill-rule="evenodd" d="M4.72 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L11.69 12 4.72 5.03a.75.75 0 010-1.06zm6 0a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L17.69 12l-6.97-6.97a.75.75 0 010-1.06z" clip-rule="evenodd" />
       </svg>
     </div>
