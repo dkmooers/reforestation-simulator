@@ -1,12 +1,13 @@
 import { derived, get, writable } from "svelte/store"
-import { times, delay, sortBy, take, countBy, last } from "lodash"
+import { times, delay, sortBy, take, countBy, last, filter } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
-import type { Run } from "src/types";
+import type { Run, Tree, TreeSpecies } from "src/types";
 
 let syncWorker: Worker | undefined = undefined;
 let syncWorker2: Worker | undefined = undefined;
 let syncWorker3: Worker | undefined = undefined;
 let syncWorker4: Worker | undefined = undefined;
+let useMultithreading = true;
 
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
@@ -21,19 +22,26 @@ const handleMessage = (e) => {
     yearlyCarbon.set(runData.yearlyData.carbon)
     year.set(runData.yearlyData.carbon.length)
 
-    runs.update(prevRuns => {
-      const lastRunId = last(get(runs))?.id || 0
-      return [
-        ...prevRuns,
-        {
-          ...runData,
-          // id: lastRunId + 1
-        }
-      ]
-    })
+    runs.update(prevRuns => prevRuns.map((run, index) => {
+      if (run.id === runData.id) {
+        // console.log(runData.id)
+        return runData
+      } else {
+        return run
+      }
+    }))
+
+    // runs.update(prevRuns => {
+    //   // const lastRunId = last(get(runs))?.id || 0
+    //   return [
+    //     ...prevRuns,
+    //     {
+    //       ...runData,
+    //       // id: lastRunId + 1
+    //     }
+    //   ]
+    // })
     currentRunId.set(runData.id)
-
-
 
   } else if (e.data.type === 'updatedRun') {
     // console.log('updatedRun')
@@ -43,41 +51,44 @@ const handleMessage = (e) => {
     // if this run is not in runs yet, add it
     if (!get(runs).find(run => run.id === updatedRun.id)) {
       runs.update(prevRuns => [...prevRuns, updatedRun])
-      currentRunId.set(updatedRun.id)
+      // currentRunId.set(updatedRun.id)
     }
     else {
-
-      year.set(updatedRun.yearlyData.biodiversity.length)
-      yearlyTrees.set(updatedRun.yearlyData.trees)
-      yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
-      yearlyCarbon.set(updatedRun.yearlyData.carbon)
-      // carbon.set(last(updatedRun.yearlyData.carbon))
-
-      // only render trees every Nth year step to avoid choking the graphics engine
-      if (updatedRun.yearlyData.biodiversity.length % 4 === 0) {
-        trees.set(updatedRun.trees)
+      if (!useMultithreading) {
+        year.set(updatedRun.yearlyData.biodiversity.length)
+        yearlyTrees.set(updatedRun.yearlyData.trees)
+        yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
+        yearlyCarbon.set(updatedRun.yearlyData.carbon)
+        // only render trees every Nth year step to avoid choking the graphics engine
+        if (updatedRun.yearlyData.biodiversity.length % 4 === 0) {
+          trees.set(updatedRun.trees)
+        }
       }
+      
       // update everything else every single year
       runs.update(prevRuns => prevRuns.map((run, index) => {
         if (run.id === updatedRun.id) {
+          // console.log(updatedRun.id)
           return updatedRun
         } else {
           return run
         }
       }))
-
     }
   } else if (e.data.type === 'success') {
     // isRunning.set(false)
 
     // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
     const numRuns = get(runs).length
-    const maxRuns = 17
+    const maxRuns = 20
+    const numUnfinishedRuns = get(runs).filter(run => !run.isComplete)?.length
+    // const maxRuns = 1
     // ask this worker to do another run if we're not at max runs yet
     if (numRuns < maxRuns) {
       e.srcElement.postMessage({action: 'runSimulation'})
-    } else if (numRuns >= maxRuns + 3) {
+    } else if (numUnfinishedRuns === 0) {
       isRunning.set(false);
+      window.postMessage({type: 'runFinished'})
     }
   }
 }
@@ -172,21 +183,22 @@ export const runIdWithHighestBiodiversity = derived(
     return maxBiodiversityRunId
   }
 )
-export const runIdWithHighestScore = derived(
+export const runIdWithHighestFitness = derived(
   runs,
   runs => {
-    let maxScore = 0
-    let maxScoreRunId = 0
+    let maxFitness = 0
+    let maxFitnessRunId = 0
     runs.forEach(run => {
-      const biodiversity = last(run.yearlyData.biodiversity) || 0
-      const carbon = last(run.yearlyData.carbon) || 0
-      const score = biodiversity * carbon / 2000
-      if (score > maxScore) {
-        maxScore = score
-        maxScoreRunId = run.id
+      // const biodiversity = last(run.yearlyData.biodiversity) || 0
+      // const carbon = last(run.yearlyData.carbon) || 0
+      // const score = biodiversity * carbon / 2000
+      
+      if (run.fitness > maxFitness) {
+        maxFitness = run.fitness
+        maxFitnessRunId = run.id
       }
     })
-    return maxScoreRunId
+    return maxFitnessRunId
   }
 )
 

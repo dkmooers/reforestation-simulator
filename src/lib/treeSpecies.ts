@@ -3,7 +3,7 @@ import type { TreeSpecies } from "src/types";
 export const treeSpecies: TreeSpecies[] = [
   {
     id: 'oak',
-    color: 'red',
+    color: '#ff0000',
     growthRate: 1,
     maxRadius: 100,
     shadeTolerance: 0.4,
@@ -11,7 +11,7 @@ export const treeSpecies: TreeSpecies[] = [
   },
   {
     id: 'maple',
-    color: 'rebeccapurple',
+    color: '#663399',
     growthRate: 1.0,
     maxRadius: 80,
     shadeTolerance: 0.45,
@@ -19,7 +19,7 @@ export const treeSpecies: TreeSpecies[] = [
   },
   {
     id: 'linden',
-    color: 'green',
+    color: '#008000',
     growthRate: 0.6,
     maxRadius: 80,
     shadeTolerance: 0.5,
@@ -27,7 +27,7 @@ export const treeSpecies: TreeSpecies[] = [
   },
   {
     id: 'hickory',
-    color: 'teal',
+    color: '#008080',
     growthRate: 0.8,
     maxRadius: 60,
     shadeTolerance: 0.5,
@@ -35,10 +35,10 @@ export const treeSpecies: TreeSpecies[] = [
   },
   {
     id: 'hazel',
-    color: 'blue',
+    color: '#2196f3',
     growthRate: 0.8,
     maxRadius: 15,
-    shadeTolerance: 0.65,
+    shadeTolerance: 0.55,
     lifespan: 80,
   }
 ]

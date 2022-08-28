@@ -54,6 +54,12 @@ export const biodiversity = derived(
     return Math.pow(1 - rawBiodiversity, 500)//.toFixed(3)
   }
 )
+// export const fitness = derived(
+//   [biodiversity, carbon],
+//   ([biodiversity, carbon]) => {
+//     return Math.round(Number(biodiversity) * carbon / 2000 / (get(scenario)?.numTrees / 100))
+//   }
+// )
 
 const calculateCarbon = () => {
   let carbonSum = 0
@@ -147,7 +153,12 @@ const msPerFrame = 1
 export const elapsedTime = writable(0)
 
 
-
+const calculateFitness = (): number => {
+  const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
+  const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
+  const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
+  return Math.round(fitnessAdjustedForTreesPlanted)
+}
 
 //  copied from store.ts
 
@@ -229,11 +240,14 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       yearlyBiodiversity.update(data => [...data, get(biodiversity)])
 
 
-      const sendLiveUpdates = false
+      const sendLiveUpdates = true
+
       if (sendLiveUpdates) {
         const updatedRun: Run = {
-          trees: get(trees),
-          deadTrees: get(deadTrees),
+          // trees: get(trees),
+          trees: [],
+          deadTrees: [],
+          // deadTrees: get(deadTrees),
           id: get(currentRunId),
           yearlyData: {
             carbon: get(yearlyCarbon),
@@ -241,6 +255,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
             biodiversity: get(yearlyBiodiversity),
           },
           scenario: get(scenario),
+          fitness: 0,
+          // scenario: get(scenario),
         }
 
         postMessage({type: 'updatedRun', value: updatedRun})
@@ -273,6 +289,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       trees: get(trees),
       deadTrees: get(deadTrees),
       scenario: get(scenario),
+      fitness: calculateFitness(),
+      isComplete: true,
     }
 
     postMessage({type: 'runData', value: runData})
@@ -544,7 +562,7 @@ const generateScenario = () => {
     numTrees: Math.round(Math.random() * 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
   })
-  console.log(get(scenario))
+  // console.log(get(scenario))
 }
 
 export const addNRandomTrees = (numTrees: number): Tree[] => {

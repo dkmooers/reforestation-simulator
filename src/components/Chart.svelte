@@ -3,7 +3,7 @@
   import { yearlyCarbon, yearlyTrees, yearlyBiodiversity, runs, carbon, currentRunId } from '../stores/store';
   import { get } from 'svelte/store';
   import { insolationData } from '../data/insolation.js';
-  import { draw } from "svelte/transition"
+  import { fade } from "svelte/transition"
   import { last } from 'lodash';
 
   // const data = tsv
@@ -40,11 +40,13 @@
   let minx = 0;
   let maxx = numYears;
   let miny = 0;
-  let maxy = 1500;
+  let maxy = 4000;
   let highest;
 
   $: {
-    maxy = $runs.map(run => last(run.yearlyData.carbon)).reduce((acc, o) => o > acc ? o : acc, 0) / 2000 ?? maxy
+    const carbonValuesOfEachRun = $runs.map(run => last(run.yearlyData.carbon))
+    const maxCarbon = carbonValuesOfEachRun.reduce((max, thisRunCarbon) => thisRunCarbon > max ? thisRunCarbon : max, 0)
+    maxy = maxCarbon ? maxCarbon / 2000 : maxy
   }
 
   $: otherRunsData = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
@@ -111,8 +113,8 @@
   // getInsolationData()
 </script>
 
-<div class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
-  <div class="mx-auto font-normal mb-3 text-xl">Carbon Sequestered <span class="font-light">(tons)</span></div>
+<div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
+  <div class="mx-auto font-light mb-3">Carbon sequestered for each run <span class="font-light">(tons)</span></div>
   <Pancake.Chart x1={minx} x2={maxx} y1={miny} y2={maxy}>
     <Pancake.Grid horizontal count={3} let:value let:last>
       <div class="grid-line horizontal"><span>{value} {last ? 'tons' : ''}</span></div>
@@ -138,14 +140,14 @@
           <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
             <path class="carbon" {d} />
           </Pancake.SvgLine>
-          <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.trees}" let:d>
+          <!-- <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.trees}" let:d>
             <path class="trees" {d} />
-          </Pancake.SvgLine>
+          </Pancake.SvgLine> -->
         {/each}
 
-        <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.trees}" let:d>
+        <!-- <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.trees}" let:d>
           <path class="trees active" {d} />
-        </Pancake.SvgLine>
+        </Pancake.SvgLine> -->
       </Pancake.Svg>
     {/if}
 

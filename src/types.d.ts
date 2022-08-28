@@ -28,11 +28,13 @@ export type Tree = {
 type Run = {
   id: number
   yearlyData: {
-    carbon: number[],
-    trees: number[],
-    biodiversity: number[],
-  },
-  trees: Tree[],
-  deadTrees: Tree[],
-  scenario: Scenario,
+    carbon: number[]
+    trees: number[]
+    biodiversity: number[]
+  }
+  trees: Tree[]
+  deadTrees: Tree[]
+  scenario: Scenario
+  fitness: number
+  isComplete?: boolean
 }
