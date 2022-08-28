@@ -3,11 +3,13 @@ import { times, delay, sortBy, take, countBy, last, filter } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
 import type { Run, Tree, TreeSpecies } from "src/types";
 
-let syncWorker: Worker | undefined = undefined;
-let syncWorker2: Worker | undefined = undefined;
-let syncWorker3: Worker | undefined = undefined;
-let syncWorker4: Worker | undefined = undefined;
-let useMultithreading = true;
+let syncWorkers: Worker[] = []
+// let syncWorker: Worker | undefined = undefined;
+// let syncWorker2: Worker | undefined = undefined;
+// let syncWorker3: Worker | undefined = undefined;
+// let syncWorker4: Worker | undefined = undefined;
+const numWorkers = 6
+let useMultithreading = true
 
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
@@ -89,6 +91,7 @@ const handleMessage = (e) => {
     } else if (numUnfinishedRuns === 0) {
       isRunning.set(false);
       window.postMessage({type: 'runFinished'})
+      currentRunId.set(get(runIdWithHighestFitness))
     }
   }
 }
@@ -97,27 +100,37 @@ export const loadWorker = async () => {
 
   const SyncWorker = await import('../lib/simulation.worker?worker');
   
-  syncWorker = new SyncWorker.default();
-  syncWorker.postMessage('ping')
-  syncWorker.onmessage = (e) => {
-    handleMessage(e)
-  }
+  // create N workers
+  times(numWorkers, () => {
+    const syncWorker = new SyncWorker.default()
+    syncWorker.postMessage('ping')
+    syncWorker.onmessage = (e) => {
+      handleMessage(e)
+    }
+    syncWorkers.push(syncWorker)
+  })
 
-  syncWorker2 = new SyncWorker.default();
-  syncWorker2.onmessage = (e) => {
-    handleMessage(e)
-  }
+  // syncWorker = new SyncWorker.default();
+  // syncWorker.postMessage('ping')
+  // syncWorker.onmessage = (e) => {
+  //   handleMessage(e)
+  // }
+
+  // syncWorker2 = new SyncWorker.default();
+  // syncWorker2.onmessage = (e) => {
+  //   handleMessage(e)
+  // }
 
 
-  syncWorker3 = new SyncWorker.default();
-  syncWorker3.onmessage = (e) => {
-    handleMessage(e);
-  }
+  // syncWorker3 = new SyncWorker.default();
+  // syncWorker3.onmessage = (e) => {
+  //   handleMessage(e);
+  // }
 
-  syncWorker4 = new SyncWorker.default();
-  syncWorker4.onmessage = (e) => {
-    handleMessage(e);
-  }
+  // syncWorker4 = new SyncWorker.default();
+  // syncWorker4.onmessage = (e) => {
+  //   handleMessage(e);
+  // }
 
 };
 
@@ -328,10 +341,14 @@ export const elapsedTime = writable(0)
 
 export const runSimulation = () => {
 
-  syncWorker?.postMessage({action: 'runSimulation'})
-  syncWorker2?.postMessage({action: 'runSimulation'})
-  syncWorker3?.postMessage({action: 'runSimulation'})
-  syncWorker4?.postMessage({action: 'runSimulation'})
+  syncWorkers.forEach(syncWorker => {
+    syncWorker.postMessage({action: 'runSimulation'})
+  })
+
+  // syncWorker?.postMessage({action: 'runSimulation'})
+  // syncWorker2?.postMessage({action: 'runSimulation'})
+  // syncWorker3?.postMessage({action: 'runSimulation'})
+  // syncWorker4?.postMessage({action: 'runSimulation'})
 
   // runs.set([])
   isRunning.set(true)

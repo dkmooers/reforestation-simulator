@@ -220,7 +220,7 @@ import { prettifyNumber } from '$lib/helpers';
             </div>
             <div
               on:click={() => displayRun(run.id)}
-              transition:fade
+              in:fade
               class="text-sm transition-colors relative rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-0 hover:bg-opacity-20 cursor-pointer"
               class:!bg-yellow-500={run.id === $runIdWithHighestFitness}
               class:!text-stone-900={run.id === $runIdWithHighestFitness}
@@ -284,13 +284,13 @@ import { prettifyNumber } from '$lib/helpers';
                     />
                     {#if showTreeLabels}
                       <text
-                        x={tree.x - 4}
-                        y={tree.y - 3}
+                        x={tree.x - 5}
+                        y={tree.y - 2}
                         style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
                       >
                       <text
-                        x={tree.x - 4}
-                        y={tree.y + 1}
+                        x={tree.x - 5}
+                        y={tree.y + 2}
                         style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
                       >
                       <!-- <text
@@ -328,7 +328,7 @@ import { prettifyNumber } from '$lib/helpers';
               {@const species = treeSpecies.find(species => species.id === speciesId)}
               <div
                 style="width: {probabilityPercent}%; background: {species?.color}99; transition: min-width 0.2s;"
-                class="px-2 hover:flex-grow min-w-0 hover:!min-w-[5rem] cursor-pointer whitespace-nowrap text-xs text-black border-r border-black border-opacity-20 overflow-hidden"
+                class="px-2 hover:flex-grow min-w-0 hover:!min-w-[5.5rem] cursor-pointer whitespace-nowrap text-xs text-black border-r border-black border-opacity-20 overflow-hidden"
                 class:rounded-l={index === 0}
                 class:rounded-r={index === Object.keys($currentRun.scenario.speciesProbabilities).length - 1}
               >{speciesId}: {Math.round($currentRun.scenario.speciesProbabilities[speciesId] * 100)}%</div>
