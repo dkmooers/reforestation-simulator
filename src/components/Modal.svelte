@@ -4,11 +4,11 @@
   import TreeIcon from "./TreeIcon.svelte";
   let isVisible = false
 
-  onMount(() => {
-    setTimeout(() => {
-      isVisible = true
-    }, 1)
-  })
+  // onMount(() => {
+  //   setTimeout(() => {
+  //     isVisible = true
+  //   }, 1)
+  // })
 </script>
 
 {#if isVisible}

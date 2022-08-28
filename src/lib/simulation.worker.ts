@@ -1,7 +1,7 @@
-import { countBy, delay, last, rest, sortBy, take, times } from "lodash";
-import type { Tree } from "src/stores/store";
+import { countBy, delay, last, random, rest, sortBy, take, times } from "lodash";
+import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
 import { derived, get, writable } from "svelte/store";
-import { treeSpecies, type TreeSpecies } from "./treeSpecies";
+import { treeSpecies } from "./treeSpecies";
 
 onmessage = (msg) => {
   console.log('Hello World 👋');
@@ -17,40 +17,6 @@ onmessage = (msg) => {
 export const isRunning = writable(false)
 export const runs = writable<Run[]>([])
 export const currentRunId = writable<number>(0)
-// export const currentRun = derived(
-//   [runs, currentRunId],
-//   ([runs, currentRunId]) => runs.find(run => run.id === currentRunId)
-// )
-// export const averageCarbonAcrossRuns = derived(
-//   runs, 
-//   runs => runs.reduce((runningTotal, run) => (last(run.yearlyData.carbon) || 0) + runningTotal, 0) / (runs.length || 1)
-// )
-// export const runIdWithHighestCarbon = derived(
-//   runs,
-//   runs => {
-//     let maxCarbon = 0
-//     let maxCarbonRunId = 0
-//     runs.forEach(run => {
-//       const carbon = last(run.yearlyData.carbon) || 0
-//       if (carbon > maxCarbon) {
-//         maxCarbon = carbon
-//         maxCarbonRunId = run.id
-//       }
-//     })
-//     return maxCarbonRunId
-//   }
-// )
-
-type Run = {
-  id: number
-  yearlyData: {
-    carbon: number[],
-    trees: number[],
-    biodiversity: number[],
-  },
-  trees: Tree[],
-  deadTrees: Tree[],
-}
 
 export const yearlyCarbon = writable([0])
 export const yearlyTrees = writable([0])
@@ -64,6 +30,7 @@ const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 2;
 
+export const scenario = writable<Scenario>()
 export const trees = writable<Tree[]>([])
 export const numSpecies = derived(
   trees,
@@ -74,10 +41,6 @@ export const year = writable(0);
 export const carbon = derived(
   yearlyCarbon,
   yearlyCarbon => last(yearlyCarbon) ?? 0
-  // [trees, deadTrees],
-  // () => {
-  //   return calculateCarbon()
-  // }
 )
 export const biodiversity = derived(
   trees,
@@ -92,7 +55,6 @@ export const biodiversity = derived(
   }
 )
 
-
 const calculateCarbon = () => {
   let carbonSum = 0
   get(trees).forEach(tree => {
@@ -105,7 +67,40 @@ const calculateCarbon = () => {
 }
 
 const getRandomTreeSpecies = () => {
-  return treeSpecies[Math.floor(Math.random() * treeSpecies.length)]
+
+  // we're basically making a comparator here to find which tree species probability bin this random number goes into,
+  // where the bins are sized according to the species probabilities defined in the random scenario generation
+  const speciesProbabilities = get(scenario).speciesProbabilities
+
+  let runningTotal = 0
+  const treeSpeciesRandomValueThresholds = Object.keys(speciesProbabilities).reduce((acc, speciesId) => {
+    // each number is the cutoff for that tree species
+    runningTotal += speciesProbabilities[speciesId]
+    acc[speciesId] = runningTotal
+    return acc
+  }, {} as Record<string, number>)
+
+  // pick a random one
+  let speciesIdChosen: string
+
+  const randomValue = Math.random()
+  Object.keys(treeSpeciesRandomValueThresholds).forEach(speciesId => {
+    if (!speciesIdChosen) {
+      if (randomValue < treeSpeciesRandomValueThresholds[speciesId]) {
+        speciesIdChosen = speciesId
+      }
+    }
+  })
+  // for (let index = 0; index < Object.keys(treeSpeciesRandomValueThresholds).length; index++) {
+  //   // check to see if the random value is in this species bin
+  //   const speciesId
+  //   const thisSpeciesThreshold = treeSpeciesRandomValueThresholds
+    
+  // }
+  return treeSpecies.find(species => species.id === speciesIdChosen)
+
+  // simple random species, same chance for each
+  // return treeSpecies[Math.floor(Math.random() * treeSpecies.length)]
 }
 
 const getTreeSpeciesById = (id: string): TreeSpecies => {
@@ -170,7 +165,8 @@ export const runSimulation = () => {
       // run each new scenario
       // times(3, () => {
         // reset()
-        const initialTrees = addNRandomTrees(100)
+        generateScenario()
+        const initialTrees = addNRandomTrees(get(scenario)?.numTrees)
 
         // currentRunId.set()
         // const runData = runScenario()
@@ -243,7 +239,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
             carbon: get(yearlyCarbon),
             trees: get(yearlyTrees),
             biodiversity: get(yearlyBiodiversity),
-          }
+          },
+          scenario: get(scenario),
         }
 
         postMessage({type: 'updatedRun', value: updatedRun})
@@ -266,7 +263,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
     console.log('run complete! attempting to return data...')
 
-    const runData = {
+    const runData: Run = {
       id: get(currentRunId),
       yearlyData: {
         carbon: get(yearlyCarbon),
@@ -275,6 +272,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       },
       trees: get(trees),
       deadTrees: get(deadTrees),
+      scenario: get(scenario),
     }
 
     postMessage({type: 'runData', value: runData})
@@ -312,7 +310,7 @@ export const pruneOverflowTrees = () => {
 
 const calculateTreeHealth = () => {
   // calculate shade map
-  const shadeGrid: number[][] = []
+  // const shadeGrid: number[][] = []
   // NO, this won't work, b/c for any given tree, we don't want to include its own shade in the shade map... maybe we just subtract its own shade then?
   // OR, we just calculate a local shade map for every tree, by finding overlapping trees... calculating rough size of overlap...
   // then summing the overlaps...
@@ -424,6 +422,15 @@ const getNearestTreesForTree = (baseTree: Tree): Array<Tree & { distance: number
   return take(sortBy(treesByDistance, 'distance'), 2).filter(tree => tree.distance < 50)
 }
 
+const getMatureOverlapBetweenTwoTrees = (tree1: Tree, tree2: Tree) => {
+  const distanceOnCenter = getDistanceBetweenTwoTrees(tree1, tree2)
+  // get species of each tree, and find the max radius of each
+  const species1 = getTreeSpeciesById(tree1.speciesId)
+  const species2 = getTreeSpeciesById(tree2.speciesId)
+  const overlapAtMaturity = species1.maxRadius + species2.maxRadius - distanceOnCenter
+  return overlapAtMaturity
+}
+
 const areAnyOverlappingTrees = () => {
   return get(trees).some(baseTree => {
     return getOverlappingTreesForTree(baseTree).length > 0
@@ -439,6 +446,10 @@ export const declusterTrees = () => {
       nearestTrees.forEach(nearTree => {
         trees.update(prevTrees => prevTrees.map(prevTree => {
           if (prevTree === baseTree) {
+
+            // first figure out if the trees will overlap at max age
+
+
             // find direction vector toward nearTree
             const vector = {
               x: nearTree.x - prevTree.x,
@@ -450,9 +461,14 @@ export const declusterTrees = () => {
               y: vector.y / magnitude
             }
             // move away from nearTree
-            const repulsion = 1
-            prevTree.x -= normalizedVector.x * repulsion
-            prevTree.y -= normalizedVector.y * repulsion
+            // the repulsion strength should be based on the overlap amount at the final mature tree size - we don't need to repulse tiny trees that will not be overlapping at mature size, for instance.
+            // const repulsion = 1
+            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * get(scenario)?.declusteringStrength
+            if (repulsion > 0) {
+              // const repulsion = getTreeSpeciesById(near)
+              prevTree.x -= normalizedVector.x * repulsion
+              prevTree.y -= normalizedVector.y * repulsion
+            }
           }
           return prevTree
         }))
@@ -509,6 +525,26 @@ export const calculateOverlaps = () => {
     })
     pruneOverflowTrees()
   }
+}
+
+const generateScenario = () => {
+  const speciesProbabilities = treeSpecies.reduce((acc, species) => {
+    acc[species.id] = Number(Math.random().toFixed(2))
+    return acc
+  }, {} as Record<string, number>)
+  console.log(speciesProbabilities)
+  const sumOfSpeciesProbabilities = Object.values(speciesProbabilities).reduce((acc, probability) => {
+    return acc + probability
+  }, 0)
+  Object.keys(speciesProbabilities).forEach(speciesId => {
+    speciesProbabilities[speciesId] = speciesProbabilities[speciesId] / sumOfSpeciesProbabilities
+  })
+  scenario.set({
+    speciesProbabilities,
+    numTrees: Math.round(Math.random() * 200),
+    declusteringStrength: Number(Math.random().toFixed(2)),
+  })
+  console.log(get(scenario))
 }
 
 export const addNRandomTrees = (numTrees: number): Tree[] => {

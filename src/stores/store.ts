@@ -1,6 +1,7 @@
 import { derived, get, writable } from "svelte/store"
 import { times, delay, sortBy, take, countBy, last } from "lodash"
-import { treeSpecies, type TreeSpecies } from "$lib/treeSpecies";
+import { treeSpecies } from "$lib/treeSpecies";
+import type { Run } from "src/types";
 
 let syncWorker: Worker | undefined = undefined;
 let syncWorker2: Worker | undefined = undefined;
@@ -26,10 +27,12 @@ const handleMessage = (e) => {
         ...prevRuns,
         {
           ...runData,
-          id: lastRunId + 1
+          // id: lastRunId + 1
         }
       ]
     })
+    currentRunId.set(runData.id)
+
 
 
   } else if (e.data.type === 'updatedRun') {
@@ -114,18 +117,6 @@ export const loadWorker = async () => {
 //   postMessage(workerResult);
 // }
 
-export type Tree = {
-  x: number
-  y: number
-  radius: number
-  speciesId: string
-  color: string
-  age: number
-  sizeMultiplier: number
-  health: number // 0 to 1
-  isDead?: boolean
-}
-
 type Scenario = {
   speciesProbabilities: Array<{
     id: string
@@ -181,17 +172,34 @@ export const runIdWithHighestBiodiversity = derived(
     return maxBiodiversityRunId
   }
 )
+export const runIdWithHighestScore = derived(
+  runs,
+  runs => {
+    let maxScore = 0
+    let maxScoreRunId = 0
+    runs.forEach(run => {
+      const biodiversity = last(run.yearlyData.biodiversity) || 0
+      const carbon = last(run.yearlyData.carbon) || 0
+      const score = biodiversity * carbon / 2000
+      if (score > maxScore) {
+        maxScore = score
+        maxScoreRunId = run.id
+      }
+    })
+    return maxScoreRunId
+  }
+)
 
-type Run = {
-  id: number
-  yearlyData: {
-    carbon: number[],
-    trees: number[],
-    biodiversity: number[],
-  },
-  trees: Tree[],
-  deadTrees: Tree[],
-}
+// type Run = {
+//   id: number
+//   yearlyData: {
+//     carbon: number[],
+//     trees: number[],
+//     biodiversity: number[],
+//   },
+//   trees: Tree[],
+//   deadTrees: Tree[],
+// }
 
 export const yearlyCarbon = writable([0])
 export const yearlyTrees = writable([0])

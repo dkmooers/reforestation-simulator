@@ -1,11 +1,4 @@
-export type TreeSpecies = {
-  id: string
-  color: string
-  growthRate: number
-  maxRadius: number
-  shadeTolerance: number // 0 to 1
-  lifespan: number
-}
+import type { TreeSpecies } from "src/types";
 
 export const treeSpecies: TreeSpecies[] = [
   {

@@ -17,6 +17,7 @@
     averageCarbonAcrossRuns,
     runIdWithHighestCarbon,
     runIdWithHighestBiodiversity,
+    runIdWithHighestScore,
 		biodiversity,
 		pruneOverflowTrees,
 		declusterTrees,
@@ -29,9 +30,9 @@
     clearRunHistory,
 	} from '../stores/store';
   import TreeIcon from '../components/TreeIcon.svelte';
-
+  import { treeSpecies } from '$lib/treeSpecies';
 	let renderGraphics = true;
-  let showTreeLabels = false;
+  let showTreeLabels = true;
   let colorMode = 'colorized';
 
   onMount(() => {
@@ -45,6 +46,8 @@
     });
     loadWorker()
   })
+
+  $: console.log($currentRun)
 
 </script>
 
@@ -166,13 +169,21 @@
 				<label>tons / year</label>
 				<span>{Math.round($carbon / 2000 / $year) || 0}</span>
 			</div>
-			<div class="statistic">
+			<div class="statistic !w-24">
 				<label>biodiversity</label>
 				<span style="color: var(--biodiversity)">{(Number($biodiversity) * 100).toFixed(1)}%</span>
 			</div>
       <div class="statistic !w-24">
+        <label>fitness score</label>
+        <span style="color: var(--biodiversity)">{Math.round(Number($biodiversity) * $carbon / 2000)}</span>
+      </div>
+      <!-- <div class="statistic">
         <label>area (ha)</label>
         <span>1.0</span>
+      </div> -->
+      <div class="statistic !w-56 border-l border-[#ad8c6a] border-opacity-30 pl-4">
+        <label>avg carbon across runs (tons)</label>
+        <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
       </div>
 		</div>
 	</div>
@@ -204,6 +215,8 @@
             <div
               on:click={() => displayRun(run.id)}
               class="text-sm rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-5 hover:bg-opacity-20 cursor-pointer"
+              class:!bg-yellow-500={run.id === $runIdWithHighestScore}
+              class:!text-stone-900={run.id === $runIdWithHighestScore}
               style={run.id === $currentRunId ? 'background: var(--accentColor); color: var(--backgroundColor);' : ''}
             >{index + 1}</div>
           </div>
@@ -264,14 +277,14 @@
                   <text
                     x={tree.x - 4}
                     y={tree.y + 1}
-                    style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age}y</text
+                    style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
                   >
-                  <text
+                  <!-- <text
                     x={tree.x - 4}
                     y={tree.y + 5}
                     style="z-index: 10; font-family: monospace; font-size: 4px;"
                     >{tree.health.toFixed(1)}</text
-                  >
+                  > -->
                 {/if}
                   <!-- <text
                   x={tree.x - 6}
@@ -287,7 +300,25 @@
 
     </div>
 
-    <!-- Charts -->
+    <!-- Species breakdown bar chart -->
+    <div class="text-xs mb-1">Initial planting species breakdown:</div>
+    <div class="flex">
+      {#if $currentRun?.scenario}
+        {#each Object.keys($currentRun.scenario.speciesProbabilities) as speciesId, index}
+          {@const probabilityPercent = $currentRun?.scenario.speciesProbabilities[speciesId] * 100}
+          {@const species = treeSpecies.find(species => species.id === speciesId)}
+          <div
+            style="width: {probabilityPercent}%; background: {species?.color};"
+            class="px-2 whitespace-nowrap text-xs"
+            class:rounded-l={index === 0}
+            class:rounded-r={index === Object.keys($currentRun.scenario.speciesProbabilities).length - 1}
+          >{speciesId}</div>
+        {/each}
+        <!-- {JSON.stringify($currentRun?.scenario)} -->
+      {/if}
+    </div>
+
+    <!-- Carbon chart -->
     <div class="flex-grow rounded pt-2 pb-0 pr-2">
       <Chart />
     </div>

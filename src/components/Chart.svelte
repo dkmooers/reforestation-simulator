@@ -48,7 +48,7 @@
   }
 
   $: otherRunsData = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
-    date: index,
+    date: index + 1,
     carbon: carbonValue / 2000,
     trees: run.yearlyData.trees[index],
   })))
@@ -62,7 +62,7 @@
       // weightedAvgValues = [...weightedAvgValues, scaledSolarEnergy]
       // const weightedAvg = weightedAvgValues.reduce((a, b) => a + b, 0) / weightedAvgValues.length
       return {
-        date: index,
+        date: index + 1,
         carbon: carbonValue / 2000,
         trees: $yearlyTrees[index],
 
@@ -74,7 +74,7 @@
     });
     // console.log(points)
     if (points?.length > 1) {
-      minx = points?.[0]?.date;
+      // minx = points?.[0]?.date;
       maxx = Math.max(numYears, points?.[points.length - 1]?.date);
       for (let i = 0; i < points.length; i += 1) {
         const point = points[i];

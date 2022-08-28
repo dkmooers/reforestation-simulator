@@ -21,7 +21,7 @@ h1 {
 }
 
 button {
-  @apply text-sm flex items-center space-x-1  transition-colors mr-2;
+  @apply px-2 py-1 flex items-center space-x-1 transition-colors mr-4;
   border: none;
   /* background-color: #5d4e3c; */
   background-color: #564a3d;
