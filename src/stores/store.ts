@@ -8,7 +8,7 @@ let syncWorkers: Worker[] = []
 // let syncWorker2: Worker | undefined = undefined;
 // let syncWorker3: Worker | undefined = undefined;
 // let syncWorker4: Worker | undefined = undefined;
-const numWorkers = 5
+const numWorkers = 4
 const maxRuns = 20
 let useMultithreading = true
 
@@ -103,6 +103,8 @@ export const loadWorker = async () => {
 
   const SyncWorker = await import('../lib/simulation.worker?worker');
   
+  // clear prevoius sync workers
+  syncWorkers = []
   // create N workers
   times(numWorkers, () => {
     const syncWorker = new SyncWorker.default()

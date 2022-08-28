@@ -64,10 +64,21 @@
     <SuccessMessage />
     <div class="flex items-start space-x-6">
       <!-- <div class="flex"> -->
-        <h1 class="whitespace-nowrap mb-1 flex flex-grow">
+        <h1 class="whitespace-nowrap mb-1 flex flex-grow items-center">
           <TreeIcon />
           <span>Reforestation Simulator</span>
-          <!-- <span class="rounded-full bg-white text-base h-6 w-6">?</span> -->
+          <div class="relative group mt-[0.35rem] pr-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 ml-3 text-[#ad8c6a] group-hover:text-white transition-colors cursor-pointer">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM8.94 6.94a.75.75 0 11-1.061-1.061 3 3 0 112.871 5.026v.345a.75.75 0 01-1.5 0v-.5c0-.72.57-1.172 1.081-1.287A1.5 1.5 0 108.94 6.94zM10 15a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+            <div class=" z-10 w-64 max-w-2xl whitespace-normal text-base absolute top-0 left-10 invisible group-hover:visible transition-opacity opacity-0 group-hover:opacity-100 bg-black bg-opacity-70 backdrop-blur px-4 py-3 rounded shadow-lg">
+              A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
+              <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+            </div>
+          </div>
+
+
+          <!-- <span class="rounded-full bg-[#ad8c6a] text-base h-6 w-6">?</span> -->
           
         </h1>
         <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
@@ -79,6 +90,7 @@
           Render graphics
           <input type="checkbox" bind:checked={renderGraphics} />
         </label>
+        <span class="opacity-30">•</span>
         <label class="flex items-center whitespace-nowrap">
           Show tree labels
           <input type="checkbox" bind:checked={showTreeLabels} />
@@ -204,13 +216,16 @@
     <div class="flex space-x-2 items-end">
       <div class="opacity-80 text-sm pb-[5px]">Run:</div>
       {#if $runs.length === 0}
-        <div class="flex flex-col items-center justify-end">
-          <div style="color: var(--accentColor);" class:opacity-10={true}>•</div>
+        <div class="flex flex-col items-center justify-end ">
+          <div style="color: var(--accentColor);" class="leading-tight" class:opacity-10={true}>•</div>
           <div
             class="text-sm rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-5 hover:bg-opacity-20 cursor-pointer"
-            style={'background: var(--accentColor); color: var(--backgroundColor);'}
+            style={'background: var(--accfentColor); color: var(--backgroundColor);'}
           >1</div>
         </div>
+        {#if !$isRunning}
+          <div transition:fade class="text-[#ad8c6a] text-sm mb-1">Click Run to run the simulation</div>
+        {/if}
       {:else}
         {#each $runs as run, index}
           <div class="flex flex-col items-center justify-end">
