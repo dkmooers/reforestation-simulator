@@ -114,7 +114,7 @@
 </script>
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
-  <div class="mx-auto font-light mb-3">Carbon sequestered for each run <span class="font-light">(tons)</span></div>
+  <div class="mx-auto font-light mb-3 text-[#ad8c6a]">Carbon sequestered by run <span class="font-light">(tons)</span></div>
   <Pancake.Chart x1={minx} x2={maxx} y1={miny} y2={maxy}>
     <Pancake.Grid horizontal count={3} let:value let:last>
       <div class="grid-line horizontal"><span>{value} {last ? 'tons' : ''}</span></div>

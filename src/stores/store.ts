@@ -8,8 +8,11 @@ let syncWorkers: Worker[] = []
 // let syncWorker2: Worker | undefined = undefined;
 // let syncWorker3: Worker | undefined = undefined;
 // let syncWorker4: Worker | undefined = undefined;
-const numWorkers = 6
+const numWorkers = 5
+const maxRuns = 20
 let useMultithreading = true
+
+let runQueue: Array<Partial<Run>> = []
 
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
@@ -82,12 +85,12 @@ const handleMessage = (e) => {
 
     // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
     const numRuns = get(runs).length
-    const maxRuns = 20
     const numUnfinishedRuns = get(runs).filter(run => !run.isComplete)?.length
     // const maxRuns = 1
     // ask this worker to do another run if we're not at max runs yet
-    if (numRuns < maxRuns) {
+    if (runQueue.length < maxRuns) {
       e.srcElement.postMessage({action: 'runSimulation'})
+      runQueue.push({id: 0})
     } else if (numUnfinishedRuns === 0) {
       isRunning.set(false);
       window.postMessage({type: 'runFinished'})
@@ -109,37 +112,7 @@ export const loadWorker = async () => {
     }
     syncWorkers.push(syncWorker)
   })
-
-  // syncWorker = new SyncWorker.default();
-  // syncWorker.postMessage('ping')
-  // syncWorker.onmessage = (e) => {
-  //   handleMessage(e)
-  // }
-
-  // syncWorker2 = new SyncWorker.default();
-  // syncWorker2.onmessage = (e) => {
-  //   handleMessage(e)
-  // }
-
-
-  // syncWorker3 = new SyncWorker.default();
-  // syncWorker3.onmessage = (e) => {
-  //   handleMessage(e);
-  // }
-
-  // syncWorker4 = new SyncWorker.default();
-  // syncWorker4.onmessage = (e) => {
-  //   handleMessage(e);
-  // }
-
 };
-
-// syncWorkeronmessage = (e) => {
-//   console.log('Message received from main script');
-//   const workerResult = `Result: ${e.data[0] * e.data[1]}`;
-//   console.log('Posting message back to main script');
-//   postMessage(workerResult);
-// }
 
 type Scenario = {
   speciesProbabilities: Array<{
@@ -341,14 +314,12 @@ export const elapsedTime = writable(0)
 
 export const runSimulation = () => {
 
+  runQueue = []
+
   syncWorkers.forEach(syncWorker => {
     syncWorker.postMessage({action: 'runSimulation'})
+    runQueue.push({id: Math.round(Math.random() * 1000000) })
   })
-
-  // syncWorker?.postMessage({action: 'runSimulation'})
-  // syncWorker2?.postMessage({action: 'runSimulation'})
-  // syncWorker3?.postMessage({action: 'runSimulation'})
-  // syncWorker4?.postMessage({action: 'runSimulation'})
 
   // runs.set([])
   isRunning.set(true)

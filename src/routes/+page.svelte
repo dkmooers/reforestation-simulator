@@ -33,7 +33,7 @@
   import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
   import SuccessMessage from '../components/SuccessMessage.svelte';
-import { prettifyNumber } from '$lib/helpers';
+  import { prettifyNumber } from '$lib/helpers';
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
