@@ -242,7 +242,7 @@
 
 
     <!-- Diagram -->
-    <div class="mb-2 flex bg-[#efe1db]">
+    <div class="mb-2 flex bg-[#efe1db] rounded">
       <div class="flex-grow rounded flex items-center justify-center">
           <svg viewBox="0 0 612 176" class="w-full">
             <defs>
