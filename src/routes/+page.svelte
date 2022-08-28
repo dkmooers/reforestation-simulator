@@ -327,11 +327,11 @@ import { prettifyNumber } from '$lib/helpers';
               {@const probabilityPercent = $currentRun?.scenario.speciesProbabilities[speciesId] * 100}
               {@const species = treeSpecies.find(species => species.id === speciesId)}
               <div
-                style="width: {probabilityPercent}%; background: {species?.color}99;"
-                class="px-2 whitespace-nowrap text-xs text-black border-r border-black border-opacity-20 overflow-hidden"
+                style="width: {probabilityPercent}%; background: {species?.color}99; transition: min-width 0.2s;"
+                class="px-2 hover:flex-grow min-w-0 hover:!min-w-[5rem] cursor-pointer whitespace-nowrap text-xs text-black border-r border-black border-opacity-20 overflow-hidden"
                 class:rounded-l={index === 0}
                 class:rounded-r={index === Object.keys($currentRun.scenario.speciesProbabilities).length - 1}
-              >{speciesId}</div>
+              >{speciesId}: {Math.round($currentRun.scenario.speciesProbabilities[speciesId] * 100)}%</div>
             {/each}
           </div>
             <!-- {JSON.stringify($currentRun?.scenario)} -->
