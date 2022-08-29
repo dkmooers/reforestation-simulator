@@ -91,7 +91,7 @@ const handleMessage = (e) => {
     if (runQueue.length < maxRuns) {
       e.srcElement.postMessage({action: 'runSimulation'})
       runQueue.push({id: 0})
-    } else if (numUnfinishedRuns === 0) {
+    } else if (runQueue.length === maxRuns && numUnfinishedRuns === 0) {
       isRunning.set(false);
       window.postMessage({type: 'runFinished'})
       currentRunId.set(get(runIdWithHighestFitness))

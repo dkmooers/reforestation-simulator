@@ -40,7 +40,7 @@
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
-  let isSidebarOpen = false;
+  let isSidebarOpen = true;
 
   onMount(() => {
     window.addEventListener('keydown', function(event) {
@@ -366,23 +366,24 @@
     <!-- </div> -->
   </div>
 
-  <div class="py-4 flex-shrink relative bg-[#2a2421]">
+  <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px]">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? 'w-48' : 'w-0'}" style="transition: width 0.2s; ">
-        <div class="px-4">
+      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} flex flex-col h-full" style="transition: width 0.2s; ">
+        <div class="px-4 flex-grow">
           <table class="border-collapse text-sm">
             <thead><th>Run</th><th>Fitness</th><th>Carbon</th></thead>
             {#each reverse(sortBy($runs.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
-              <tr>
-                <td class="cursor-pointer text-right text-[#ad8c6a] hover:text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
-                <td class="text-right" class:text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness}</td>
-                <td class="text-right" class:text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
+              <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
+                <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
+                <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness}</td>
+                <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
               </tr>
             {/each}
           </table>
         </div>
-        
+        <div class="mt-auto px-4">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
       </div>
+
     <!-- {/if} -->
     <div class="absolute -left-8 w-8 top-14 flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
       <div class="rotate-90 mt-6 text-sm">Ranking</div>
@@ -427,5 +428,15 @@
   td, th {
     border: 1px solid #ad8c6a99;
     padding: 0 0.5rem;
+  }
+  td {
+    color: #ad8c6a;
+    transition: color 0.2s;
+  }
+  tr.current-run {
+    color: white !important;
+  }
+  tr.current-run td {
+    color: white;
   }
 </style>
