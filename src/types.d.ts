@@ -35,6 +35,6 @@ type Run = {
   trees: Tree[]
   deadTrees: Tree[]
   scenario: Scenario
-  fitness: number
+  fitness?: number
   isComplete?: boolean
 }

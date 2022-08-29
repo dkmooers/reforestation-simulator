@@ -66,7 +66,7 @@
     <div class="flex items-start space-x-6">
       <!-- <div class="flex"> -->
         <h1 class="whitespace-nowrap mb-1 flex flex-grow items-center">
-          <TreeIcon />
+          <div class="-mt-3"><TreeIcon /></div>
           <span>Reforestation Simulator</span>
           <Tooltip>
             A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
@@ -81,11 +81,11 @@
 
       <!-- </div> -->
       
-      <div class="flex space-x-4 items-center ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
-        <label class="flex items-center whitespace-nowrap">
+      <div class="flex space-x-4 items-center -mt-1 -mr-1 ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
+        <!-- <label class="flex items-center whitespace-nowrap">
           Render graphics
           <input type="checkbox" bind:checked={renderGraphics} />
-        </label>
+        </label> -->
         <span class="opacity-30">•</span>
         <label class="flex items-center whitespace-nowrap">
           Show tree labels
@@ -193,7 +193,10 @@
           <span>{Math.round($carbon / 2000 / $year) || 0}</span>
         </div>
         <div class="statistic !w-24">
-          <label>fitness score</label>
+          <div class="flex items-center justify-center">
+            <label>fitness </label>
+            <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
+          </div>
           <span class="text-yellow-500">{prettifyNumber($currentRun?.fitness || 0)}</span>
         </div>
         <!-- <div class="statistic">
@@ -225,25 +228,23 @@
       {:else}
         {#each $runs as run, index}
           <div class="flex flex-col items-center justify-end">
+            <!-- Dots -->
             <div class="flex leading-tight">
-
-            <!-- {#if run.id === $runIdWithHighestCarbon} -->
               <div style="color: var(--accentColor);" class="opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestCarbon}>•</div>
-            <!-- {/if} -->
-            <!-- {#if run.id === $runIdWithHighestBiodiversity} -->
-              <div style="color: var(--biodiversity);" class="opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestBiodiversity}>•</div>
-            <!-- {/if} -->
+              <div class="text-yellow-400 opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestFitness}>•</div>
             </div>
+
+            <!-- Tab -->
             <div
               on:click={() => displayRun(run.id)}
               in:fade
               class="text-sm transition-colors relative rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-0 hover:bg-opacity-20 cursor-pointer"
               class:!bg-yellow-500={run.id === $runIdWithHighestFitness}
               class:!text-stone-900={run.id === $runIdWithHighestFitness}
-              style={run.id === $currentRunId ? 'background: var(--accentColor); color: var(--backgroundColor);' : ''}
+              style="{run.id === $currentRunId ? 'background-color: #b6a393; color: var(--backgroundColor);' : ''}"
             >
-              <!-- vertical progress bar background -->
-              <div class="absolute bottom-0 left-0 w-full bg-[#ad8c6a] bg-opacity-40 rounded-t-[0.2rem]" style="height: {run.yearlyData.carbon.length}%"></div>
+              <!-- Vertical progress bar background -->
+              <div class="absolute bottom-0 left-0 w-full bg-[#ad8c6a] {run.id === $currentRunId ? 'bg-opacity-0' : 'bg-opacity-40'} rounded-t-[0.2rem]" style="height: {run.yearlyData.carbon.length}%"></div>
               {index + 1}
             </div>
           </div>
@@ -253,7 +254,7 @@
 
 
     <!-- Diagram -->
-    <div class="mb-2 flex bg-[#efe1db] rounded">
+    <div class="mb-2 flex bg-[#efe1db] rounded z-10">
       <div class="flex-grow rounded flex items-center justify-center">
           <svg viewBox="0 0 612 176" class="w-full">
             <defs>
@@ -368,7 +369,7 @@
 
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px]">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} flex flex-col h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-hidden flex flex-col h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
           <table class="border-collapse text-sm">
             <thead><th>Run</th><th>Fitness</th><th>Carbon</th></thead>
@@ -381,12 +382,12 @@
             {/each}
           </table>
         </div>
-        <div class="mt-auto px-4">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+        <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
       </div>
 
     <!-- {/if} -->
     <div class="absolute -left-8 w-8 top-14 flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
-      <div class="rotate-90 mt-6 text-sm">Ranking</div>
+      <div class="rotate-90 mt-[1.3rem] text-xs">Ranking</div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-5 mb-1 w-5 h-5 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
         <path fill-rule="evenodd" d="M4.72 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L11.69 12 4.72 5.03a.75.75 0 010-1.06zm6 0a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L17.69 12l-6.97-6.97a.75.75 0 010-1.06z" clip-rule="evenodd" />
       </svg>

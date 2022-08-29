@@ -550,7 +550,7 @@ const generateScenario = () => {
     acc[species.id] = Number(Math.random().toFixed(2))
     return acc
   }, {} as Record<string, number>)
-  console.log(speciesProbabilities)
+  // console.log(speciesProbabilities)
   const sumOfSpeciesProbabilities = Object.values(speciesProbabilities).reduce((acc, probability) => {
     return acc + probability
   }, 0)
@@ -562,7 +562,6 @@ const generateScenario = () => {
     numTrees: Math.round(Math.random() * 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
   })
-  // console.log(get(scenario))
 }
 
 export const addNRandomTrees = (numTrees: number): Tree[] => {

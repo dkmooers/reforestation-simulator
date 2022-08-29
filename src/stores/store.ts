@@ -1,7 +1,8 @@
 import { derived, get, writable } from "svelte/store"
 import { times, delay, sortBy, take, countBy, last, filter } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
-import type { Run, Tree, TreeSpecies } from "src/types";
+import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
+import { getRandomId } from "$lib/helpers";
 
 let syncWorkers: Worker[] = []
 // let syncWorker: Worker | undefined = undefined;
@@ -10,6 +11,9 @@ let syncWorkers: Worker[] = []
 // let syncWorker4: Worker | undefined = undefined;
 const numWorkers = 4
 const maxRuns = 20
+const populationSize = 20
+const numElites = 2
+const crossoverFraction = 0.8
 let useMultithreading = true
 
 let runQueue: Array<Partial<Run>> = []
@@ -46,7 +50,8 @@ const handleMessage = (e) => {
     //     }
     //   ]
     // })
-    currentRunId.set(runData.id)
+    displayRun(runData.id)
+    // currentRunId.set(runData.id)
 
   } else if (e.data.type === 'updatedRun') {
     // console.log('updatedRun')
@@ -85,13 +90,13 @@ const handleMessage = (e) => {
 
     // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
     const numRuns = get(runs).length
-    const numUnfinishedRuns = get(runs).filter(run => !run.isComplete)?.length
+    const numFinishedRuns = get(runs).filter(run => run.isComplete)?.length
     // const maxRuns = 1
     // ask this worker to do another run if we're not at max runs yet
     if (runQueue.length < maxRuns) {
       e.srcElement.postMessage({action: 'runSimulation'})
       runQueue.push({id: 0})
-    } else if (runQueue.length === maxRuns && numUnfinishedRuns === 0) {
+    } else if (runQueue.length === maxRuns && numFinishedRuns === maxRuns) {
       isRunning.set(false);
       window.postMessage({type: 'runFinished'})
       currentRunId.set(get(runIdWithHighestFitness))
@@ -116,22 +121,17 @@ export const loadWorker = async () => {
   })
 };
 
-type Scenario = {
-  speciesProbabilities: Array<{
-    id: string
-    probability: number
-  }>
-  id: string // randomly generated
-}
-
-const scenarios = writable<Scenario[]>([])
-const currentScenario = derived(
-  scenarios,
-  scenarios => last(scenarios)
-)
+// const scenarios = writable<Scenario[]>([])
+// const currentScenario = derived(
+//   scenarios,
+//   scenarios => last(scenarios)
+// )
 
 export const isRunning = writable(false)
 export const runs = writable<Run[]>([])
+
+// export const population = writable<Run[]>([])
+
 export const currentRunId = writable<number>(0)
 export const currentRun = derived(
   [runs, currentRunId],
@@ -314,14 +314,85 @@ export const clearRunHistory = () => {
 const msPerFrame = 1
 export const elapsedTime = writable(0)
 
+const generateScenario = (): Scenario => {
+  const speciesProbabilities = treeSpecies.reduce((acc, species) => {
+    acc[species.id] = Number(Math.random().toFixed(2))
+    return acc
+  }, {} as Record<string, number>)
+  // console.log(speciesProbabilities)
+  const sumOfSpeciesProbabilities = Object.values(speciesProbabilities).reduce((acc, probability) => {
+    return acc + probability
+  }, 0)
+  Object.keys(speciesProbabilities).forEach(speciesId => {
+    speciesProbabilities[speciesId] = speciesProbabilities[speciesId] / sumOfSpeciesProbabilities
+  })
+  return {
+    speciesProbabilities,
+    numTrees: Math.round(Math.random() * 200),
+    declusteringStrength: Number(Math.random().toFixed(2)),
+  }
+}
+
+const createInitialPopulation = () => {
+
+  times(populationSize, () => {
+    const run: Run = {
+      scenario: generateScenario(),
+      id: getRandomId(),
+      yearlyData: {
+        carbon: [0],
+        trees: [0],
+        biodiversity: [0],
+      },
+      trees: [],
+      deadTrees: [],
+    }
+    runs.update(prevRuns => [...prevRuns, run])
+  })
+}
+
+const runPopulation = () => {
+  syncWorkers.forEach(syncWorker => {
+    syncWorker.postMessage({action: 'runSimulation'})
+    runQueue.push({ id: Math.round(Math.random() * 1000000) }) // this is a dummy ID, currently not used for anything
+  })
+  // dispatch queue items to workers until complete
+}
+
+// const evaluatePopulation = () => {
+//   // this is already done by each worker, which evaluates the individual's fitness after it's done running
+// }
+
+const areStopConditionsMet = () => {
+  return false
+}
+
+const selectNewPopulation = () => {
+  const newPopulation: Run[] = []
+  // select elites and move them to next generation
+
+  // generate crossovers and add to next generation
+  
+  // generation mutations and add to next generation
+}
+
 export const runSimulation = () => {
+
+  const maxRounds = 10
+  createInitialPopulation()
+  for (let round = 1; round < maxRounds; round++) {
+    runPopulation()
+    // evaluatePopulation()
+    // see if stop conditions are met 
+    if (areStopConditionsMet()) {
+      break;
+    }
+    selectNewPopulation()
+  }
 
   runQueue = []
 
-  syncWorkers.forEach(syncWorker => {
-    syncWorker.postMessage({action: 'runSimulation'})
-    runQueue.push({id: Math.round(Math.random() * 1000000) })
-  })
+
 
   // runs.set([])
   isRunning.set(true)
