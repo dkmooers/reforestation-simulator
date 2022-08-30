@@ -41,6 +41,7 @@
   import { sortBy, reverse } from 'lodash';
   import { last } from 'lodash';
   import Tooltip from '../components/Tooltip.svelte';
+import { round } from 'lodash';
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
@@ -378,9 +379,9 @@
       <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-hidden flex flex-col h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
-          <div class="flex items-center mb-2">
+          <div class="flex items-center mb-3">
             <label class="text-base mr-2">Round:</label>
-            <select bind:value={$roundIndexViewedInTable}>
+            <select bind:value={$roundIndexViewedInTable} class="text-sm">
               {#if !$rounds.length}
                 <option value={0} label="1" />
               {:else}
@@ -405,6 +406,12 @@
               </tr>
             {/each}
           </table>
+
+          <div class="my-2">Best fitness by round:</div>
+          {#each $rounds as runs, index}
+            <div>{index + 1}: {last(sortBy(runs, 'fitness'))?.fitness}</div>
+          {/each}
+
         </div>
         <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
       </div>
