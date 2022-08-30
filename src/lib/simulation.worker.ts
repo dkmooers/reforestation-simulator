@@ -65,13 +65,17 @@ export const biodiversity = derived(
 //   }
 // )
 
+const getCarbonFromTree = (tree: Tree) => {
+  return Math.pow(tree.radius, 2) * 10
+}
+
 const calculateCarbon = () => {
   let carbonSum = 0
   get(trees).forEach(tree => {
-    carbonSum += tree.radius * 100
+    carbonSum += getCarbonFromTree(tree)
   })
   get(deadTrees).forEach(tree => {
-    carbonSum += tree.radius * 100
+    carbonSum += getCarbonFromTree(tree)
   })
   return carbonSum 
 }
@@ -83,31 +87,31 @@ const getRandomTreeSpecies = () => {
   const speciesProbabilities = get(scenario).speciesProbabilities
 
   let runningTotal = 0
-  const treeSpeciesRandomValueThresholds = Object.keys(speciesProbabilities).reduce((acc, speciesId) => {
+  const treeSpeciesRandomValueThresholds = speciesProbabilities.map(probability => {
     // each number is the cutoff for that tree species
-    runningTotal += speciesProbabilities[speciesId]
-    acc[speciesId] = runningTotal
-    return acc
-  }, {} as Record<string, number>)
+    runningTotal += probability
+    return runningTotal
+  })
 
   // pick a random one
-  let speciesIdChosen: string
+  let speciesIndexChosen: number | undefined
 
   const randomValue = Math.random()
-  Object.keys(treeSpeciesRandomValueThresholds).forEach(speciesId => {
-    if (!speciesIdChosen) {
-      if (randomValue < treeSpeciesRandomValueThresholds[speciesId]) {
-        speciesIdChosen = speciesId
+  treeSpeciesRandomValueThresholds.forEach((threshold, index) => {
+    if (speciesIndexChosen === undefined) {
+      if (randomValue < threshold) {
+        speciesIndexChosen = index
       }
     }
   })
+
   // for (let index = 0; index < Object.keys(treeSpeciesRandomValueThresholds).length; index++) {
   //   // check to see if the random value is in this species bin
   //   const speciesId
   //   const thisSpeciesThreshold = treeSpeciesRandomValueThresholds
     
   // }
-  return treeSpecies.find(species => species.id === speciesIdChosen)
+  return treeSpecies[speciesIndexChosen ?? 0]
 
   // simple random species, same chance for each
   // return treeSpecies[Math.floor(Math.random() * treeSpecies.length)]
@@ -453,54 +457,31 @@ export const calculateOverlaps = () => {
   }
 }
 
-const generateScenario = () => {
-  const speciesProbabilities = treeSpecies.reduce((acc, species) => {
-    acc[species.id] = Number(Math.random().toFixed(2))
-    return acc
-  }, {} as Record<string, number>)
-  // console.log(speciesProbabilities)
-  const sumOfSpeciesProbabilities = Object.values(speciesProbabilities).reduce((acc, probability) => {
-    return acc + probability
-  }, 0)
-  Object.keys(speciesProbabilities).forEach(speciesId => {
-    speciesProbabilities[speciesId] = speciesProbabilities[speciesId] / sumOfSpeciesProbabilities
-  })
-  scenario.set({
-    speciesProbabilities,
-    numTrees: Math.round(Math.random() * 200),
-    declusteringStrength: Number(Math.random().toFixed(2)),
-  })
-}
-
 export const addNRandomTrees = (numTrees: number): Tree[] => {
 
   let remainingTreesToPlant = numTrees - get(trees).length
 
-  // while (remainingTreesToPlant > 0) {
-    const newTrees: Tree[] = [];
-    for (let index = 0; index < remainingTreesToPlant; index++) {
-      const species = getRandomTreeSpecies();
-      newTrees.push({
-        speciesId: species.id,
-        color: species.color,
-        x: Math.random() * width,
-        y: Math.random() * height,
-        health: 1,
-        radius: 0,
-        age: 0,
-        sizeMultiplier: Math.random() / 2 + 0.5,
-      })
-    }
-    trees.update(prevTrees => [...prevTrees, ...newTrees])
-    declusterTrees()
-    if (remainingTreesToPlant > 0) {
-      addNRandomTrees(remainingTreesToPlant)
-    }
-    // remainingTreesToPlant -= 
-  // }
-  // return initially planted trees
-  return get(trees)
+  const newTrees: Tree[] = [];
+  for (let index = 0; index < remainingTreesToPlant; index++) {
+    const species = getRandomTreeSpecies();
+    newTrees.push({
+      speciesId: species.id,
+      color: species.color,
+      x: Math.random() * width,
+      y: Math.random() * height,
+      health: 1,
+      radius: 0,
+      age: 0,
+      sizeMultiplier: Math.random() / 2 + 0.5,
+    })
+  }
+  trees.update(prevTrees => [...prevTrees, ...newTrees])
+  declusterTrees()
+  if (remainingTreesToPlant > 0) {
+    addNRandomTrees(remainingTreesToPlant)
+  }
 
+  return get(trees)
 }
 
 

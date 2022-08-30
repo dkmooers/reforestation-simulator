@@ -1,5 +1,5 @@
 import { derived, get, writable } from "svelte/store"
-import { times, delay, sortBy, take, countBy, last, filter, reverse, first } from "lodash"
+import { times, delay, sortBy, take, countBy, last, reverse, first, sum } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
 import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
@@ -10,13 +10,14 @@ let syncWorkers: Worker[] = []
 // let syncWorker3: Worker | undefined = undefined;
 // let syncWorker4: Worker | undefined = undefined;
 export const bestRun = writable<Run>()
-export const numYearsPerRun = 25
 const numWorkers = 4
-const maxRuns = 20
-const maxRounds = 10
-const populationSize = 10
+export const numYearsPerRun = 25
+const maxRounds = 20
+const populationSize = 20
 const numElites = 2
 const crossoverFraction = 0.8
+const mutationStrength = 0.2
+export const fitnessImprovement = writable(0)
 export const currentRound = writable(1)
 export const rounds = writable<Run[][]>([])
 export const roundIndexViewedInTable = writable(0)
@@ -317,19 +318,21 @@ export const clearRunHistory = () => {
 const msPerFrame = 1
 export const elapsedTime = writable(0)
 
-const generateScenario = (): Scenario => {
-  const speciesProbabilities = treeSpecies.reduce((acc, species) => {
-    acc[species.id] = Number(Math.random().toFixed(2))
-    return acc
-  }, {} as Record<string, number>)
-  const sumOfSpeciesProbabilities = Object.values(speciesProbabilities).reduce((acc, probability) => {
-    return acc + probability
-  }, 0)
-  Object.keys(speciesProbabilities).forEach(speciesId => {
-    speciesProbabilities[speciesId] = speciesProbabilities[speciesId] / sumOfSpeciesProbabilities
+const normalizeSpeciesProbabilities = (probabilities: number[]) => {
+  const sumOfSpeciesProbabilities = sum(probabilities)
+  const normalizedSpeciesProbabilities = probabilities.map(probability => {
+    return probability / sumOfSpeciesProbabilities
   })
+  return normalizedSpeciesProbabilities
+}
+
+const generateScenario = (): Scenario => {
+  const speciesProbabilities = treeSpecies.map((species) => {
+    return Number(Math.random().toFixed(2))
+  })
+
   return {
-    speciesProbabilities,
+    speciesProbabilities: normalizeSpeciesProbabilities(speciesProbabilities),
     numTrees: Math.round(Math.random() * 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
   }
@@ -380,57 +383,66 @@ const generateCrossoverFromParents = (parent1: Run, parent2: Run): Scenario => {
   // combine randomly
   const scenario1 = parent1.scenario
   const scenario2 = parent2.scenario
-  // TODO build out this stub
-  return {
-    ...parent1.scenario,
-  }
+  const child: Partial<Scenario> = {}
+  child.declusteringStrength = getRandomArrayElement([scenario1, scenario2]).declusteringStrength
+  child.numTrees = getRandomArrayElement([scenario1, scenario2]).numTrees
+  child.speciesProbabilities = normalizeSpeciesProbabilities(scenario1.speciesProbabilities.map((probability, index) => {
+    return getRandomArrayElement([scenario1, scenario2]).speciesProbabilities[index]
+  }))
+  return child as Scenario
+}
+
+const getRandomMutationMultiplier = () => {
+  return Math.random() * (mutationStrength * 2) + (1 - mutationStrength)
 }
 
 const generateMutantFromParent = (parent: Run): Scenario => {
-  // TODO build out this stub
-  return {
-    ...parent.scenario
+  const parentScenario = parent.scenario
+  const mutant = {
+    ...parentScenario
   }
+  mutant.declusteringStrength = mutant.declusteringStrength * getRandomMutationMultiplier() // multiply by 0.8 to 1.2
+  mutant.numTrees = Math.round(mutant.numTrees * getRandomMutationMultiplier()) // multiply by 0.8 to 1.2
+  mutant.speciesProbabilities = normalizeSpeciesProbabilities(mutant.speciesProbabilities.map(probability => (
+    probability * getRandomMutationMultiplier()
+  )))
+  // console.log('MUTATION:', sum(mutant.speciesProbabilities), mutant.speciesProbabilities)
+  return mutant
 }
 
 const selectNewPopulation = () => {
 
-  let newScenarios: Scenario[] = []
+  let newRunPartials: Partial<Run>[] = []
 
   if (get(currentRound) === 1) {
-    newScenarios = createInitialPopulation()
+    newRunPartials = createInitialPopulation().map(scenario => ({scenario}))
   } else {
     // select elites and move them to next generation
     const elites = take(reverse(sortBy(get(runs), 'fitness')), numElites)
-    elites.forEach(elite => newScenarios.push({...elite.scenario}))
+    elites.forEach(elite => newRunPartials.push(elite))
     
     // generate crossovers and add to next generation
     const numCrossovers = Math.floor((populationSize - numElites) * crossoverFraction)
     times(numCrossovers, () => {
-      newScenarios.push(generateCrossoverFromParents(elites[0], elites[1]))
+      newRunPartials.push({scenario: generateCrossoverFromParents(elites[0], elites[1])})
     })
 
     // generation mutations and add to next generation
     const numMutants = populationSize - numElites - numCrossovers
     times(numMutants, () => {
       const randomParent = getRandomArrayElement(elites)
-      newScenarios.push(generateMutantFromParent(randomParent))
+      newRunPartials.push({scenario: generateMutantFromParent(randomParent)})
     })
   }
 
-  const newRuns = newScenarios.map(scenario => {
+  const newRuns = newRunPartials.map(run => {
     return {
       ...getEmptyRun(),
-      scenario
+      ...run,
     } as Run
   })
 
   runs.set(newRuns)
-
-  // runs.update(prevRuns => [
-  //   ...prevRuns,
-  //   ...newRuns
-  // ])
 }
 
 const completeSimulation = () => {
@@ -453,6 +465,15 @@ const attemptToRunNextRound = () => {
   if (lastRound.length) {
     rounds.update(prevRounds => [...prevRounds, lastRound])
     console.log(get(rounds))
+  }
+
+  // update fitness improvement
+  if (get(rounds).length > 1) {
+    const firstRoundMaxFitness = last(sortBy(first(get(rounds)), 'fitness'))?.fitness
+    const lastRoundMaxFitness = last(sortBy(last(get(rounds)), 'fitness'))?.fitness
+    if (firstRoundMaxFitness && lastRoundMaxFitness) {
+      fitnessImprovement.set(lastRoundMaxFitness / firstRoundMaxFitness)
+    }
   }
 
   if (get(currentRound) >= maxRounds || areStopConditionsMet()) {

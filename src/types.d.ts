@@ -1,5 +1,5 @@
 type Scenario = {
-  speciesProbabilities: Record<string, number>
+  speciesProbabilities: Array<number>
   numTrees: number
   declusteringStrength: number
 }

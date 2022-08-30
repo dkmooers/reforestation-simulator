@@ -33,6 +33,7 @@
     currentRound,
     numYearsPerRun,
     roundIndexViewedInTable,
+    fitnessImprovement,
 	} from '../stores/store';
   import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
@@ -41,12 +42,10 @@
   import { sortBy, reverse } from 'lodash';
   import { last } from 'lodash';
   import Tooltip from '../components/Tooltip.svelte';
-import { round } from 'lodash';
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
   let isSidebarOpen = true;
-  let selectedRoundIndexInTable = 0;
 
   onMount(() => {
     window.addEventListener('keydown', function(event) {
@@ -350,15 +349,15 @@ import { round } from 'lodash';
       <div class="h-4">
         {#if $currentRun?.scenario}
           <div class="bg-white flex rounded">
-            {#each Object.keys($currentRun.scenario.speciesProbabilities) as speciesId, index}
-              {@const probabilityPercent = $currentRun?.scenario.speciesProbabilities[speciesId] * 100}
-              {@const species = treeSpecies.find(species => species.id === speciesId)}
+            {#each $currentRun.scenario.speciesProbabilities as probability, speciesIndex}
+              {@const probabilityPercent = probability * 100}
+              {@const species = treeSpecies[speciesIndex]}
               <div
                 style="width: {probabilityPercent}%; background: {species?.color}99; transition: min-width 0.2s;"
                 class="px-2 hover:flex-grow min-w-0 hover:!min-w-[5.5rem] cursor-pointer whitespace-nowrap text-xs text-black border-r border-black border-opacity-20 overflow-hidden"
-                class:rounded-l={index === 0}
-                class:rounded-r={index === Object.keys($currentRun.scenario.speciesProbabilities).length - 1}
-              >{speciesId}: {Math.round($currentRun.scenario.speciesProbabilities[speciesId] * 100)}%</div>
+                class:rounded-l={speciesIndex === 0}
+                class:rounded-r={speciesIndex === Object.keys($currentRun.scenario.speciesProbabilities).length - 1}
+              >{species.id}: {Math.round($currentRun.scenario.speciesProbabilities[speciesIndex] * 100)}%</div>
             {/each}
           </div>
             <!-- {JSON.stringify($currentRun?.scenario)} -->
@@ -374,9 +373,10 @@ import { round } from 'lodash';
     <!-- </div> -->
   </div>
 
-  <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px]">
+  <!-- Sidebar -->
+  <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-hidden flex flex-col h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-y-auto flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3">
@@ -407,10 +407,22 @@ import { round } from 'lodash';
             {/each}
           </table>
 
-          <div class="my-2">Best fitness by round:</div>
-          {#each $rounds as runs, index}
-            <div>{index + 1}: {last(sortBy(runs, 'fitness'))?.fitness}</div>
-          {/each}
+          {#if $rounds.length > 0}
+            <div class="my-2">Best fitness by round:</div>
+            <div class="columns-2">
+              {#each $rounds as runs, index}
+                <div class="text-xs">{index + 1}: {last(sortBy(runs, 'fitness'))?.fitness}</div>
+              {/each}
+            </div>
+            {#if $rounds.length > 1}
+              <div class="statistic !w-full mt-2">
+                <label>Total fitness improvement</label>
+                {#key $rounds.length}
+                  <span in:fade={{duration: 200, delay: 200}} out:fade={{duration: 200}}>{Math.round($fitnessImprovement * 100) - 100}%</span>
+                {/key}
+              </div>
+            {/if}
+          {/if}
 
         </div>
         <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
