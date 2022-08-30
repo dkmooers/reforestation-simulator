@@ -5,18 +5,16 @@ import { derived, get, writable } from "svelte/store";
 import { treeSpecies } from "./treeSpecies";
 
 onmessage = (msg) => {
-  // console.log('Hello World 👋');
-  // console.log(msg.data)
-  const { action, value } = msg.data
-  if (action === 'runScenario') {
+  const { type, value } = msg.data
+  if (type === 'runScenario') {
     reset()
     scenario.set(value.scenario)
     currentRunId.set(value.id)
     runScenario()
-  } else if (action === 'ping') {
+  } else if (type === 'ping') {
+    postMessage({ type: 'ready' })
     console.log('Worker ready! 👋');
   }
-  // if (msg.data)
 };
 
 export const isRunning = writable(false)
@@ -138,7 +136,7 @@ const calculateFitness = (): number => {
   const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
   const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
   const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
-  return Math.round(fitnessAdjustedForTreesPlanted)
+  return Math.round(fitnessAdjustedForTreesPlanted) || 0
 }
 
 const runScenario = () => {

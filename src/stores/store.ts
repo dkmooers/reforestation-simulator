@@ -4,15 +4,21 @@ import { treeSpecies } from "$lib/treeSpecies";
 import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
 
+let useMultithreading = true
+const numWorkers = 4
 let syncWorkers: Worker[] = []
+const numWorkersReady = writable(0)
+export const allWorkersReady = derived(
+  numWorkersReady,
+  numWorkersReady => numWorkersReady === numWorkers
+)
 // let syncWorker: Worker | undefined = undefined;
 // let syncWorker2: Worker | undefined = undefined;
 // let syncWorker3: Worker | undefined = undefined;
 // let syncWorker4: Worker | undefined = undefined;
 export const bestRun = writable<Run>()
-const numWorkers = 4
-export const numYearsPerRun = 25
-const maxRounds = 20
+export const numYearsPerRun = 100
+export const maxRounds = 20
 const populationSize = 20
 const numElites = 2
 const crossoverFraction = 0.8
@@ -21,9 +27,10 @@ export const fitnessImprovement = writable(0)
 export const currentRound = writable(1)
 export const rounds = writable<Run[][]>([])
 export const roundIndexViewedInTable = writable(0)
-let useMultithreading = true
-
-let runQueue: Array<Partial<Run>> = []
+export const bestFitnessByRound = derived(
+  rounds,
+  rounds => rounds.map(runs => last(sortBy(runs, 'fitness'))?.fitness || 0)
+)
 
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
@@ -93,6 +100,10 @@ const handleMessage = (e) => {
     }))
     // }
   } 
+  else if (e.data.type === 'ready') {
+    // log this worker as ready
+    numWorkersReady.update(num => num + 1)
+  }
   // else if (e.data.type === 'success') {
   //   // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
   //   const numUnallocatedRuns = get(runs).filter(run => !run.isAllocated)?.length
@@ -107,6 +118,8 @@ const handleMessage = (e) => {
 
 export const loadWorker = async () => {
 
+  numWorkersReady.set(0)
+
   const SyncWorker = await import('../lib/simulation.worker?worker');
   
   // clear prevoius sync workers
@@ -114,7 +127,7 @@ export const loadWorker = async () => {
   // create N workers
   times(numWorkers, () => {
     const syncWorker = new SyncWorker.default()
-    syncWorker.postMessage({action: 'ping'})
+    syncWorker.postMessage({type: 'ping'})
     syncWorker.onmessage = (e) => {
       handleMessage(e)
     }
@@ -130,6 +143,17 @@ export const loadWorker = async () => {
 
 export const isRunning = writable(false)
 export const runs = writable<Run[]>([])
+
+export const progressPercent = derived(
+  [rounds, runs],
+  ([rounds, runs]) => {
+    const completedRounds = rounds.length
+    const baseCompletedFraction = completedRounds / maxRounds
+    const completedRunsThisRound = runs.filter(run => run.isComplete)?.length || 0
+    const thisRoundAdditionToCompletedFraction = completedRunsThisRound / populationSize / maxRounds
+    return (baseCompletedFraction + thisRoundAdditionToCompletedFraction) * 100
+  }
+)
 
 // export const population = writable<Run[]>([])
 
@@ -288,6 +312,7 @@ const getEmptyRun = (): Run => ({
   trees: [],
   deadTrees: [],
   scenario: generateScenario(),
+  fitness: 0,
 })
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
@@ -347,7 +372,7 @@ const createInitialPopulation = (): Scenario[] => {
 const dispatchNextRunToWorker = (worker: Worker) => {
   const firstUnallocatedRun = first(get(runs).filter(run => !run.isAllocated))
   if (firstUnallocatedRun) {
-    worker.postMessage({action: 'runScenario', value: {
+    worker.postMessage({type: 'runScenario', value: {
       scenario: firstUnallocatedRun.scenario,
       id: firstUnallocatedRun.id
     }})
@@ -410,6 +435,12 @@ const generateMutantFromParent = (parent: Run): Scenario => {
   return mutant
 }
 
+const selectRandomParentByFitness = () => {
+  // we use a cube root function to preferentially choose higher-fitness parents
+  const randomRunIndex = Math.floor(Math.pow(Math.random(), 1/3) * populationSize)
+  return sortBy(get(runs), 'fitness')[randomRunIndex] // sortBy sorts in ascending order
+}
+
 const selectNewPopulation = () => {
 
   let newRunPartials: Partial<Run>[] = []
@@ -422,15 +453,21 @@ const selectNewPopulation = () => {
     elites.forEach(elite => newRunPartials.push(elite))
     
     // generate crossovers and add to next generation
+    // const numCrossovers = populationSize - numElites
     const numCrossovers = Math.floor((populationSize - numElites) * crossoverFraction)
     times(numCrossovers, () => {
-      newRunPartials.push({scenario: generateCrossoverFromParents(elites[0], elites[1])})
+      newRunPartials.push({
+        scenario: generateCrossoverFromParents(
+          selectRandomParentByFitness(),
+          selectRandomParentByFitness()
+        )})
     })
 
     // generation mutations and add to next generation
     const numMutants = populationSize - numElites - numCrossovers
     times(numMutants, () => {
-      const randomParent = getRandomArrayElement(elites)
+      // const randomParent = getRandomArrayElement(elites)
+      const randomParent = selectRandomParentByFitness()
       newRunPartials.push({scenario: generateMutantFromParent(randomParent)})
     })
   }
@@ -457,14 +494,12 @@ const attemptToRunNextRound = () => {
   const bestRunInLastRound = last(sortBy(get(runs), 'fitness'))
   if (bestRunInLastRound?.fitness && bestRunInLastRound.fitness > (get(bestRun)?.fitness ?? 0)) {
     bestRun.set(bestRunInLastRound)
-    console.log('New best run!', bestRunInLastRound)
   }
 
   // save last round
   const lastRound = get(runs)
   if (lastRound.length) {
     rounds.update(prevRounds => [...prevRounds, lastRound])
-    console.log(get(rounds))
   }
 
   // update fitness improvement
@@ -481,7 +516,7 @@ const attemptToRunNextRound = () => {
   } else {
     currentRound.update(round => round + 1)
     roundIndexViewedInTable.set(get(currentRound) - 1)
-    console.log('running round', get(currentRound))
+    // console.log('running round', get(currentRound))
     selectNewPopulation()
     runPopulation()
   }

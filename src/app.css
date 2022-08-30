@@ -60,3 +60,15 @@ select {
   color: inherit;
   padding: 0.125rem 0.25rem;
 }
+
+.text-subtle {
+  color: #ad8c6a;
+}
+
+.bg-subtle {
+  background-color: #ad8c6a;
+}
+
+.border-subtle {
+  border-color: #ad8c6a;
+}

@@ -4,9 +4,9 @@
   import Chart from '../components/Chart.svelte';
   import Slider from '../components/Slider.svelte';
   import Modal from '../components/Modal.svelte';
-
 	import {
     loadWorker,
+    allWorkersReady,
 		addNRandomTrees,
 		calculateOverlaps,
 		runSimulation,
@@ -34,6 +34,9 @@
     numYearsPerRun,
     roundIndexViewedInTable,
     fitnessImprovement,
+    bestFitnessByRound,
+    maxRounds,
+    progressPercent,
 	} from '../stores/store';
   import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
@@ -42,10 +45,13 @@
   import { sortBy, reverse } from 'lodash';
   import { last } from 'lodash';
   import Tooltip from '../components/Tooltip.svelte';
+  import Loader from '../components/Loader.svelte';
+
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
   let isSidebarOpen = true;
+  $: isRunButtonDisabled = $isRunning || !$allWorkersReady
 
   onMount(() => {
     window.addEventListener('keydown', function(event) {
@@ -63,289 +69,301 @@
 
 <div class="flex">
 
+
+
   <div
-    class="flex flex-grow flex-col items-stretch h-screen p-4 overflow-hidden"
+    class="flex flex-grow flex-col items-stretch h-screen overflow-hidden"
   >
     <Modal />
     <SuccessMessage />
-    <div class="flex items-start space-x-6">
-      <!-- <div class="flex"> -->
-        <h1 class="whitespace-nowrap mb-1 flex flex-grow items-center">
-          <div class="-mt-3"><TreeIcon /></div>
-          <span class="-mt-2">Reforestation Simulator</span>
-          <Tooltip>
-            A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
-            <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
-          </Tooltip>
-          <!-- <span class="rounded-full bg-[#ad8c6a] text-base h-6 w-6">?</span> -->
-        </h1>
-        <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
-
-      <!-- </div> -->
-      
-      <div class="flex space-x-4 items-center -mt-1 -mr-1 ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
-        <!-- <label class="flex items-center whitespace-nowrap">
-          Render graphics
-          <input type="checkbox" bind:checked={renderGraphics} />
-        </label> -->
-        <span class="opacity-30">•</span>
-        <label class="flex items-center whitespace-nowrap">
-          Show tree labels
-          <input type="checkbox" bind:checked={showTreeLabels} />
-        </label>
-        <span class="opacity-30">•</span>
-        <label class="whitespace-nowrap">
-          Color mode
-          <select bind:value={colorMode}>
-            <option value="colorized" label="Colorized">
-            <option value="shaded" label="Green shading">
-          </select>
-        </label>
+    {#if !$allWorkersReady}
+      <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
+        <div class="flex flex-col justify-center items-center space-y-3">
+          <div>Loading workers</div>
+          <Loader size="6rem" />
+        </div>
       </div>
+    {/if}
+
+    <!-- Progress bar -->
+    <div class="h-[3px] w-full bg-black relative">
+      <div class="bg-subtle absolute left-0 top-0 h-full" style="width: {$progressPercent}%; transition: width 0.2s;" />
     </div>
 
-    <!-- Controls -->
-    <div class="flex items-end flex-wrap">
+    <div class="p-4 flex-grow flex flex-col">
+      <div class="flex items-start space-x-6">
+        <!-- <div class="flex"> -->
+          <h1 class="whitespace-nowrap mb-1 flex flex-grow items-center">
+            <div class="-mt-3"><TreeIcon /></div>
+            <span class="-mt-2">Reforestation Simulator</span>
+            <Tooltip>
+              A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
+              <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+            </Tooltip>
+            <!-- <span class="rounded-full bg-[#ad8c6a] text-base h-6 w-6">?</span> -->
+          </h1>
+          <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
 
-      <div class="flex flex-col max-w-md mr-6">
+        <!-- </div> -->
+      
+        <div class="flex space-x-4 items-center -mt-2 -mr-2 ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
+          <!-- <label class="flex items-center whitespace-nowrap">
+            Render graphics
+            <input type="checkbox" bind:checked={renderGraphics} />
+          </label> -->
+          <!-- <span class="opacity-30">•</span> -->
+          <label class="flex items-center whitespace-nowrap">
+            Show tree labels
+            <input type="checkbox" bind:checked={showTreeLabels} />
+          </label>
+          <span class="opacity-30">•</span>
+          <label class="whitespace-nowrap">
+            Color mode
+            <select bind:value={colorMode}>
+              <option value="colorized" label="Colorized">
+              <option value="shaded" label="Green shading">
+            </select>
+          </label>
+        </div>
+      </div>
 
-        <!-- Buttons -->
-        <div class="mr-6 mb-[4px]">
-          <div class="whitespace-nowrap flex" >
-            <button
-              class="text-black text-opacity-75 {$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
-              style="background: var(--accentColor);"
-              disabled={$isRunning}
-              on:click={() => {
-                // reset();
-                runSimulation();
-              }}
-            >
-              <span class="w-6">
-                {#if $isRunning}
-                  <svg class="animate-spin mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                {:else}
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                  </svg>
-                {/if}
-              </span>
+      <!-- Controls -->
+      <div class="flex items-end flex-wrap">
 
-              <span>Run</span>
-            </button>
-            <!-- <button on:click={() => stepNYears(1)}>+1 year</button>
-            <button on:click={() => stepNYears(5)}>+5 years</button>
-            <button on:click={() => stepNYears(10)}>+10 years</button>
-            <button on:click={() => stepNYears(50)}>+50 years</button> -->
-            <button class="{$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" on:click={() => {
-              reset()
-              clearRunHistory()
-            }}>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
-              </svg>
-              <span>Reset</span>
-            </button>
+        <div class="flex flex-col max-w-md mr-6">
+
+          <!-- Buttons -->
+          <div class="mr-6 mb-[4px]">
+            <div class="whitespace-nowrap flex">
+              <button
+                class="text-black text-opacity-75 {isRunButtonDisabled ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                style="background: var(--accentColor);"
+                disabled={isRunButtonDisabled}
+                on:click={() => {
+                  // reset();
+                  runSimulation();
+                }}
+              >
+                <span class="w-6">
+                  {#if $isRunning}
+                    <Loader />
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                  {/if}
+                </span>
+
+                <span>Run</span>
+              </button>
+              <!-- <button on:click={() => stepNYears(1)}>+1 year</button>
+              <button on:click={() => stepNYears(5)}>+5 years</button>
+              <button on:click={() => stepNYears(10)}>+10 years</button>
+              <button on:click={() => stepNYears(50)}>+50 years</button> -->
+              <button class="{$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" on:click={() => {
+                reset()
+                clearRunHistory()
+              }}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
+                </svg>
+                <span>Reset</span>
+              </button>
+            </div>
+            <!-- <div class="whitespace-nowrap">
+              <button on:click={() => addNRandomTrees(100)}>Plant Trees</button>
+              <button on:click={() => calculateOverlaps()}>Calculate Overlaps</button>
+              <button on:click={() => pruneOverflowTrees()}>Prune Overflow Trees</button>
+              <button on:click={() => declusterTrees()}>Decluster</button>
+            </div> -->
           </div>
-          <!-- <div class="whitespace-nowrap">
-            <button on:click={() => addNRandomTrees(100)}>Plant Trees</button>
-            <button on:click={() => calculateOverlaps()}>Calculate Overlaps</button>
-            <button on:click={() => pruneOverflowTrees()}>Prune Overflow Trees</button>
-            <button on:click={() => declusterTrees()}>Decluster</button>
+        </div>
+
+
+        <!-- Statistics -->
+        <div class="flex">
+          <div class="statistic !w-28 border-r border-subtle">
+            <label>round</label>
+            <span>{$currentRound}/{maxRounds}</span>
+          </div>
+          <div class="statistic !w-20f">
+            <label>year</label>
+            <span>{$year}</span>
+          </div>
+          <div class="statistic !w-24">
+            <label>trees planted</label>
+            <span>{$currentRun?.scenario.numTrees || 0}</span>
+          </div>
+          <div class="statistic !w-20">
+            <label>final trees</label>
+            <span>{prettifyNumber($trees.length || 0)}</span>
+          </div>
+          <div class="statistic !w-24">
+            <label>final species</label>
+            <span>{$numSpecies}</span>
+          </div>
+          <div class="statistic !w-24">
+            <label>biodiversity</label>
+            <span>{(Number($biodiversity) * 100).toFixed(1)}%</span>
+          </div>
+          <div class="statistic !w-24">
+            <label>carbon (tons)</label>
+            <span style="color: var(--accentColor)">{prettifyNumber(Math.round($carbon / 2000))}</span>
+          </div>
+          <!-- <div class="statistic !w-36">
+            <label>avg carbon (all runs)</label>
+            <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
+          </div> -->
+          <div class="statistic !w-20">
+            <label>tons / year</label>
+            <span>{Math.round($carbon / 2000 / $year) || 0}</span>
+          </div>
+          <div class="statistic !w-24">
+            <div class="flex items-center justify-center">
+              <label>fitness </label>
+              <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
+            </div>
+            <span class="text-yellow-500">{prettifyNumber($currentRun?.fitness || 0)}</span>
+          </div>
+          <!-- <div class="statistic">
+            <label>area (ha)</label>
+            <span>1.0</span>
+          </div> -->
+          <!-- <div class="statistic !w-56 border-l border-[#ad8c6a] border-opacity-30 pl-4">
+            <label>avg carbon across runs (tons)</label>
+            <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
           </div> -->
         </div>
       </div>
 
+      <!-- <div class="flex grid-fols-2 gap-6 mt-2"> -->
 
-      <!-- Statistics -->
-      <div class="flex">
-        <div class="statistic !w-20f">
-          <label>round</label>
-          <span>{$currentRound}</span>
-        </div>
-        <div class="statistic !w-20f">
-          <label>year</label>
-          <span>{$year}</span>
-        </div>
-        <div class="statistic !w-24">
-          <label>trees planted</label>
-          <span>{$currentRun?.scenario.numTrees || 0}</span>
-        </div>
-        <div class="statistic !w-20">
-          <label>final trees</label>
-          <span>{prettifyNumber($trees.length || 0)}</span>
-        </div>
-        <div class="statistic !w-24">
-          <label>final species</label>
-          <span>{$numSpecies}</span>
-        </div>
-        <div class="statistic !w-24">
-          <label>biodiversity</label>
-          <span>{(Number($biodiversity) * 100).toFixed(1)}%</span>
-        </div>
-        <div class="statistic !w-24">
-          <label>carbon (tons)</label>
-          <span style="color: var(--accentColor)">{prettifyNumber(Math.round($carbon / 2000))}</span>
-        </div>
-        <!-- <div class="statistic !w-36">
-          <label>avg carbon (all runs)</label>
-          <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
-        </div> -->
-        <div class="statistic !w-20">
-          <label>tons / year</label>
-          <span>{Math.round($carbon / 2000 / $year) || 0}</span>
-        </div>
-        <div class="statistic !w-24">
-          <div class="flex items-center justify-center">
-            <label>fitness </label>
-            <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
-          </div>
-          <span class="text-yellow-500">{prettifyNumber($currentRun?.fitness || 0)}</span>
-        </div>
-        <!-- <div class="statistic">
-          <label>area (ha)</label>
-          <span>1.0</span>
-        </div> -->
-        <!-- <div class="statistic !w-56 border-l border-[#ad8c6a] border-opacity-30 pl-4">
-          <label>avg carbon across runs (tons)</label>
-          <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
-        </div> -->
-      </div>
-    </div>
-
-    <!-- <div class="flex grid-fols-2 gap-6 mt-2"> -->
-
-    <div class="flex space-x-2 items-end">
-      <div class="opacity-80 text-sm pb-[5px]">Run:</div>
-      {#if $runs.filter(run => run.isAllocated).length === 0}
-        <div class="flex flex-col items-center justify-end ">
-          <div style="color: var(--accentColor);" class="leading-tight" class:opacity-10={true}>•</div>
-          <div
-            class="text-sm rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-5 hover:bg-opacity-20 cursor-pointer"
-            style={'background: var(--accfentColor); color: var(--backgroundColor);'}
-          >1</div>
-        </div>
-        {#if !$isRunning}
-          <div transition:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
-        {/if}
-      {:else}
-        {#each $runs.filter(run => run.isAllocated) as run, index}
-          <div class="flex flex-col items-center justify-end">
-            <!-- Dots -->
-            <div class="flex leading-tight">
-              <div style="color: var(--accentColor);" class="opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestCarbon}>•</div>
-              <div class="text-yellow-400 opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestFitness}>•</div>
-            </div>
-
-            <!-- Tab -->
+      <div class="flex space-x-2 items-end">
+        <div class="opacity-80 text-sm pb-[5px]">Run:</div>
+        {#if $runs.filter(run => run.isAllocated).length === 0}
+          <div class="flex flex-col items-center justify-end ">
+            <div style="color: var(--accentColor);" class="leading-tight" class:opacity-10={true}>•</div>
             <div
-              on:click={() => displayRun(run.id)}
-              in:fade
-              class="text-sm transition-colors relative rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-0 hover:bg-opacity-20 cursor-pointer"
-              class:!bg-yellow-500={run.id === $runIdWithHighestFitness}
-              class:!text-stone-900={run.id === $runIdWithHighestFitness}
-              style="{run.id === $currentRunId ? 'background-color: #b6a393; color: var(--backgroundColor);' : ''}"
-            >
-              <!-- Vertical progress bar background -->
-              <div class="absolute bottom-0 left-0 w-full bg-[#ad8c6a] {run.id === $currentRunId ? 'bg-opacity-0' : 'bg-opacity-40'} rounded-t-[0.2rem]" style="height: {run.yearlyData.carbon.length * 100 / numYearsPerRun}%"></div>
-              {index + 1}
-            </div>
+              class="text-sm rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-5 hover:bg-opacity-20 cursor-pointer"
+              style={'background: var(--accfentColor); color: var(--backgroundColor);'}
+            >1</div>
           </div>
-        {/each}
-      {/if}
-    </div>
+          {#if !$isRunning}
+            <div transition:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
+          {/if}
+        {:else}
+          {#each $runs.filter(run => run.isAllocated) as run, index}
+            <div class="flex flex-col items-center justify-end">
+              <!-- Dots -->
+              <div class="flex leading-tight">
+                <div style="color: var(--accentColor);" class="opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestCarbon}>•</div>
+                <div class="text-yellow-400 opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestFitness}>•</div>
+              </div>
 
+              <!-- Tab -->
+              <div
+                on:click={() => displayRun(run.id)}
+                in:fade
+                class="text-sm transition-colors relative rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-0 hover:bg-opacity-20 cursor-pointer"
+                class:!bg-yellow-500={run.id === $runIdWithHighestFitness}
+                class:!text-stone-900={run.id === $runIdWithHighestFitness}
+                style="{run.id === $currentRunId ? 'background-color: #b6a393; color: var(--backgroundColor);' : ''}"
+              >
+                <!-- Vertical progress bar background -->
+                <div class="absolute bottom-0 left-0 w-full bg-[#ad8c6a] {run.id === $currentRunId ? 'bg-opacity-0' : 'bg-opacity-40'} rounded-t-[0.2rem]" style="height: {run.yearlyData.carbon.length * 100 / numYearsPerRun}%"></div>
+                {index + 1}
+              </div>
+            </div>
+          {/each}
+        {/if}
+      </div>
 
-    <!-- Diagram -->
-    <div class="mb-2 flex bg-[#efe1db] rounded z-10">
-      <div class="flex-grow rounded flex items-center justify-center">
-          <svg viewBox="0 0 612 176" class="w-full">
-            <defs>
-              <radialGradient id="treeGradient">
-                <stop offset="0%" stop-color="rgba(20,100,20,1)" />
-                <stop offset="70%" stop-color="rgba(0,150,0,0.5)" />
-                <stop offset="100%" stop-color="rgba(20,100,0,0.0)" />
-              </radialGradient>
-            </defs>
+      <!-- Diagram -->
+      <div class="mb-2 flex bg-[#efe1db] rounded z-10">
+        <div class="flex-grow rounded flex items-center justify-center">
+            <svg viewBox="0 0 612 176" class="w-full">
+              <defs>
+                <radialGradient id="treeGradient">
+                  <stop offset="0%" stop-color="rgba(20,100,20,1)" />
+                  <stop offset="70%" stop-color="rgba(0,150,0,0.5)" />
+                  <stop offset="100%" stop-color="rgba(20,100,0,0.0)" />
+                </radialGradient>
+              </defs>
             
-            {#key $currentRunId}  
+              {#key $currentRunId}  
 
-              <g in:fade={{delay: 50}} out:fade={{duration: 50}}>
-                {#if renderGraphics}
-                  <!-- trunks -->
-                  {#each $trees as tree}
-                    <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
-                  {/each}
-                  <!-- foliage canopies -->
-                  {#each $trees as tree}
-                    {#if colorMode === 'colorized'}
-                      <circle cx={tree.x} cy={tree.y} r={tree.radius} fill={tree.color} opacity="0.3" />
-                    {:else if colorMode === 'shaded'}
+                <g in:fade={{delay: 50}} out:fade={{duration: 50}}>
+                  {#if renderGraphics}
+                    <!-- trunks -->
+                    {#each $trees as tree}
+                      <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
+                    {/each}
+                    <!-- foliage canopies -->
+                    {#each $trees as tree}
+                      {#if colorMode === 'colorized'}
+                        <circle cx={tree.x} cy={tree.y} r={tree.radius} fill={tree.color} opacity="0.3" />
+                      {:else if colorMode === 'shaded'}
+                        <circle
+                          cx={tree.x}
+                          cy={tree.y}
+                          r={tree.radius}
+                          fill="url('#treeGradient')"
+                          style="z-index: 1"
+                          opacity="0.75"
+                        />
+                      {/if}
+                    {/each}
+                    <!-- tree outlines and text overlays -->
+                    {#each $trees as tree}
                       <circle
                         cx={tree.x}
                         cy={tree.y}
                         r={tree.radius}
-                        fill="url('#treeGradient')"
+                        stroke="rgba(0,50,0,0.2)"
                         style="z-index: 1"
-                        opacity="0.75"
+                        fill="transparent"
+                        stroke-width="0.5"
                       />
-                    {/if}
-                  {/each}
-                  <!-- tree outlines and text overlays -->
-                  {#each $trees as tree}
-                    <circle
-                      cx={tree.x}
-                      cy={tree.y}
-                      r={tree.radius}
-                      stroke="rgba(0,50,0,0.2)"
-                      style="z-index: 1"
-                      fill="transparent"
-                      stroke-width="0.5"
-                    />
-                    {#if showTreeLabels}
-                      <text
-                        x={tree.x - 5}
-                        y={tree.y - 2}
-                        style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
-                      >
-                      <text
-                        x={tree.x - 5}
-                        y={tree.y + 2}
-                        style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
-                      >
-                      <!-- <text
-                        x={tree.x - 4}
-                        y={tree.y + 5}
-                        style="z-index: 10; font-family: monospace; font-size: 4px;"
-                        >{tree.health.toFixed(1)}</text
+                      {#if showTreeLabels}
+                        <text
+                          x={tree.x - 5}
+                          y={tree.y - 2}
+                          style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
+                        >
+                        <text
+                          x={tree.x - 5}
+                          y={tree.y + 2}
+                          style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
+                        >
+                        <!-- <text
+                          x={tree.x - 4}
+                          y={tree.y + 5}
+                          style="z-index: 10; font-family: monospace; font-size: 4px;"
+                          >{tree.health.toFixed(1)}</text
+                        > -->
+                      {/if}
+                        <!-- <text
+                        x={tree.x - 6}
+                        y={tree.y + 6}
+                        style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.radius.toFixed(1) * 2}ft</text
                       > -->
-                    {/if}
-                      <!-- <text
-                      x={tree.x - 6}
-                      y={tree.y + 6}
-                      style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.radius.toFixed(1) * 2}ft</text
-                    > -->
-                  {/each}
-                {/if}
-              </g>
-            {/key}
+                    {/each}
+                  {/if}
+                </g>
+              {/key}
 
-          </svg>
-        <!-- <Slider min={0} max={100} bind:value={$year} /> -->
+            </svg>
+          <!-- <Slider min={0} max={100} bind:value={$year} /> -->
+        </div>
       </div>
-    </div>
 
-
-    <!-- Species breakdown bar chart -->
-    <div class="text-xs mb-1 flex items-center opacity-0 transition-opacity" class:!opacity-100={$runs?.filter(run => run.isComplete).length > 0}>
-      Initial planting species breakdown:
-      <Tooltip>
-        <small>The percentages of each species initially planted in this run</small>
-      </Tooltip>
-    </div>
+      <!-- Species breakdown bar chart -->
+      <div class="text-xs mb-1 flex items-center opacity-0 transition-opacity" class:!opacity-100={$runs?.filter(run => run.isComplete).length > 0}>
+        Initial planting species breakdown:
+        <Tooltip>
+          <small>The percentages of each species initially planted in this run</small>
+        </Tooltip>
+      </div>
       <div class="h-4">
         {#if $currentRun?.scenario}
           <div class="bg-white flex rounded">
@@ -366,11 +384,12 @@
         {/if}
       </div>
 
-    <!-- Carbon chart -->
-    <div class="flex-grow rounded pt-3 pb-0 pr-2">
-        <Chart />
+      <!-- Carbon chart -->
+      <div class="flex-grow rounded pt-3 pb-0 pr-2">
+          <Chart />
+      </div>
     </div>
-    <!-- </div> -->
+    
   </div>
 
   <!-- Sidebar -->
@@ -379,8 +398,8 @@
       <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-y-auto flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
-          <div class="flex items-center mb-3">
-            <label class="text-base mr-2">Round:</label>
+          <div class="flex items-center mb-3 text-sm">
+            <label class="mr-2 text-subtle">Round:</label>
             <select bind:value={$roundIndexViewedInTable} class="text-sm">
               {#if !$rounds.length}
                 <option value={0} label="1" />
@@ -395,9 +414,9 @@
             </select>
           </div>
 
-          <table class="border-collapse text-sm">
+          <table class="border-collapse text-xs">
             <thead><th>Run</th><th>Fitness</th><th>Carbon</th></thead>
-            {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
+            {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
             <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
               <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
                 <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
@@ -408,20 +427,27 @@
           </table>
 
           {#if $rounds.length > 0}
-            <div class="my-2">Best fitness by round:</div>
-            <div class="columns-2">
-              {#each $rounds as runs, index}
-                <div class="text-xs">{index + 1}: {last(sortBy(runs, 'fitness'))?.fitness}</div>
+            <div class="statistic !w-full mt-5">
+              <label>Total fitness improvement</label>
+              {#key $rounds.length}
+                <span class="text-yellow-500" in:fade={{duration: 200, delay: 200}} out:fade={{duration: 200}}>{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
+              {/key}
+            </div>
+            <div class="my-3 text-subtle text-sm">Best fitness by round</div>
+            <div class="grid grid-cols-2">
+              {#each $bestFitnessByRound as fitness, index}
+                <div class="text-xs">
+                  <span class="text-subtle w-5 inline-block">{index + 1}:</span>
+                  <span>{fitness}</span>
+                  {#if index > 0}
+                    {@const improvement = Math.round(100 * (fitness / $bestFitnessByRound[index - 1] - 1))}
+                    {#if improvement > 0}
+                      <span class="font-mono text-yellow-500 text-[0.65rem]">+{improvement}%</span>
+                    {/if}    
+                  {/if}
+                </div>
               {/each}
             </div>
-            {#if $rounds.length > 1}
-              <div class="statistic !w-full mt-2">
-                <label>Total fitness improvement</label>
-                {#key $rounds.length}
-                  <span in:fade={{duration: 200, delay: 200}} out:fade={{duration: 200}}>{Math.round($fitnessImprovement * 100) - 100}%</span>
-                {/key}
-              </div>
-            {/if}
           {/if}
 
         </div>
@@ -429,7 +455,7 @@
       </div>
 
     <!-- {/if} -->
-    <div class="absolute -left-8 w-8 top-14 flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
+    <div class="absolute -left-8 w-8 top-[3.25rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
       <div class="rotate-90 mt-[1.3rem] text-xs">Ranking</div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-5 mb-1 w-5 h-5 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
         <path fill-rule="evenodd" d="M4.72 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L11.69 12 4.72 5.03a.75.75 0 010-1.06zm6 0a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L17.69 12l-6.97-6.97a.75.75 0 010-1.06z" clip-rule="evenodd" />
@@ -463,7 +489,7 @@
 		/* color: #d49352; */
 	}
 	.statistic span {
-		font-size: 2rem;
+		font-size: 1.8rem;
     flex-shrink: 0;
 		font-weight: 100;
 		line-height: 1;
