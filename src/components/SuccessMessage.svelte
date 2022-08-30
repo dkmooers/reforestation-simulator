@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from "svelte";
+  import { onMount } from "svelte";
 
   import { fly } from "svelte/transition"
   let isVisible = false
@@ -27,7 +27,7 @@ import { onMount } from "svelte";
     <div class="modal-content max-w-full rounded-lg shadow-lg flex relative">
       <div style="background: var(--accentColor); transition: width {duration/1000}s" class="!bg-orange-500 absolute inset-0 rounded opacity-10 w-[0%]"
       class:!w-full={isCountingDown}></div>
-      <div class="px-6 py-4">Run Complete</div>
+      <div class="px-6 py-4">Simulation Complete!</div>
       <div on:click={() => isVisible = false} class="relative z-20 font-mono border-l text-[#ad8c6a] text-opacity-70 bg-black bg-opacity-10 border-white border-opacity-10 px-6 py-2 hover:bg-opacity-30 transition-colors rounded-r cursor-pointer text-lg flex items-center">x</div>
     </div>
   </div>  

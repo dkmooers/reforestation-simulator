@@ -1,47 +1,17 @@
 <script>
   import * as Pancake from '@sveltejs/pancake';
-  import { yearlyCarbon, yearlyTrees, yearlyBiodiversity, runs, carbon, currentRunId } from '../stores/store';
+  import { yearlyCarbon, yearlyTrees, yearlyBiodiversity, runs, carbon, currentRunId, numYearsPerRun } from '../stores/store';
   import { get } from 'svelte/store';
   import { insolationData } from '../data/insolation.js';
   import { fade } from "svelte/transition"
   import { last } from 'lodash';
 
-  // const data = tsv
-  //   .split('\n')
-  //   .map(str => {
-  //     let [date, avg, trend] = str.split('\t').map(parseFloat);
-  //     if (avg === -99.99) avg = null;
-
-  //     return { date, avg, trend };
-  //   });
-
-  // let points = data.filter(d => d.avg);
-  let weightedAvgValues = []
-  const weightedAvgDays = 28
   let points = []
 
-  const numYears = 100
-
-  // let points = insolationData.days.map((day, index) => {
-  //   if (weightedAvgValues.length >= weightedAvgDays) {
-  //     weightedAvgValues.shift()
-  //   }
-  //   const scaledSolarEnergy = day.solarenergy / 3.6 // to get from MJ/m2 to kWh/m2
-  //   weightedAvgValues = [...weightedAvgValues, scaledSolarEnergy]
-  //   const weightedAvg = weightedAvgValues.reduce((a, b) => a + b, 0) / weightedAvgValues.length
-  //   return {
-  //     date: 2021 + index / 365,
-  //     trend: weightedAvg,
-  //     avg: scaledSolarEnergy.toFixed(2)
-  //   }
-  // });
-  // console.log(points)
-
   let minx = 0;
-  let maxx = numYears;
+  let maxx = numYearsPerRun;
   let miny = 0;
   let maxy = 4000;
-  let highest;
 
   $: {
     const carbonValuesOfEachRun = $runs.map(run => last(run.yearlyData.carbon))
@@ -57,27 +27,14 @@
 
   $: {
     points = $yearlyCarbon?.map((carbonValue, index) => {
-      // if (weightedAvgValues.length >= weightedAvgDays) {
-      //   weightedAvgValues.shift()
-      // }
-      // const scaledSolarEnergy = day.solarenergy / 3.6 // to get from MJ/m2 to kWh/m2
-      // weightedAvgValues = [...weightedAvgValues, scaledSolarEnergy]
-      // const weightedAvg = weightedAvgValues.reduce((a, b) => a + b, 0) / weightedAvgValues.length
       return {
         date: index + 1,
         carbon: carbonValue / 2000,
         trees: $yearlyTrees[index],
-
-        // firstRunCarbon: ($runs?.[0]?.yearlyData?.carbon?.[index] || 0) / 2000,
-        // date: 2021 + index / 365,
-        // trend: weightedAvg,
-        // avg: scaledSolarEnergy.toFixed(2)
       }
     });
-    // console.log(points)
     if (points?.length > 1) {
-      // minx = points?.[0]?.date;
-      maxx = Math.max(numYears, points?.[points.length - 1]?.date);
+      maxx = Math.max(numYearsPerRun, points?.[points.length - 1]?.date);
       for (let i = 0; i < points.length; i += 1) {
         const point = points[i];
 
@@ -93,20 +50,9 @@
     }
   }
 
-
-
   miny = 0;
 
-  const months = 'Jan Feb Mar Apr May June July Aug Sept Oct Nov Dec'.split(' ');
-
-  const format = date => {
-    const year = ~~date;
-    const month = Math.floor((date % 1) * 12);
-
-    return `${months[month]} ${year}`;
-  };
-
-  const pc = date => {
+  const percent = date => {
     return 100 * (date - minx) / (maxx - minx);
   };
 
@@ -178,7 +124,7 @@
         {#if closest}
           <Pancake.Point x={closest.date} y={closest.avg} let:d>
             <div class="focus"></div>
-            <div class="tooltip" style="transform: translate(-{pc(closest.date)}%,0)">
+            <div class="tooltip" style="transform: translate(-{percent(closest.date)}%,0)">
               <strong class="font-normal text-[#16c264]"><span>{Math.round(closest.avg)}</span> <span class="font-extralight">tons</span></strong>
               <span class="opacity-70">Year {closest.date}</span>
             </div>

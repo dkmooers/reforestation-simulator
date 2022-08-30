@@ -1,19 +1,25 @@
 import { derived, get, writable } from "svelte/store"
-import { times, delay, sortBy, take, countBy, last, filter } from "lodash"
+import { times, delay, sortBy, take, countBy, last, filter, reverse, first } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
 import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
-import { getRandomId } from "$lib/helpers";
+import { getRandomArrayElement, getRandomId } from "$lib/helpers";
 
 let syncWorkers: Worker[] = []
 // let syncWorker: Worker | undefined = undefined;
 // let syncWorker2: Worker | undefined = undefined;
 // let syncWorker3: Worker | undefined = undefined;
 // let syncWorker4: Worker | undefined = undefined;
+export const bestRun = writable<Run>()
+export const numYearsPerRun = 25
 const numWorkers = 4
 const maxRuns = 20
-const populationSize = 20
+const maxRounds = 10
+const populationSize = 10
 const numElites = 2
 const crossoverFraction = 0.8
+export const currentRound = writable(1)
+export const rounds = writable<Run[][]>([])
+export const roundIndexViewedInTable = writable(0)
 let useMultithreading = true
 
 let runQueue: Array<Partial<Run>> = []
@@ -40,68 +46,62 @@ const handleMessage = (e) => {
       }
     }))
 
-    // runs.update(prevRuns => {
-    //   // const lastRunId = last(get(runs))?.id || 0
-    //   return [
-    //     ...prevRuns,
-    //     {
-    //       ...runData,
-    //       // id: lastRunId + 1
-    //     }
-    //   ]
-    // })
     displayRun(runData.id)
-    // currentRunId.set(runData.id)
 
+    // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
+    const numUnallocatedRuns = get(runs).filter(run => !run.isAllocated)?.length
+    const numUnfinishedRuns = get(runs).filter(run => !run.isComplete)?.length
+    // ask this worker to do another run if there are any unallocated runs waiting to be run
+    if (numUnallocatedRuns > 0) {
+      dispatchNextRunToWorker(e.srcElement)
+    } else if (numUnfinishedRuns === 0) {
+      attemptToRunNextRound()
+    }
   } else if (e.data.type === 'updatedRun') {
     // console.log('updatedRun')
 
     const updatedRun = e.data.value as Run
 
     // if this run is not in runs yet, add it
-    if (!get(runs).find(run => run.id === updatedRun.id)) {
-      runs.update(prevRuns => [...prevRuns, updatedRun])
-      // currentRunId.set(updatedRun.id)
-    }
-    else {
-      if (!useMultithreading) {
-        year.set(updatedRun.yearlyData.biodiversity.length)
-        yearlyTrees.set(updatedRun.yearlyData.trees)
-        yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
-        yearlyCarbon.set(updatedRun.yearlyData.carbon)
-        // only render trees every Nth year step to avoid choking the graphics engine
-        if (updatedRun.yearlyData.biodiversity.length % 4 === 0) {
-          trees.set(updatedRun.trees)
-        }
-      }
-      
-      // update everything else every single year
-      runs.update(prevRuns => prevRuns.map((run, index) => {
-        if (run.id === updatedRun.id) {
-          // console.log(updatedRun.id)
-          return updatedRun
-        } else {
-          return run
-        }
-      }))
-    }
-  } else if (e.data.type === 'success') {
-    // isRunning.set(false)
+    // if (!get(runs).find(run => run.id === updatedRun.id)) {
+    //   runs.update(prevRuns => [...prevRuns, updatedRun])
+    //   // currentRunId.set(updatedRun.id)
+    // }
+    // else {
 
-    // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
-    const numRuns = get(runs).length
-    const numFinishedRuns = get(runs).filter(run => run.isComplete)?.length
-    // const maxRuns = 1
-    // ask this worker to do another run if we're not at max runs yet
-    if (runQueue.length < maxRuns) {
-      e.srcElement.postMessage({action: 'runSimulation'})
-      runQueue.push({id: 0})
-    } else if (runQueue.length === maxRuns && numFinishedRuns === maxRuns) {
-      isRunning.set(false);
-      window.postMessage({type: 'runFinished'})
-      currentRunId.set(get(runIdWithHighestFitness))
+    // update tree graphics every year if we're not using web workers / multiple threads at once
+    if (!useMultithreading) {
+      year.set(updatedRun.yearlyData.biodiversity.length)
+      yearlyTrees.set(updatedRun.yearlyData.trees)
+      yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
+      yearlyCarbon.set(updatedRun.yearlyData.carbon)
+      // only render trees every Nth year step to avoid choking the graphics engine
+      if (updatedRun.yearlyData.biodiversity.length % 4 === 0) {
+        trees.set(updatedRun.trees)
+      }
     }
-  }
+    
+    // update everything else every single year
+    runs.update(prevRuns => prevRuns.map((run, index) => {
+      if (run.id === updatedRun.id) {
+        // console.log(updatedRun.id)
+        return updatedRun
+      } else {
+        return run
+      }
+    }))
+    // }
+  } 
+  // else if (e.data.type === 'success') {
+  //   // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
+  //   const numUnallocatedRuns = get(runs).filter(run => !run.isAllocated)?.length
+  //   // ask this worker to do another run if there are any unallocated runs waiting to be run
+  //   if (numUnallocatedRuns > 0) {
+  //     dispatchNextRunToWorker(e.srcElement)
+  //   } else if (numUnallocatedRuns === 0) {
+  //     attemptToRunNextRound()
+  //   }
+  // }
 }
 
 export const loadWorker = async () => {
@@ -113,7 +113,7 @@ export const loadWorker = async () => {
   // create N workers
   times(numWorkers, () => {
     const syncWorker = new SyncWorker.default()
-    syncWorker.postMessage('ping')
+    syncWorker.postMessage({action: 'ping'})
     syncWorker.onmessage = (e) => {
       handleMessage(e)
     }
@@ -277,22 +277,25 @@ const loadRun = (runId: number) => {
   }
 }
 
+const getEmptyRun = (): Run => ({
+  id: getRandomId(),
+  yearlyData: {
+    carbon: [0],
+    trees: [0],
+    biodiversity: [0],
+  },
+  trees: [],
+  deadTrees: [],
+  scenario: generateScenario(),
+})
+
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
 
   const mostRecentRunId = last(get(runs))?.id || 0
   const newRunId = mostRecentRunId + 1
   // const newRunId = (get(currentRunId) || 0) + 1
 
-  runs.update(prevRuns => [...prevRuns, {
-    id: newRunId,
-    yearlyData: {
-      carbon: [0],
-      trees: [0],
-      biodiversity: [0],
-    },
-    trees: [],
-    deadTrees: [],
-  }])
+  runs.update(prevRuns => [...prevRuns, getEmptyRun()])
 
   currentRunId.set(newRunId)
   yearlyCarbon.set([])
@@ -319,7 +322,6 @@ const generateScenario = (): Scenario => {
     acc[species.id] = Number(Math.random().toFixed(2))
     return acc
   }, {} as Record<string, number>)
-  // console.log(speciesProbabilities)
   const sumOfSpeciesProbabilities = Object.values(speciesProbabilities).reduce((acc, probability) => {
     return acc + probability
   }, 0)
@@ -333,30 +335,37 @@ const generateScenario = (): Scenario => {
   }
 }
 
-const createInitialPopulation = () => {
-
-  times(populationSize, () => {
-    const run: Run = {
-      scenario: generateScenario(),
-      id: getRandomId(),
-      yearlyData: {
-        carbon: [0],
-        trees: [0],
-        biodiversity: [0],
-      },
-      trees: [],
-      deadTrees: [],
-    }
-    runs.update(prevRuns => [...prevRuns, run])
+const createInitialPopulation = (): Scenario[] => {
+  return new Array(populationSize).fill(null).map(o => {
+    return generateScenario()
   })
 }
 
+const dispatchNextRunToWorker = (worker: Worker) => {
+  const firstUnallocatedRun = first(get(runs).filter(run => !run.isAllocated))
+  if (firstUnallocatedRun) {
+    worker.postMessage({action: 'runScenario', value: {
+      scenario: firstUnallocatedRun.scenario,
+      id: firstUnallocatedRun.id
+    }})
+    runs.update(prevRuns => prevRuns.map(run => {
+      if (run.id !== firstUnallocatedRun.id) {
+        return run
+      } else {
+        return {
+          ...run,
+          isAllocated: true
+        }
+      }
+    }))
+  }
+}
+
 const runPopulation = () => {
+  // send a message to each worker to start going on a run (the instructions to continue after that come from handleMessage func)
   syncWorkers.forEach(syncWorker => {
-    syncWorker.postMessage({action: 'runSimulation'})
-    runQueue.push({ id: Math.round(Math.random() * 1000000) }) // this is a dummy ID, currently not used for anything
+    dispatchNextRunToWorker(syncWorker)
   })
-  // dispatch queue items to workers until complete
 }
 
 // const evaluatePopulation = () => {
@@ -367,42 +376,107 @@ const areStopConditionsMet = () => {
   return false
 }
 
-const selectNewPopulation = () => {
-  const newPopulation: Run[] = []
-  // select elites and move them to next generation
+const generateCrossoverFromParents = (parent1: Run, parent2: Run): Scenario => {
+  // combine randomly
+  const scenario1 = parent1.scenario
+  const scenario2 = parent2.scenario
+  // TODO build out this stub
+  return {
+    ...parent1.scenario,
+  }
+}
 
-  // generate crossovers and add to next generation
-  
-  // generation mutations and add to next generation
+const generateMutantFromParent = (parent: Run): Scenario => {
+  // TODO build out this stub
+  return {
+    ...parent.scenario
+  }
+}
+
+const selectNewPopulation = () => {
+
+  let newScenarios: Scenario[] = []
+
+  if (get(currentRound) === 1) {
+    newScenarios = createInitialPopulation()
+  } else {
+    // select elites and move them to next generation
+    const elites = take(reverse(sortBy(get(runs), 'fitness')), numElites)
+    elites.forEach(elite => newScenarios.push({...elite.scenario}))
+    
+    // generate crossovers and add to next generation
+    const numCrossovers = Math.floor((populationSize - numElites) * crossoverFraction)
+    times(numCrossovers, () => {
+      newScenarios.push(generateCrossoverFromParents(elites[0], elites[1]))
+    })
+
+    // generation mutations and add to next generation
+    const numMutants = populationSize - numElites - numCrossovers
+    times(numMutants, () => {
+      const randomParent = getRandomArrayElement(elites)
+      newScenarios.push(generateMutantFromParent(randomParent))
+    })
+  }
+
+  const newRuns = newScenarios.map(scenario => {
+    return {
+      ...getEmptyRun(),
+      scenario
+    } as Run
+  })
+
+  runs.set(newRuns)
+
+  // runs.update(prevRuns => [
+  //   ...prevRuns,
+  //   ...newRuns
+  // ])
+}
+
+const completeSimulation = () => {
+  console.log('complete simulation!')
+  isRunning.set(false);
+  window.postMessage({type: 'runFinished'})
+  currentRunId.set(get(runIdWithHighestFitness))
+}
+
+const attemptToRunNextRound = () => {
+
+  const bestRunInLastRound = last(sortBy(get(runs), 'fitness'))
+  if (bestRunInLastRound?.fitness && bestRunInLastRound.fitness > (get(bestRun)?.fitness ?? 0)) {
+    bestRun.set(bestRunInLastRound)
+    console.log('New best run!', bestRunInLastRound)
+  }
+
+  // save last round
+  const lastRound = get(runs)
+  if (lastRound.length) {
+    rounds.update(prevRounds => [...prevRounds, lastRound])
+    console.log(get(rounds))
+  }
+
+  if (get(currentRound) >= maxRounds || areStopConditionsMet()) {
+    completeSimulation()
+  } else {
+    currentRound.update(round => round + 1)
+    roundIndexViewedInTable.set(get(currentRound) - 1)
+    console.log('running round', get(currentRound))
+    selectNewPopulation()
+    runPopulation()
+  }
 }
 
 export const runSimulation = () => {
-
-  const maxRounds = 10
-  createInitialPopulation()
-  for (let round = 1; round < maxRounds; round++) {
-    runPopulation()
-    // evaluatePopulation()
-    // see if stop conditions are met 
-    if (areStopConditionsMet()) {
-      break;
-    }
-    selectNewPopulation()
-  }
-
-  runQueue = []
-
-
-
-  // runs.set([])
+  currentRound.set(0)
   isRunning.set(true)
   const startTime = new Date().getTime()
   elapsedTime.set(0)
+  attemptToRunNextRound()
 
   // just repeat new runs N times
   // times(5, () => {
     // setTimeout(() => {
-      console.log(get(isRunning))
+      // console.log(get(isRunning))
 
       // run each new scenario
       // times(3, () => {
@@ -425,9 +499,9 @@ export const runSimulation = () => {
   elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
 }
 
-const runScenario = () => {
-  stepNYears(50);
-}
+// const runScenario = () => {
+//   stepNYears(50);
+// }
 
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 

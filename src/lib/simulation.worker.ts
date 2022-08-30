@@ -1,21 +1,25 @@
 import { countBy, delay, last, random, rest, sortBy, take, times } from "lodash";
+import { numYearsPerRun } from "../stores/store";
 import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
 import { derived, get, writable } from "svelte/store";
 import { treeSpecies } from "./treeSpecies";
 
 onmessage = (msg) => {
-  console.log('Hello World 👋');
-  console.log(msg.data)
-  const { action } = msg.data
-  if (action === 'runSimulation') {
+  // console.log('Hello World 👋');
+  // console.log(msg.data)
+  const { action, value } = msg.data
+  if (action === 'runScenario') {
     reset()
-    runSimulation()
+    scenario.set(value.scenario)
+    currentRunId.set(value.id)
+    runScenario()
+  } else if (action === 'ping') {
+    console.log('Worker ready! 👋');
   }
   // if (msg.data)
 };
 
 export const isRunning = writable(false)
-export const runs = writable<Run[]>([])
 export const currentRunId = writable<number>(0)
 
 export const yearlyCarbon = writable([0])
@@ -114,44 +118,17 @@ const getTreeSpeciesById = (id: string): TreeSpecies => {
 }
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
-
-  // const mostRecentRunId = last(get(runs))?.id || 0
-  // const newRunId = mostRecentRunId + 1
-  // currentRunId.update(newRunId)
-  // const newRunId = (get(currentRunId) || 0) + 1
-
-  // runs.update(prevRuns => [...prevRuns, {
-  //   id: newRunId,
-  //   yearlyData: {
-  //     carbon: [0],
-  //     trees: [0],
-  //     biodiversity: [0],
-  //   },
-  //   trees: [],
-  //   deadTrees: [],
-  // }])
-
-  currentRunId.set(Math.round(Math.random() * 1000000000))
-  // currentRunId.update(lastRunId => lastRunId + 1)
   yearlyCarbon.set([])
   yearlyTrees.set([])
   yearlyBiodiversity.set([])
-
   trees.set(opts?.initialTrees ?? [])
   deadTrees.set([])
-
   year.set(0)
-}
-
-export const clearRunHistory = () => {
-  runs.set([])
-  currentRunId.set(0)
 }
 
 // const msPerFrame = 33.33
 const msPerFrame = 1
 export const elapsedTime = writable(0)
-
 
 const calculateFitness = (): number => {
   const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
@@ -160,55 +137,13 @@ const calculateFitness = (): number => {
   return Math.round(fitnessAdjustedForTreesPlanted)
 }
 
-//  copied from store.ts
-
-export const runSimulation = () => {
-  runs.set([])
-  // isRunning.set(true)
-  const startTime = new Date().getTime()
-  // elapsedTime.set(0)
-
-  // just repeat new runs N times
-  // times(5, () => {
-    // setTimeout(() => {
-      // console.log(get(isRunning))
-
-      // run each new scenario
-      // times(3, () => {
-        // reset()
-        generateScenario()
-        const initialTrees = addNRandomTrees(get(scenario)?.numTrees)
-
-        // currentRunId.set()
-        // const runData = runScenario()
-        runScenario()
-
-        // console.log(runData)
-
-        postMessage({type: 'success'})
-
-
-        // re-run this scenario X more times
-        // times(2, () => {
-        //   reset()
-        //   trees.set(initialTrees)
-        //   runScenario()
-        // })
-      // })
-    // }, 1000)
-  // })
-
-
-  // const endTime = new Date().getTime()
-  // elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
-}
-
 const runScenario = () => {
-  stepNYears(100);
+  const initialTrees = addNRandomTrees(get(scenario)?.numTrees)
+  stepNYears(numYearsPerRun);
+  postMessage({type: 'success'})
 }
 
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
-
 
   for (let index = 0; index < numYears; index++) {
     // console.log('step at year:', get(year))
@@ -256,6 +191,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
           },
           scenario: get(scenario),
           fitness: 0,
+          isAllocated: true,
           // scenario: get(scenario),
         }
 
@@ -277,7 +213,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
     // store the run data after the run is over
 
-    console.log('run complete! attempting to return data...')
+    // console.log('run complete! attempting to return data...')
 
     const runData: Run = {
       id: get(currentRunId),
@@ -291,28 +227,12 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       scenario: get(scenario),
       fitness: calculateFitness(),
       isComplete: true,
+      isAllocated: true,
     }
 
     postMessage({type: 'runData', value: runData})
 
-    // runs.update(prevRuns => prevRuns.map(run => {
-    //   if (run.id !== get(currentRunId)) {
-    //     return run;
-    //   }
-    //   return {
-    //     ...run,
-    //     yearlyData: {
-    //       carbon: get(yearlyCarbon),
-    //       trees: get(yearlyTrees),
-    //       biodiversity: get(yearlyBiodiversity),
-    //     },
-    //     trees: get(trees),
-    //     deadTrees: get(deadTrees),
-    //   }
-    // }))
-    // isRunning.set(false)
-    // return runData
-    return 'Complete'
+    // return 'Complete'
   }
 
 
@@ -494,18 +414,6 @@ export const declusterTrees = () => {
     })
   }) 
 }
-
-// export const updateTreesTo = (newTrees: Tree[]) => {
-//   runs.update(prevRuns => prevRuns.map(run => {
-//     if (run.id !== get(currentRunId)) {
-//       return run;
-//     }
-//     return {
-//       ...run,
-//       trees: newTrees
-//     }
-//   }))
-// }
 
 export const calculateOverlaps = () => {
   while (areAnyOverlappingTrees()) {

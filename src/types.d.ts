@@ -36,5 +36,6 @@ type Run = {
   deadTrees: Tree[]
   scenario: Scenario
   fitness?: number
+  isAllocated?: boolean
   isComplete?: boolean
 }

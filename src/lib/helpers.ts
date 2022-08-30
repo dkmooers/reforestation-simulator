@@ -17,3 +17,7 @@ export const prettifyNumber = (count: number) => {
 export const getRandomId = (): number => {
   return Math.round(Math.random() * 1000000000)
 }
+
+export const getRandomArrayElement = (array: any[]) => {
+  return array[Math.floor(Math.random() * array.length)]
+}

@@ -23,12 +23,16 @@
 		pruneOverflowTrees,
 		declusterTrees,
     runs,
+    rounds,
     displayRun,
     currentRunId,
     currentRun,
     trees,
     isRunning,
     clearRunHistory,
+    currentRound,
+    numYearsPerRun,
+    roundIndexViewedInTable,
 	} from '../stores/store';
   import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
@@ -41,6 +45,7 @@
   let showTreeLabels = true;
   let colorMode = 'colorized';
   let isSidebarOpen = true;
+  let selectedRoundIndexInTable = 0;
 
   onMount(() => {
     window.addEventListener('keydown', function(event) {
@@ -67,15 +72,12 @@
       <!-- <div class="flex"> -->
         <h1 class="whitespace-nowrap mb-1 flex flex-grow items-center">
           <div class="-mt-3"><TreeIcon /></div>
-          <span>Reforestation Simulator</span>
+          <span class="-mt-2">Reforestation Simulator</span>
           <Tooltip>
             A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
             <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
           </Tooltip>
-
-
           <!-- <span class="rounded-full bg-[#ad8c6a] text-base h-6 w-6">?</span> -->
-          
         </h1>
         <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
 
@@ -161,6 +163,10 @@
       <!-- Statistics -->
       <div class="flex">
         <div class="statistic !w-20f">
+          <label>round</label>
+          <span>{$currentRound}</span>
+        </div>
+        <div class="statistic !w-20f">
           <label>year</label>
           <span>{$year}</span>
         </div>
@@ -214,7 +220,7 @@
 
     <div class="flex space-x-2 items-end">
       <div class="opacity-80 text-sm pb-[5px]">Run:</div>
-      {#if $runs.length === 0}
+      {#if $runs.filter(run => run.isAllocated).length === 0}
         <div class="flex flex-col items-center justify-end ">
           <div style="color: var(--accentColor);" class="leading-tight" class:opacity-10={true}>•</div>
           <div
@@ -226,7 +232,7 @@
           <div transition:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
         {/if}
       {:else}
-        {#each $runs as run, index}
+        {#each $runs.filter(run => run.isAllocated) as run, index}
           <div class="flex flex-col items-center justify-end">
             <!-- Dots -->
             <div class="flex leading-tight">
@@ -244,7 +250,7 @@
               style="{run.id === $currentRunId ? 'background-color: #b6a393; color: var(--backgroundColor);' : ''}"
             >
               <!-- Vertical progress bar background -->
-              <div class="absolute bottom-0 left-0 w-full bg-[#ad8c6a] {run.id === $currentRunId ? 'bg-opacity-0' : 'bg-opacity-40'} rounded-t-[0.2rem]" style="height: {run.yearlyData.carbon.length}%"></div>
+              <div class="absolute bottom-0 left-0 w-full bg-[#ad8c6a] {run.id === $currentRunId ? 'bg-opacity-0' : 'bg-opacity-40'} rounded-t-[0.2rem]" style="height: {run.yearlyData.carbon.length * 100 / numYearsPerRun}%"></div>
               {index + 1}
             </div>
           </div>
@@ -371,12 +377,30 @@
     <!-- {#if isSidebarOpen} -->
       <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-hidden flex flex-col h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
+
+          <div class="flex items-center mb-2">
+            <label class="text-base mr-2">Round:</label>
+            <select bind:value={$roundIndexViewedInTable}>
+              {#if !$rounds.length}
+                <option value={0} label="1" />
+              {:else}
+                {#each $rounds as round, index}
+                  <option value={index} label={String(index + 1)} />
+                {/each}
+                {#if $isRunning}
+                  <option value={$rounds.length} label={String($rounds.length + 1)} />
+                {/if}
+              {/if}
+            </select>
+          </div>
+
           <table class="border-collapse text-sm">
             <thead><th>Run</th><th>Fitness</th><th>Carbon</th></thead>
-            {#each reverse(sortBy($runs.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
+            {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
+            <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
               <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
                 <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
-                <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness}</td>
+                <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
                 <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
               </tr>
             {/each}
