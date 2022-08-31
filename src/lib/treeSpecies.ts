@@ -4,7 +4,7 @@ export const treeSpecies: TreeSpecies[] = [
   {
     id: 'oak',
     color: '#ff0000',
-    growthRate: 1,
+    growthRate: 0.7,
     maxRadius: 100,
     shadeTolerance: 0.4,
     lifespan: 200,
@@ -18,14 +18,6 @@ export const treeSpecies: TreeSpecies[] = [
     lifespan: 400,
   },
   {
-    id: 'linden',
-    color: '#008000',
-    growthRate: 0.6,
-    maxRadius: 80,
-    shadeTolerance: 0.5,
-    lifespan: 150,
-  },
-  {
     id: 'hickory',
     color: '#008080',
     growthRate: 0.8,
@@ -36,9 +28,33 @@ export const treeSpecies: TreeSpecies[] = [
   {
     id: 'hazel',
     color: '#2196f3',
-    growthRate: 0.8,
+    growthRate: 1.0,
     maxRadius: 15,
     shadeTolerance: 0.55,
     lifespan: 80,
-  }
+  },
+  {
+    id: 'ash',
+    color: '#ffff00', // yellow
+    growthRate: 0.85,
+    maxRadius: 40,
+    shadeTolerance: 0.5,
+    lifespan: 150,
+  },
+  {
+    id: 'linden',
+    color: '#008000',
+    growthRate: 0.8,
+    maxRadius: 80,
+    shadeTolerance: 0.5,
+    lifespan: 150,
+  },
+  {
+    id: 'beech',
+    color: '#ffa500', // orange
+    growthRate: 0.7,
+    maxRadius: 70,
+    shadeTolerance: 0.5,
+    lifespan: 300,
+  },
 ]

@@ -1,4 +1,4 @@
-import { countBy, delay, last, random, rest, sortBy, take, times } from "lodash";
+import { countBy, delay, last, max, random, rest, sortBy, take, times } from "lodash";
 import { numYearsPerRun } from "../stores/store";
 import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
 import { derived, get, writable } from "svelte/store";
@@ -49,11 +49,13 @@ export const biodiversity = derived(
   trees => {
     const numTreesBySpecies = countBy(trees, 'speciesId')
     const numTrees = trees.length
-    const arrayOfSpeciesCounts = Object.keys(numTreesBySpecies).map(key => numTreesBySpecies[key])
-    const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)
+    const arrayOfSpeciesCounts = Object.values(numTreesBySpecies)
+    const maxSpeciesCount = max(arrayOfSpeciesCounts)
+    const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
+    // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)
     const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
     // return Math.log(Math.log(1 - rawBiodiversity + 1.718) + 1.718)
-    return Math.pow(1 - rawBiodiversity, 500)//.toFixed(3)
+    return Math.pow(rawBiodiversity, 0.5)//.toFixed(3)
   }
 )
 // export const fitness = derived(
@@ -134,9 +136,10 @@ export const elapsedTime = writable(0)
 
 const calculateFitness = (): number => {
   const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
-  const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
-  const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
-  return Math.round(fitnessAdjustedForTreesPlanted) || 0
+  // const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
+  // const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
+  // return Math.round(fitnessAdjustedForTreesPlanted) || 0
+  return Math.round(biodiversityTimesCarbonTons) || 0
 }
 
 const runScenario = () => {

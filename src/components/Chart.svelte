@@ -5,8 +5,11 @@
   import { insolationData } from '../data/insolation.js';
   import { fade } from "svelte/transition"
   import { last } from 'lodash';
+  import { max } from 'lodash';
 
-  let points = []
+  // let points = [] 
+  let runsData = []
+  let showTrees = false
 
   let minx = 0;
   let maxx = numYearsPerRun;
@@ -15,40 +18,56 @@
 
   $: {
     const carbonValuesOfEachRun = $runs.map(run => last(run.yearlyData.carbon))
-    const maxCarbon = carbonValuesOfEachRun.reduce((max, thisRunCarbon) => thisRunCarbon > max ? thisRunCarbon : max, 0)
-    maxy = maxCarbon ? maxCarbon / 2000 : maxy
+    let maxCarbon = max(carbonValuesOfEachRun) / 2000
+    let maxTrees = 0
+    if (showTrees) {
+      maxTrees = max($runs?.map(run => max(run.yearlyData.trees))) || 0
+    }
+    // let maxCarbon = carbonValuesOfEachRun.reduce((max, thisRunCarbon) => thisRunCarbon > max ? thisRunCarbon : max, 0)
+    // const pointsMax = last(points)?.carbon
+    // console.log(pointsMax)
+    // if (pointsMax && pointsMax > maxCarbon) {
+    //   maxCarbon = pointsMax
+    // }
+    const maxYToUse = (Math.max(maxCarbon, maxTrees))
+    maxy = maxYToUse ? maxYToUse : maxy
   }
 
-  $: otherRunsData = $runs.filter(run => run.id !== $currentRunId).map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
+  $: runsData = $runs.map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
     date: index + 1,
     carbon: carbonValue / 2000,
     trees: run.yearlyData.trees[index],
+    id: run.id
   })))
 
-  $: {
-    points = $yearlyCarbon?.map((carbonValue, index) => {
-      return {
-        date: index + 1,
-        carbon: carbonValue / 2000,
-        trees: $yearlyTrees[index],
-      }
-    });
-    if (points?.length > 1) {
-      maxx = Math.max(numYearsPerRun, points?.[points.length - 1]?.date);
-      for (let i = 0; i < points.length; i += 1) {
-        const point = points[i];
+  // $: console.log(runsData)
 
-        if (point.avg < miny) {
-          miny = point.avg;
-        }
+  $: currentRunData = runsData?.find(data => data?.[0].id === $currentRunId)
 
-        if (point.avg > maxy) {
-          maxy = point.avg;
-          highest = point;
-        }
-      }
-    }
-  }
+  // $: {
+  //   points = $yearlyCarbon?.map((carbonValue, index) => {
+  //     return {
+  //       date: index + 1,
+  //       carbon: carbonValue / 2000,
+  //       trees: $yearlyTrees[index],
+  //     }
+  //   });
+  //   if (points?.length > 1) {
+  //     maxx = Math.max(numYearsPerRun, points?.[points.length - 1]?.date);
+  //     // for (let i = 0; i < points.length; i += 1) {
+  //     //   const point = points[i];
+
+  //     //   if (point.avg < miny) {
+  //     //     miny = point.avg;
+  //     //   }
+
+  //     //   if (point.avg > maxy) {
+  //     //     maxy = point.avg;
+  //     //     highest = point;
+  //     //   }
+  //     // }
+  //   }
+  // }
 
   miny = 0;
 
@@ -72,23 +91,25 @@
     </Pancake.Grid>
     
 
-    {#if points?.length}
+    {#if runsData?.length}
       <Pancake.Svg>
-        <Pancake.SvgScatterplot data={points} x="{d => d.date}" y="{d => d.avg}" let:d>
+        <!-- <Pancake.SvgScatterplot data={points} x="{d => d.date}" y="{d => d.avg}" let:d>
           <path class="avg scatter" {d} />
         </Pancake.SvgScatterplot>
 
         <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.carbon}" let:d>
           <path class="carbon active" {d} />
-        </Pancake.SvgLine>
+        </Pancake.SvgLine> -->
 
-        {#each otherRunsData as data}
+        {#each runsData as data}
           <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
-            <path class="carbon" {d} />
+            <path class="carbon" class:active={data?.[0].id === $currentRunId} {d} />
           </Pancake.SvgLine>
-          <!-- <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.trees}" let:d>
-            <path class="trees" {d} />
-          </Pancake.SvgLine> -->
+          {#if showTrees}
+            <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.trees}" let:d>
+              <path class="trees" class:active={data?.[0].id === $currentRunId} {d} />
+            </Pancake.SvgLine>
+          {/if}
         {/each}
 
         <!-- <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.trees}" let:d>
@@ -118,14 +139,14 @@
       </div>
     </Pancake.Point> -->
 
-    {#if points?.length}
+    {#if currentRunData}
 
-      <Pancake.Quadtree data={points} x="{d => d.date}" y="{d => d.avg}" let:closest>
+      <Pancake.Quadtree data={currentRunData} x="{d => d.date}" y="{d => d.carbon}" let:closest>
         {#if closest}
-          <Pancake.Point x={closest.date} y={closest.avg} let:d>
+          <Pancake.Point x={closest.date} y={closest.carbon} let:d>
             <div class="focus"></div>
             <div class="tooltip" style="transform: translate(-{percent(closest.date)}%,0)">
-              <strong class="font-normal text-[#16c264]"><span>{Math.round(closest.avg)}</span> <span class="font-extralight">tons</span></strong>
+              <strong class="font-normal text-[#16c264]"><span>{Math.round(closest.carbon)}</span> <span class="font-extralight">tons</span></strong>
               <span class="opacity-70">Year {closest.date}</span>
             </div>
           </Pancake.Point>

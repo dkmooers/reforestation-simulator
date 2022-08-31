@@ -17,20 +17,22 @@ export const allWorkersReady = derived(
 // let syncWorker3: Worker | undefined = undefined;
 // let syncWorker4: Worker | undefined = undefined;
 export const bestRun = writable<Run>()
-export const numYearsPerRun = 100
-export const maxRounds = 20
-const populationSize = 20
+export const numYearsPerRun = 50
+export const maxRounds = 50
+export const populationSize = 20
 const numElites = 2
 const crossoverFraction = 0.8
 const mutationStrength = 0.2
 export const fitnessImprovement = writable(0)
-export const currentRound = writable(1)
+export const currentRound = writable(0)
 export const rounds = writable<Run[][]>([])
 export const roundIndexViewedInTable = writable(0)
 export const bestFitnessByRound = derived(
   rounds,
   rounds => rounds.map(runs => last(sortBy(runs, 'fitness'))?.fitness || 0)
 )
+
+const pauseQueue = []
 
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
@@ -60,7 +62,11 @@ const handleMessage = (e) => {
     const numUnallocatedRuns = get(runs).filter(run => !run.isAllocated)?.length
     const numUnfinishedRuns = get(runs).filter(run => !run.isComplete)?.length
     // ask this worker to do another run if there are any unallocated runs waiting to be run
-    if (numUnallocatedRuns > 0) {
+    // if paused, put next items in a queue to be run on unpause
+    if (!get(isRunning)) {
+      pauseQueue.push({fn: dispatchNextRunToWorker, args: e.srcElement})
+    }
+    else if (numUnallocatedRuns > 0) {
       dispatchNextRunToWorker(e.srcElement)
     } else if (numUnfinishedRuns === 0) {
       attemptToRunNextRound()
@@ -353,12 +359,12 @@ const normalizeSpeciesProbabilities = (probabilities: number[]) => {
 
 const generateScenario = (): Scenario => {
   const speciesProbabilities = treeSpecies.map((species) => {
-    return Number(Math.random().toFixed(2))
+    return Math.max(0, Number((Math.random() * 1.2 - 0.2).toFixed(2)))
   })
 
   return {
     speciesProbabilities: normalizeSpeciesProbabilities(speciesProbabilities),
-    numTrees: Math.round(Math.random() * 200),
+    numTrees: Math.round(Math.random() * 50 + 50),
     declusteringStrength: Number(Math.random().toFixed(2)),
   }
 }
@@ -418,7 +424,14 @@ const generateCrossoverFromParents = (parent1: Run, parent2: Run): Scenario => {
 }
 
 const getRandomMutationMultiplier = () => {
-  return Math.random() * (mutationStrength * 2) + (1 - mutationStrength)
+
+  // simple linear mutation, 0.8 - 1.2:
+  // return Math.random() * (mutationStrength * 2) + (1 - mutationStrength)
+
+  // use cubic function to make smaller mutations more likely, and larger mutations less likely
+  // for random 0-1, returns random 0-2 but with cubic curve
+  // increase exponent to make it more likely to get smaller mutations (needs to be odd though)
+  return Math.pow((Math.random() - 0.5) * 2, 3) + 1
 }
 
 const generateMutantFromParent = (parent: Run): Scenario => {
@@ -450,7 +463,7 @@ const selectNewPopulation = () => {
   } else {
     // select elites and move them to next generation
     const elites = take(reverse(sortBy(get(runs), 'fitness')), numElites)
-    elites.forEach(elite => newRunPartials.push(elite))
+    elites.forEach(elite => newRunPartials.push({scenario: elite.scenario}))
     
     // generate crossovers and add to next generation
     // const numCrossovers = populationSize - numElites
@@ -466,8 +479,8 @@ const selectNewPopulation = () => {
     // generation mutations and add to next generation
     const numMutants = populationSize - numElites - numCrossovers
     times(numMutants, () => {
-      // const randomParent = getRandomArrayElement(elites)
-      const randomParent = selectRandomParentByFitness()
+      const randomParent = getRandomArrayElement(elites)
+      // const randomParent = selectRandomParentByFitness()
       newRunPartials.push({scenario: generateMutantFromParent(randomParent)})
     })
   }
@@ -523,36 +536,50 @@ const attemptToRunNextRound = () => {
 }
 
 export const runSimulation = () => {
-  currentRound.set(0)
-  isRunning.set(true)
-  const startTime = new Date().getTime()
-  elapsedTime.set(0)
-  attemptToRunNextRound()
 
-  // just repeat new runs N times
-  // times(5, () => {
-    // setTimeout(() => {
-      // console.log(get(isRunning))
+  if (get(currentRound) > 0) {
+    isRunning.update(prevRunning => !prevRunning)
 
-      // run each new scenario
-      // times(3, () => {
-        // reset()
-        // const initialTrees = addNRandomTrees(100)
-        // runScenario()
+    // if we're restarting, run queued items from last time the run was paused
+    if (get(isRunning)) {
+      console.log(pauseQueue)
+      pauseQueue?.forEach(({fn, args}) => fn(args))
+    }
 
-        // re-run this scenario X more times
-        // times(2, () => {
-        //   reset()
-        //   trees.set(initialTrees)
-        //   runScenario()
+  } else {
+    currentRound.set(0)
+    isRunning.set(true)
+    const startTime = new Date().getTime()
+    elapsedTime.set(0)
+    attemptToRunNextRound()
+
+    // just repeat new runs N times
+    // times(5, () => {
+      // setTimeout(() => {
+        // console.log(get(isRunning))
+
+        // run each new scenario
+        // times(3, () => {
+          // reset()
+          // const initialTrees = addNRandomTrees(100)
+          // runScenario()
+
+          // re-run this scenario X more times
+          // times(2, () => {
+          //   reset()
+          //   trees.set(initialTrees)
+          //   runScenario()
+          // })
         // })
-      // })
-    // }, 1000)
-  // })
+      // }, 1000)
+    // })
 
 
-  const endTime = new Date().getTime()
-  elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
+    const endTime = new Date().getTime()
+    elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
+  }
+
+
 }
 
 // const runScenario = () => {

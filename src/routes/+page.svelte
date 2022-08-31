@@ -37,6 +37,7 @@
     bestFitnessByRound,
     maxRounds,
     progressPercent,
+populationSize,
 	} from '../stores/store';
   import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
@@ -79,15 +80,19 @@
     {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
-          <div>Loading workers</div>
+          <div class="text-subtle font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
     {/if}
 
-    <!-- Progress bar -->
+    <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
-      <div class="bg-subtle absolute left-0 top-0 h-full" style="width: {$progressPercent}%; transition: width 0.2s;" />
+      <div class="bg-yellow-500 absolute left-0 top-0 h-full" style="width: {$progressPercent}%; transition: width 1s;" />
+    </div>
+    <!-- Progress bar (this round) -->
+    <div class="h-[3px] w-full bg-black relative">
+      <div class="bg-subtle absolute left-0 top-0 h-full" style="width: {$runs.filter(run => run.isComplete)?.length / populationSize * 100}%; transition: width 1s;" />
     </div>
 
     <div class="p-4 flex-grow flex flex-col">
@@ -133,12 +138,11 @@
         <div class="flex flex-col max-w-md mr-6">
 
           <!-- Buttons -->
-          <div class="mr-6 mb-[4px]">
+          <div class="mb-[4px]">
             <div class="whitespace-nowrap flex">
               <button
-                class="text-black text-opacity-75 {isRunButtonDisabled ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                class="text-black text-opacity-75 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                 style="background: var(--accentColor);"
-                disabled={isRunButtonDisabled}
                 on:click={() => {
                   // reset();
                   runSimulation();
@@ -146,7 +150,7 @@
               >
                 <span class="w-6">
                   {#if $isRunning}
-                    <Loader />
+                    <Loader class="mr-2" />
                   {:else}
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
@@ -156,6 +160,7 @@
 
                 <span>Run</span>
               </button>
+
               <!-- <button on:click={() => stepNYears(1)}>+1 year</button>
               <button on:click={() => stepNYears(5)}>+5 years</button>
               <button on:click={() => stepNYears(10)}>+10 years</button>
@@ -182,7 +187,7 @@
 
         <!-- Statistics -->
         <div class="flex">
-          <div class="statistic !w-28 border-r border-subtle">
+          <div class="statistic !w-32 border-r border-subtle">
             <label>round</label>
             <span>{$currentRound}/{maxRounds}</span>
           </div>
@@ -208,7 +213,7 @@
           </div>
           <div class="statistic !w-24">
             <label>carbon (tons)</label>
-            <span style="color: var(--accentColor)">{prettifyNumber(Math.round($carbon / 2000))}</span>
+            <span style="color: var(--accentColor)">{Math.round($carbon / 2000)}</span>
           </div>
           <!-- <div class="statistic !w-36">
             <label>avg carbon (all runs)</label>
@@ -433,7 +438,7 @@
                 <span class="text-yellow-500" in:fade={{duration: 200, delay: 200}} out:fade={{duration: 200}}>{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
               {/key}
             </div>
-            <div class="my-3 text-subtle text-sm">Best fitness by round</div>
+            <div class="mt-3 mb-1 text-subtle text-sm">Best fitness by round</div>
             <div class="grid grid-cols-2">
               {#each $bestFitnessByRound as fitness, index}
                 <div class="text-xs">
