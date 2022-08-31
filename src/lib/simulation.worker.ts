@@ -1,4 +1,4 @@
-import { countBy, delay, last, max, random, rest, sortBy, take, times } from "lodash";
+import { countBy, delay, last, max, random, rest, sortBy, sum, take, times } from "lodash";
 import { numYearsPerRun } from "../stores/store";
 import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
 import { derived, get, writable } from "svelte/store";
@@ -47,15 +47,41 @@ export const carbon = derived(
 export const biodiversity = derived(
   trees,
   trees => {
-    const numTreesBySpecies = countBy(trees, 'speciesId')
+
+    // const numTreesBySpecies = countBy(trees, 'speciesId')
     const numTrees = trees.length
-    const arrayOfSpeciesCounts = Object.values(numTreesBySpecies).filter(count => count !== 0) // remove zero-counts to avoid driving biodiversity to 0 if one species is not included
-    const maxSpeciesCount = max(arrayOfSpeciesCounts)
-    const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
-    // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)
-    const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
-    // return Math.log(Math.log(1 - rawBiodiversity + 1.718) + 1.718)
-    return Math.pow(rawBiodiversity, 0.5)//.toFixed(3)
+    // const arrayOfSpeciesCounts = Object.values(numTreesBySpecies).filter(count => count !== 0) // remove zero-counts to avoid driving biodiversity to 0 if one species is not included
+    // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
+
+    // new flow:
+    // get num of trees by species
+    const numTreesBySpecies = treeSpecies.map(species => {
+      return trees.filter(tree => tree.speciesId === species.id).length
+    })
+    // divide each by nTrees
+    const scaledTreesBySpecies = numTreesBySpecies.map(num => num / numTrees)
+    // get ideal avg (1/nSpecies)
+    const targetScaledNumTreesPerSpecies = 1 / treeSpecies.length
+    // get variances from avg (abs)
+    const absVariancesFromTarget = scaledTreesBySpecies.map(num => Math.abs(num - targetScaledNumTreesPerSpecies))
+    // sum variances
+    const sumOfVariancesFromTarget = sum(absVariancesFromTarget)
+    // invert it => 1 / (sum + 1)
+    const invertedSumOfVariances = 1 / (sumOfVariancesFromTarget + 1)
+    // square it (optional) - to steepen the curve, and spread out values more
+    // const biodiversity = Math.pow(invertedSumOfVariances, 2)
+    const biodiversity = invertedSumOfVariances
+    return biodiversity
+
+    // const maxSpeciesCount = max(arrayOfSpeciesCounts)
+    // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
+    // const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
+    // // take square root to spread out the curve
+    // const scaledBiodiversity = Math.pow(rawBiodiversity, 0.5)//.toFixed(3)
+    // if (get(year) === numYearsPerRun) {
+    //   console.log(scaledBiodiversity * 100, arrayOfSpeciesCounts, scaledArrayOfSpeciesCounts)
+    // }
+    // return scaledBiodiversity
   }
 )
 // export const fitness = derived(
@@ -135,7 +161,9 @@ const msPerFrame = 1
 export const elapsedTime = writable(0)
 
 const calculateFitness = (): number => {
-  const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
+  const biodiversityTimesCarbonTons = get(biodiversity) * get(carbon) / 2000
+  // console.log(get(biodiversity), get(carbon)/2000, biodiversityTimesCarbonTons)
+  // const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
   // const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
   // const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
   // return Math.round(fitnessAdjustedForTreesPlanted) || 0

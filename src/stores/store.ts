@@ -17,11 +17,13 @@ export const allWorkersReady = derived(
 // let syncWorker3: Worker | undefined = undefined;
 // let syncWorker4: Worker | undefined = undefined;
 export const bestRun = writable<Run>()
-export const numYearsPerRun = 50
-export const maxRounds = 50
+export const numYearsPerRun = 500
+export const maxRounds = 20
 export const populationSize = 20
 const numElites = 2
-const crossoverFraction = 0.8
+const preserveEliteRunData = true
+const crossoverFraction = 0.7
+const randomFraction = 0.1
 const mutationStrength = 0.2
 export const fitnessImprovement = writable(0)
 export const currentRound = writable(0)
@@ -465,7 +467,12 @@ const selectNewPopulation = () => {
   } else {
     // select elites and move them to next generation
     const elites = take(reverse(sortBy(get(runs), 'fitness')), numElites)
-    elites.forEach(elite => newRunPartials.push({scenario: elite.scenario}))
+    if (preserveEliteRunData) {
+      elites.forEach(elite => newRunPartials.push(elite))
+    } else {
+      elites.forEach(elite => newRunPartials.push({scenario: elite.scenario}))
+
+    }
     
     // generate crossovers and add to next generation
     // const numCrossovers = populationSize - numElites
@@ -478,8 +485,14 @@ const selectNewPopulation = () => {
         )})
     })
 
+    // create random new individual once per generation to keep things fresh
+    const numRandomNewIndividuals = Math.floor((populationSize - numElites) * randomFraction)
+    times(numRandomNewIndividuals, () => {
+      newRunPartials.push({scenario: generateScenario()})
+    })
+
     // generation mutations and add to next generation
-    const numMutants = populationSize - numElites - numCrossovers
+    const numMutants = populationSize - numElites - numCrossovers - numRandomNewIndividuals
     times(numMutants, () => {
       const randomParent = getRandomArrayElement(elites)
       // const randomParent = selectRandomParentByFitness()
@@ -544,8 +557,11 @@ export const runSimulation = () => {
 
     // if we're restarting, run queued items from last time the run was paused
     if (get(isRunning)) {
-      console.log(pauseQueue)
-      pauseQueue?.forEach(({fn, args}) => fn(args))
+      if (get(runs).filter(run => !run.isComplete).length === 0) {
+        attemptToRunNextRound()
+      } else {
+        pauseQueue?.forEach(({fn, args}) => fn(args))
+      }
     }
 
   } else {

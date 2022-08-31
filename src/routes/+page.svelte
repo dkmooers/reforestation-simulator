@@ -37,7 +37,7 @@
     bestFitnessByRound,
     maxRounds,
     progressPercent,
-populationSize,
+    populationSize,
 	} from '../stores/store';
   import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
@@ -52,7 +52,11 @@ populationSize,
   let showTreeLabels = true;
   let colorMode = 'colorized';
   let isSidebarOpen = true;
-  $: isRunButtonDisabled = $isRunning || !$allWorkersReady
+  $: currentRunBiodiversity = Math.round((last($currentRun?.yearlyData.biodiversity) || 0) * 100)
+  // $: isRunButtonDisabled = $isRunning || !$allWorkersReady
+
+
+  // $: console.log($runs.map(r => r))
 
   onMount(() => {
     window.addEventListener('keydown', function(event) {
@@ -141,7 +145,7 @@ populationSize,
           <div class="mb-[4px]">
             <div class="whitespace-nowrap flex">
               <button
-                class="text-black text-opacity-75 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                class="text-black text-opacity-75 transition-opacity hover:opacity-80 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                 style="background: var(--accentColor);"
                 on:click={() => {
                   // reset();
@@ -201,7 +205,7 @@ populationSize,
           </div>
           <div class="statistic !w-20">
             <label>final trees</label>
-            <span>{prettifyNumber($trees.length || 0)}</span>
+            <span>{($trees.length || 0).toLocaleString('en-US')}</span>
           </div>
           <div class="statistic !w-24">
             <label>final species</label>
@@ -209,11 +213,11 @@ populationSize,
           </div>
           <div class="statistic !w-24">
             <label>biodiversity</label>
-            <span>{(Number($biodiversity) * 100).toFixed(1)}%</span>
+            <span>{currentRunBiodiversity.toFixed(1)}%</span>
           </div>
           <div class="statistic !w-24">
             <label>carbon (tons)</label>
-            <span style="color: var(--accentColor)">{Math.round($carbon / 2000)}</span>
+            <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
           </div>
           <!-- <div class="statistic !w-36">
             <label>avg carbon (all runs)</label>
@@ -221,14 +225,14 @@ populationSize,
           </div> -->
           <div class="statistic !w-20">
             <label>tons / year</label>
-            <span>{Math.round($carbon / 2000 / $year) || 0}</span>
+            <span>{(Math.round($carbon / 2000 / $year) || 0).toLocaleString('en-US')}</span>
           </div>
           <div class="statistic !w-24">
             <div class="flex items-center justify-center">
               <label>fitness </label>
               <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
             </div>
-            <span class="text-yellow-500">{prettifyNumber($currentRun?.fitness || 0)}</span>
+            <span class="text-yellow-500">{$currentRun?.fitness?.toLocaleString('en-US') || 0}</span>
           </div>
           <!-- <div class="statistic">
             <label>area (ha)</label>
@@ -285,79 +289,103 @@ populationSize,
 
       <!-- Diagram -->
       <div class="mb-2 flex bg-[#efe1db] rounded z-10">
-        <div class="flex-grow rounded flex items-center justify-center">
-            <svg viewBox="0 0 612 176" class="w-full">
-              <defs>
-                <radialGradient id="treeGradient">
-                  <stop offset="0%" stop-color="rgba(20,100,20,1)" />
-                  <stop offset="70%" stop-color="rgba(0,150,0,0.5)" />
-                  <stop offset="100%" stop-color="rgba(20,100,0,0.0)" />
-                </radialGradient>
-              </defs>
-            
-              {#key $currentRunId}  
+        <div class="flex-grow rounded flex items-center justify-center relative">
+          {#if $currentRound === 0}
+            <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow">
+              <button
+                class="mx-auto text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-8 py-4 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                style="background: var(--accentColor);"
+                on:click={() => {
+                  // reset();
+                  runSimulation();
+                }}
+              >
+                <span class="w-8">
+                  {#if $isRunning}
+                    <Loader class="mr-2" />
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                  {/if}
+                </span>
 
-                <g in:fade={{delay: 50}} out:fade={{duration: 50}}>
-                  {#if renderGraphics}
-                    <!-- trunks -->
-                    {#each $trees as tree}
-                      <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
-                    {/each}
-                    <!-- foliage canopies -->
-                    {#each $trees as tree}
-                      {#if colorMode === 'colorized'}
-                        <circle cx={tree.x} cy={tree.y} r={tree.radius} fill={tree.color} opacity="0.3" />
-                      {:else if colorMode === 'shaded'}
-                        <circle
-                          cx={tree.x}
-                          cy={tree.y}
-                          r={tree.radius}
-                          fill="url('#treeGradient')"
-                          style="z-index: 1"
-                          opacity="0.75"
-                        />
-                      {/if}
-                    {/each}
-                    <!-- tree outlines and text overlays -->
-                    {#each $trees as tree}
+                <span>Run</span>
+              </button>
+            </div>
+          {/if}
+          <svg viewBox="0 0 612 176" class="w-full">
+            <defs>
+              <radialGradient id="treeGradient">
+                <stop offset="0%" stop-color="rgba(20,100,20,1)" />
+                <stop offset="70%" stop-color="rgba(0,150,0,0.5)" />
+                <stop offset="100%" stop-color="rgba(20,100,0,0.0)" />
+              </radialGradient>
+            </defs>
+          
+            {#key $currentRunId}  
+
+              <g in:fade={{delay: 50}} out:fade={{duration: 50}}>
+                {#if renderGraphics}
+                  <!-- trunks -->
+                  {#each $trees as tree}
+                    <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
+                  {/each}
+                  <!-- foliage canopies -->
+                  {#each $trees as tree}
+                    {#if colorMode === 'colorized'}
+                      <circle cx={tree.x} cy={tree.y} r={tree.radius} fill={tree.color} opacity="0.3" />
+                    {:else if colorMode === 'shaded'}
                       <circle
                         cx={tree.x}
                         cy={tree.y}
                         r={tree.radius}
-                        stroke="rgba(0,50,0,0.2)"
+                        fill="url('#treeGradient')"
                         style="z-index: 1"
-                        fill="transparent"
-                        stroke-width="0.5"
+                        opacity="0.75"
                       />
-                      {#if showTreeLabels}
-                        <text
-                          x={tree.x - 5}
-                          y={tree.y - 2}
-                          style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
-                        >
-                        <text
-                          x={tree.x - 5}
-                          y={tree.y + 2}
-                          style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
-                        >
-                        <!-- <text
-                          x={tree.x - 4}
-                          y={tree.y + 5}
-                          style="z-index: 10; font-family: monospace; font-size: 4px;"
-                          >{tree.health.toFixed(1)}</text
-                        > -->
-                      {/if}
-                        <!-- <text
-                        x={tree.x - 6}
-                        y={tree.y + 6}
-                        style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.radius.toFixed(1) * 2}ft</text
+                    {/if}
+                  {/each}
+                  <!-- tree outlines and text overlays -->
+                  {#each $trees as tree}
+                    <circle
+                      cx={tree.x}
+                      cy={tree.y}
+                      r={tree.radius}
+                      stroke="rgba(0,50,0,0.2)"
+                      style="z-index: 1"
+                      fill="transparent"
+                      stroke-width="0.5"
+                    />
+                    {#if showTreeLabels}
+                      <text
+                        x={tree.x - 5}
+                        y={tree.y - 2}
+                        style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
+                      >
+                      <text
+                        x={tree.x - 5}
+                        y={tree.y + 2}
+                        style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
+                      >
+                      <!-- <text
+                        x={tree.x - 4}
+                        y={tree.y + 5}
+                        style="z-index: 10; font-family: monospace; font-size: 4px;"
+                        >{tree.health.toFixed(1)}</text
                       > -->
-                    {/each}
-                  {/if}
-                </g>
-              {/key}
+                    {/if}
+                      <!-- <text
+                      x={tree.x - 6}
+                      y={tree.y + 6}
+                      style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.radius.toFixed(1) * 2}ft</text
+                    > -->
+                  {/each}
+                {/if}
+              </g>
+            {/key}
 
-            </svg>
+          </svg>
           <!-- <Slider min={0} max={100} bind:value={$year} /> -->
         </div>
       </div>
@@ -420,13 +448,20 @@ populationSize,
           </div>
 
           <table class="border-collapse text-xs">
-            <thead><th>Run</th><th>Fitness</th><th>Carbon</th></thead>
+            <thead>
+              <th title="Round Number">#</th>
+              <th class="min-w-[3rem]" title="Fitness">Fit...</th>
+              <th class="min-w-[3rem]" title="Carbon">Car...</th>
+              <th class="min-w-[3rem]" title="Biodiversity">Bio...</th>
+            </thead>
             {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
             <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
               <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
                 <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
                 <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
                 <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
+                <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestBiodiversity}>{Math.round(last(run.yearlyData.biodiversity) * 100)}%</td>
+
               </tr>
             {/each}
           </table>
@@ -502,7 +537,7 @@ populationSize,
 
   td, th {
     border: 1px solid #ad8c6a99;
-    padding: 0 0.5rem;
+    padding: 0 0.4rem;
   }
   td {
     color: #ad8c6a;
