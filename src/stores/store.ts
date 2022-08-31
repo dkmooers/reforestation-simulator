@@ -12,13 +12,9 @@ export const allWorkersReady = derived(
   numWorkersReady,
   numWorkersReady => numWorkersReady === numWorkers
 )
-// let syncWorker: Worker | undefined = undefined;
-// let syncWorker2: Worker | undefined = undefined;
-// let syncWorker3: Worker | undefined = undefined;
-// let syncWorker4: Worker | undefined = undefined;
 export const bestRun = writable<Run>()
-export const numYearsPerRun = 500
-export const maxRounds = 20
+export const numYearsPerRun = 100
+export const maxRounds = 30
 export const populationSize = 20
 const numElites = 2
 const preserveEliteRunData = true
@@ -34,7 +30,10 @@ export const bestFitnessByRound = derived(
   rounds => rounds.map(runs => last(sortBy(runs, 'fitness'))?.fitness || 0)
 )
 
-const pauseQueue = []
+const pauseQueue: Array<{
+  fn: Function,
+  args: any
+}> = []
 
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {

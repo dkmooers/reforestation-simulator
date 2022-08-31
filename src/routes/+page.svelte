@@ -84,7 +84,7 @@
     {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
-          <div class="text-subtle font-bold">Loading workers</div>
+          <div class="font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
@@ -469,9 +469,12 @@
           {#if $rounds.length > 0}
             <div class="statistic !w-full mt-5">
               <label>Total fitness improvement</label>
-              {#key $rounds.length}
-                <span class="text-yellow-500" in:fade={{duration: 200, delay: 200}} out:fade={{duration: 200}}>{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
-              {/key}
+              <div class="h-[1.8rem]">
+                <span class="text-yellow-500">{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
+                <!-- {#key $currentRound}
+                  <span class="text-yellow-500" in:fade={{duration: 200, delay: 300}} out:fade={{duration: 200}}>{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
+                {/key} -->
+              </div>
             </div>
             <div class="mt-3 mb-1 text-subtle text-sm">Best fitness by round</div>
             <div class="grid grid-cols-2">

@@ -68,9 +68,9 @@ export const biodiversity = derived(
     const sumOfVariancesFromTarget = sum(absVariancesFromTarget)
     // invert it => 1 / (sum + 1)
     const invertedSumOfVariances = 1 / (sumOfVariancesFromTarget + 1)
-    // square it (optional) - to steepen the curve, and spread out values more
-    // const biodiversity = Math.pow(invertedSumOfVariances, 2)
-    const biodiversity = invertedSumOfVariances
+    // square it (optional) - to steepen the curve, and spread out values more (i.e. to weight biodiversity more strongly)
+    const biodiversity = Math.pow(invertedSumOfVariances, 2)
+    // const biodiversity = invertedSumOfVariances
     return biodiversity
 
     // const maxSpeciesCount = max(arrayOfSpeciesCounts)
@@ -434,7 +434,7 @@ export const declusterTrees = () => {
             // move away from nearTree
             // the repulsion strength should be based on the overlap amount at the final mature tree size - we don't need to repulse tiny trees that will not be overlapping at mature size, for instance.
             // const repulsion = 1
-            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * get(scenario)?.declusteringStrength
+            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree)// * get(scenario)?.declusteringStrength
             if (repulsion > 0) {
               // const repulsion = getTreeSpeciesById(near)
               prevTree.x -= normalizedVector.x * repulsion
