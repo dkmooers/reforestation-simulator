@@ -49,7 +49,7 @@ export const biodiversity = derived(
   trees => {
     const numTreesBySpecies = countBy(trees, 'speciesId')
     const numTrees = trees.length
-    const arrayOfSpeciesCounts = Object.values(numTreesBySpecies)
+    const arrayOfSpeciesCounts = Object.values(numTreesBySpecies).filter(count => count !== 0) // remove zero-counts to avoid driving biodiversity to 0 if one species is not included
     const maxSpeciesCount = max(arrayOfSpeciesCounts)
     const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
     // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)

@@ -325,6 +325,8 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
 
   const mostRecentRunId = last(get(runs))?.id || 0
   const newRunId = mostRecentRunId + 1
+  rounds.set([])
+  currentRound.set(0)
   // const newRunId = (get(currentRunId) || 0) + 1
 
   runs.update(prevRuns => [...prevRuns, getEmptyRun()])
