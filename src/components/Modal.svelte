@@ -4,15 +4,15 @@
   import TreeIcon from "./TreeIcon.svelte";
   let isVisible = false
 
-  // onMount(() => {
-  //   setTimeout(() => {
-  //     isVisible = true
-  //   }, 1)
-  // })
+  onMount(() => {
+    setTimeout(() => {
+      isVisible = true
+    }, 1)
+  })
 </script>
 
 {#if isVisible}
-  <div transition:fly class="fixed w-screen h-screen inset-0 z-10 bg-white bg-opacity-20 backdrop-blur flex items-center justify-center">
+  <div transition:fly class="fixed w-screen h-screen inset-0 z-50 bg-white bg-opacity-20 backdrop-blur flex items-center justify-center">
     <div class="modal-content max-w-full w-[30rem] rounded-lg shadow-lg p-6">
       <h1 class="text-center flex flex-col items-center mb-6">
         <span class="pb-3">
@@ -22,9 +22,10 @@
         <b class="whitespace-nowrap">Reforestation Simulator</b>
       </h1>
       <div class="space-y-3 flex flex-col">
-        <p>This app prototype plants random trees on 1 hectare of land, and then simulates 100 years of tree growth and self-seeding by calculating the sunlight available to each tree.</p>
+        <p>This app prototype uses genetic algorithms to find optimal reforestation scenarios that maximize both carbon sequestration <em>and</em> biodiversity.</p>
+        <p>The app plants different mixtures of tree species on 1 hectare of land, and then simulates 100 years of tree growth and self-seeding by calculating the sunlight available to each tree.</p>
         <p>The goal is to find the initial mix of tree species and densities that leads to the highest sequestered carbon and biodiversity, and the least number of initial trees that need to be planted.</p>
-        <p>It runs the simulation a number of times using multithreaded web workers, charts the carbon values, and highlights the best runs.</p>
+        <p>It runs a number of generations using multithreaded web workers, charts the carbon values, and highlights the best runs.</p>
         <div>
           <button class="px-8 py-2 mt-3 mb-2 text-lg font-bfold mx-auto flex space-x-2" on:click={() => isVisible = false}>
             <span>Go</span>
