@@ -25,14 +25,14 @@ export const treeSpecies: TreeSpecies[] = [
     shadeTolerance: 0.5,
     lifespan: 500,
   },
-  // {
-  //   id: 'hazel',
-  //   color: '#2196f3',
-  //   growthRate: 1.0,
-  //   maxRadius: 15,
-  //   shadeTolerance: 0.55,
-  //   lifespan: 80,
-  // },
+  {
+    id: 'hazel',
+    color: '#2196f3',
+    growthRate: 1.0,
+    maxRadius: 15,
+    shadeTolerance: 0.55,
+    lifespan: 80,
+  },
   // {
   //   id: 'birch',
   //   color: '#666666',

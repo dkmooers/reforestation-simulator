@@ -26,8 +26,8 @@ export const yearlyBiodiversity = writable([0])
 
 const width = 612; // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
 const height = 176;
-const minReproductiveAge = 10;
-const growthMultiplier = 2;
+const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
+const growthMultiplier = 1.5; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 2;
@@ -210,7 +210,6 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       yearlyTrees.update(data => [...data, get(trees).length])
       yearlyBiodiversity.update(data => [...data, get(biodiversity)])
 
-
       const sendLiveUpdates = true
 
       if (sendLiveUpdates) {
@@ -323,10 +322,10 @@ const calculateTreeHealth = () => {
     const species = treeSpecies.find(species => species.id === baseTree.speciesId)
     let health = baseTree.health
     if (shadeFraction > species?.shadeTolerance) {
-      // need to adjust this for age - the older it is, the less affected by shade it will be due to being taller
-      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.age, 0.8)
+      // adjust this for age - the older it is, the less affected by shade it will be due to being taller
+      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.age, 0.8) * 0.8
     } else {
-      health += 0.3
+      health += Math.abs(shadeFraction - species?.shadeTolerance)
       health = Math.min(1, health)
     }
 
@@ -415,7 +414,7 @@ const areAnyOverlappingTrees = () => {
 }
 
 export const declusterTrees = () => {
-  times(5, () => {
+  times(2, () => {
     const currentTrees = get(trees)
     currentTrees.forEach(baseTree => {
       const nearestTrees = getNearestTreesForTree(baseTree)
@@ -425,8 +424,6 @@ export const declusterTrees = () => {
           if (prevTree === baseTree) {
 
             // first figure out if the trees will overlap at max age
-
-
             // find direction vector toward nearTree
             const vector = {
               x: nearTree.x - prevTree.x,
@@ -440,7 +437,7 @@ export const declusterTrees = () => {
             // move away from nearTree
             // the repulsion strength should be based on the overlap amount at the final mature tree size - we don't need to repulse tiny trees that will not be overlapping at mature size, for instance.
             // const repulsion = 1
-            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * 0.1 // * get(scenario)?.declusteringStrength
+            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * get(scenario)?.declusteringStrength
             if (repulsion > 0) {
               // const repulsion = getTreeSpeciesById(near)
               prevTree.x -= normalizedVector.x * repulsion

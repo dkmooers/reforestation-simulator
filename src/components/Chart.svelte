@@ -9,7 +9,7 @@
 
   // let points = [] 
   let runsData = []
-  let showTrees = false
+  let showTrees = true
 
   let minx = 0;
   let maxx = numYearsPerRun;
@@ -79,10 +79,15 @@
 </script>
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
-  <div class="mx-auto font-light -mb-3 text-[#ad8c6a]">Carbon sequestered by run <span class="font-light">(tons)</span></div>
+  <div class="mx-auto font-light -mb-3 text-[#ad8c6a]">
+    <span class="swatch carbon"></span>
+    Carbon sequestered by run <span class="font-light">(tons)</span>
+    <span class="swatch trees"></span>
+    Number of trees
+  </div>
   <Pancake.Chart x1={minx} x2={maxx} y1={miny} y2={maxy}>
     <Pancake.Grid horizontal count={3} let:value let:last>
-      <div class="grid-line horizontal"><span>{value} {last ? 'tons' : ''}</span></div>
+      <div class="grid-line horizontal"><span>{value} {last ? '' : ''}</span></div>
     </Pancake.Grid>
 
     <Pancake.Grid vertical count={5} let:value>
@@ -226,6 +231,21 @@
   .text h2 {
     margin: 0;
     font-size: 1.4em;
+  }
+
+  .swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 100%;
+    margin-right: 3px;
+  }
+  .swatch.carbon {
+    background-color: #16c264;
+  }
+  .swatch.trees {
+    background-color: #aea798;
+    margin-left: 24px;
   }
 
   path.trees {

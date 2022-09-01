@@ -275,8 +275,6 @@ export const biodiversity = derived(
   }
 )
 
-$: console.log(get(initialTrees))
-
 const calculateCarbon = () => {
   let carbonSum = 0
   get(trees).forEach(tree => {
