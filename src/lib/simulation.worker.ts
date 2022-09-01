@@ -27,7 +27,7 @@ export const yearlyBiodiversity = writable([0])
 const width = 612; // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
 const height = 176;
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-const growthMultiplier = 1.5; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
+const growthMultiplier = 2; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 2;
@@ -163,7 +163,8 @@ const msPerFrame = 1
 export const elapsedTime = writable(0)
 
 const calculateFitness = (): number => {
-  const biodiversityTimesCarbonTons = get(biodiversity) * get(carbon) / 2000
+  const averageBiodiversity = sum(get(yearlyBiodiversity)) / get(yearlyBiodiversity).length
+  const biodiversityTimesCarbonTons = averageBiodiversity * get(carbon) / 2000
   // console.log(get(biodiversity), get(carbon)/2000, biodiversityTimesCarbonTons)
   // const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
   // const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
@@ -190,6 +191,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
   // if (get(year) < numYears) {
     // delay(() => {
       year.update(prevYear => prevYear + 1);
+
+      // Grow trees
       trees.update(prevTrees => prevTrees.map(tree => {
         const species = treeSpecies.find(species => species.id === tree.speciesId)
         if (species) {
@@ -202,7 +205,6 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
           return tree
         }
       }))
-      // calculate shade + health
 
       const newCarbon = calculateCarbon()
 
@@ -233,9 +235,10 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
         postMessage({type: 'updatedRun', value: updatedRun})
       }
       
-
+      // calculate shade + health
       // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
       // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
+      selectivelyHarvestTrees()
       calculateTreeHealth()
       propagateSeeds()
 
@@ -284,6 +287,15 @@ export const pruneOverflowTrees = () => {
   }))
 }
 
+const selectivelyHarvestTrees = () => {
+  // const prevTrees = get(trees)
+  // const harvestedTrees = prevTrees.filter()
+  // trees.update(trees => trees.map(tree => {
+  //   // if above a certain age, harvest at random chance; add to dead trees
+  //   if (tree)
+  // }).filter(tree => ))
+}
+
 const calculateTreeHealth = () => {
   // calculate shade map
   // const shadeGrid: number[][] = []
@@ -325,7 +337,7 @@ const calculateTreeHealth = () => {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
       health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.age, 0.8) * 0.8
     } else {
-      health += Math.abs(shadeFraction - species?.shadeTolerance)
+      health += 0.3//Math.abs(shadeFraction - species?.shadeTolerance)
       health = Math.min(1, health)
     }
 
@@ -437,7 +449,7 @@ export const declusterTrees = () => {
             // move away from nearTree
             // the repulsion strength should be based on the overlap amount at the final mature tree size - we don't need to repulse tiny trees that will not be overlapping at mature size, for instance.
             // const repulsion = 1
-            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * get(scenario)?.declusteringStrength
+            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * 0.1//get(scenario)?.declusteringStrength
             if (repulsion > 0) {
               // const repulsion = getTreeSpeciesById(near)
               prevTree.x -= normalizedVector.x * repulsion

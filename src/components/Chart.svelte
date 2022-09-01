@@ -37,6 +37,7 @@
     date: index + 1,
     carbon: carbonValue / 2000,
     trees: run.yearlyData.trees[index],
+    biodiversity: run.yearlyData.biodiversity[index],
     id: run.id
   })))
 
@@ -79,11 +80,13 @@
 </script>
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
-  <div class="mx-auto font-light -mb-3 text-[#ad8c6a]">
+  <div class="mx-auto font-light -mb-3 text-[#ad8c6a] text-sm flex items-center">
     <span class="swatch carbon"></span>
     Carbon sequestered by run <span class="font-light">(tons)</span>
-    <span class="swatch trees"></span>
+    <span class="swatch trees ml-6"></span>
     Number of trees
+    <span class="swatch biodiversity ml-6"></span>
+    Biodiversity
   </div>
   <Pancake.Chart x1={minx} x2={maxx} y1={miny} y2={maxy}>
     <Pancake.Grid horizontal count={3} let:value let:last>
@@ -109,6 +112,9 @@
         {#each runsData as data}
           <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
             <path class="carbon" class:active={data?.[0].id === $currentRunId} {d} />
+          </Pancake.SvgLine>
+          <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.biodiversity * maxy}" let:d>
+            <path class="biodiversity" class:active={data?.[0].id === $currentRunId} {d} />
           </Pancake.SvgLine>
           {#if showTrees}
             <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.trees}" let:d>
@@ -234,18 +240,21 @@
   }
 
   .swatch {
-    display: inline-block;
+    /* display: inline-block; */
     width: 12px;
     height: 12px;
     border-radius: 100%;
-    margin-right: 3px;
+    margin-right: 6px;
   }
   .swatch.carbon {
     background-color: #16c264;
   }
   .swatch.trees {
     background-color: #aea798;
-    margin-left: 24px;
+  }
+
+  .swatch.biodiversity {
+    background-color: rebeccapurple;
   }
 
   path.trees {
@@ -256,11 +265,6 @@
     stroke-linecap: round;
     stroke-width: 1px;
     fill: none;
-  }
-
-  path.trees.active {
-    opacity: 1;
-    stroke-width: 2px;
   }
 
   path.scatter {
@@ -276,9 +280,18 @@
     fill: none;
   }
 
-  path.carbon.active {
-    stroke-width: 2px;
-    opacity: 1;
+  path.active {
+    stroke-width: 2px !important;
+    opacity: 1 !important;
+  }
+
+  path.biodiversity {
+    stroke: rebeccapurple;
+    opacity: 0.3;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    stroke-width: 1px;
+    fill: none;
   }
 
   .focus {
