@@ -37,6 +37,7 @@ type Run = {
   initialTrees: Tree[]
   scenario: Scenario
   fitness?: number
+  averageBiodiversity: number
   isAllocated?: boolean
   isComplete?: boolean
 }

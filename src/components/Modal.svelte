@@ -4,11 +4,11 @@
   import TreeIcon from "./TreeIcon.svelte";
   let isVisible = false
 
-  onMount(() => {
-    setTimeout(() => {
-      isVisible = true
-    }, 1)
-  })
+  // onMount(() => {
+  //   setTimeout(() => {
+  //     isVisible = true
+  //   }, 1)
+  // })
 </script>
 
 {#if isVisible}
@@ -42,8 +42,12 @@
 <style>
   button {
     background-color: var(--accentColor);
+    transition: opacity 0.2s;
     color: rgba(0,0,0,0.7);
-
+  }
+  button:hover {
+    background-color: var(--accentColor);
+    opacity: 0.8;
   }
   .modal-content {
     background-color: var(--backgroundColor);

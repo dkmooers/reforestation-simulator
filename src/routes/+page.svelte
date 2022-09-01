@@ -53,7 +53,8 @@
   let showTreeLabels = true;
   let colorMode = 'colorized';
   let isSidebarOpen = true;
-  $: currentRunBiodiversity = Math.round((last($currentRun?.yearlyData.biodiversity) || 0) * 100)
+  $: currentRunBiodiversity = Math.round(($currentRun?.averageBiodiversity || 0) * 100)
+  // $: currentRunBiodiversity = Math.round((last($currentRun?.yearlyData.biodiversity) || 0) * 100)
   // $: isRunButtonDisabled = $isRunning || !$allWorkersReady
 
 
@@ -153,15 +154,22 @@
                   runSimulation();
                 }}
               >
-                <span class="w-6">
+                <div class="w-6 flex items-center h-full">
                   {#if $isRunning}
-                    <Loader class="mr-2" />
+                    <div class="relative mt-1 h-full">
+                      <Loader class="absolute top-0 left-0" />
+                      <!-- Pause icon -->
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3 absolute top-[4px] left-[4px] text-white">
+                        <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+  
                   {:else}
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                     </svg>
                   {/if}
-                </span>
+                  </div>
 
                 <span>Run</span>
               </button>
@@ -214,7 +222,7 @@
           </div>
           <div class="statistic !w-24">
             <label>biodiversity</label>
-            <span>{currentRunBiodiversity.toFixed(1)}%</span>
+            <span>{currentRunBiodiversity}%</span>
           </div>
           <div class="statistic !w-24">
             <label>carbon (tons)</label>

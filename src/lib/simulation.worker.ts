@@ -180,6 +180,11 @@ const runScenario = () => {
   postMessage({type: 'success'})
 }
 
+const getAverageBiodiversity = () => {
+  const averageBiodiversity = sum(get(yearlyBiodiversity)) / get(yearlyBiodiversity).length
+  return averageBiodiversity
+}
+
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
   for (let index = 0; index < numYears; index++) {
@@ -229,6 +234,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
           scenario: get(scenario),
           fitness: 0,
           isAllocated: true,
+          averageBiodiversity: getAverageBiodiversity(),
           // scenario: get(scenario),
         }
 
@@ -265,6 +271,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       initialTrees: get(initialTrees),
       scenario: get(scenario),
       fitness: calculateFitness(),
+      averageBiodiversity: get(biodiversity),
       isComplete: true,
       isAllocated: true,
     }
@@ -337,7 +344,8 @@ const calculateTreeHealth = () => {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
       health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.age, 0.8) * 0.8
     } else {
-      health += 0.3//Math.abs(shadeFraction - species?.shadeTolerance)
+      // health += Math.abs(shadeFraction - species?.shadeTolerance)
+      health += 0.3
       health = Math.min(1, health)
     }
 
