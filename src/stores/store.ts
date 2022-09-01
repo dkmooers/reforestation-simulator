@@ -1,5 +1,5 @@
 import { derived, get, writable } from "svelte/store"
-import { times, delay, sortBy, take, countBy, last, reverse, first, sum } from "lodash"
+import { times, delay, sortBy, take, countBy, last, reverse, first, sum, random } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
 import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
@@ -14,7 +14,7 @@ export const allWorkersReady = derived(
 )
 export const bestRun = writable<Run>()
 export const numYearsPerRun = 100
-export const maxRounds = 30
+export const maxRounds = 100
 export const populationSize = 20
 const numElites = 2
 const preserveEliteRunData = true
@@ -43,6 +43,7 @@ const handleMessage = (e) => {
     // isRunning.set(false)
     trees.set(runData.trees)
     deadTrees.set(runData.deadTrees)
+    initialTrees.set(runData.initialTrees)
     yearlyTrees.set(runData.yearlyData.trees)
     yearlyBiodiversity.set(runData.yearlyData.biodiversity)
     yearlyCarbon.set(runData.yearlyData.carbon)
@@ -251,6 +252,7 @@ export const numSpecies = derived(
   trees => Object.keys(countBy(trees, 'speciesId'))?.length || 0
 )
 const deadTrees = writable<Tree[]>([])
+export const initialTrees = writable<Tree[]>([])
 export const year = writable(0);
 export const carbon = derived(
   yearlyCarbon,
@@ -272,6 +274,8 @@ export const biodiversity = derived(
     return Math.pow(1 - rawBiodiversity, 500)//.toFixed(3)
   }
 )
+
+$: console.log(get(initialTrees))
 
 const calculateCarbon = () => {
   let carbonSum = 0
@@ -367,7 +371,7 @@ const generateScenario = (): Scenario => {
 
   return {
     speciesProbabilities: normalizeSpeciesProbabilities(speciesProbabilities),
-    numTrees: Math.round(Math.random() * 50 + 50),
+    numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
   }
 }
@@ -470,8 +474,16 @@ const selectNewPopulation = () => {
       elites.forEach(elite => newRunPartials.push(elite))
     } else {
       elites.forEach(elite => newRunPartials.push({scenario: elite.scenario}))
-
     }
+    // set current run ID to top elite
+    currentRunId.set(elites[0].id)
+
+    // pure random search
+    // times(populationSize - numElites, () => {
+    //   newRunPartials.push({
+    //     scenario: generateScenario()
+    //   })
+    // })
     
     // generate crossovers and add to next generation
     // const numCrossovers = populationSize - numElites
@@ -529,7 +541,7 @@ const attemptToRunNextRound = () => {
     rounds.update(prevRounds => [...prevRounds, lastRound])
   }
 
-  // update fitness improvement
+  // update overall fitness improvement %
   if (get(rounds).length > 1) {
     const firstRoundMaxFitness = last(sortBy(first(get(rounds)), 'fitness'))?.fitness
     const lastRoundMaxFitness = last(sortBy(last(get(rounds)), 'fitness'))?.fitness

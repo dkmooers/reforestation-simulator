@@ -34,6 +34,7 @@ const maxSeedlings = 2;
 
 export const scenario = writable<Scenario>()
 export const trees = writable<Tree[]>([])
+const initialTrees = writable<Tree[]>([])
 export const numSpecies = derived(
   trees,
   trees => Object.keys(countBy(trees, 'speciesId'))?.length || 0
@@ -153,6 +154,7 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   yearlyBiodiversity.set([])
   trees.set(opts?.initialTrees ?? [])
   deadTrees.set([])
+  initialTrees.set([])
   year.set(0)
 }
 
@@ -171,7 +173,8 @@ const calculateFitness = (): number => {
 }
 
 const runScenario = () => {
-  const initialTrees = addNRandomTrees(get(scenario)?.numTrees)
+  const newInitialTrees = addNRandomTrees(200)
+  initialTrees.set(newInitialTrees)
   stepNYears(numYearsPerRun);
   postMessage({type: 'success'})
 }
@@ -256,12 +259,15 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
         biodiversity: get(yearlyBiodiversity),
       },
       trees: get(trees),
-      deadTrees: get(deadTrees),
+      deadTrees: [],//get(deadTrees),
+      initialTrees: get(initialTrees),
       scenario: get(scenario),
       fitness: calculateFitness(),
       isComplete: true,
       isAllocated: true,
     }
+
+    // console.log(get(initialTrees))
 
     postMessage({type: 'runData', value: runData})
 
@@ -409,7 +415,7 @@ const areAnyOverlappingTrees = () => {
 }
 
 export const declusterTrees = () => {
-  times(50, () => {
+  times(5, () => {
     const currentTrees = get(trees)
     currentTrees.forEach(baseTree => {
       const nearestTrees = getNearestTreesForTree(baseTree)
@@ -434,7 +440,7 @@ export const declusterTrees = () => {
             // move away from nearTree
             // the repulsion strength should be based on the overlap amount at the final mature tree size - we don't need to repulse tiny trees that will not be overlapping at mature size, for instance.
             // const repulsion = 1
-            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree)// * get(scenario)?.declusteringStrength
+            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * 0.1 // * get(scenario)?.declusteringStrength
             if (repulsion > 0) {
               // const repulsion = getTreeSpeciesById(near)
               prevTree.x -= normalizedVector.x * repulsion
@@ -445,6 +451,7 @@ export const declusterTrees = () => {
         }))
       })
     })
+    pruneOverflowTrees()
   }) 
 }
 

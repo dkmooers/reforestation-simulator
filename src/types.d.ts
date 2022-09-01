@@ -34,6 +34,7 @@ type Run = {
   }
   trees: Tree[]
   deadTrees: Tree[]
+  initialTrees: Tree[]
   scenario: Scenario
   fitness?: number
   isAllocated?: boolean

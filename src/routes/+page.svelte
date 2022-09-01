@@ -28,6 +28,7 @@
     currentRunId,
     currentRun,
     trees,
+    initialTrees,
     isRunning,
     clearRunHistory,
     currentRound,
@@ -201,7 +202,7 @@
           </div>
           <div class="statistic !w-24">
             <label>trees planted</label>
-            <span>{$currentRun?.scenario.numTrees || 0}</span>
+            <span>{$currentRun?.initialTrees.length || 0}</span>
           </div>
           <div class="statistic !w-20">
             <label>final trees</label>
@@ -258,7 +259,7 @@
             >1</div>
           </div>
           {#if !$isRunning}
-            <div transition:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
+            <div in:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
           {/if}
         {:else}
           {#each $runs.filter(run => run.isAllocated) as run, index}
