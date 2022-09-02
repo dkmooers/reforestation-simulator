@@ -285,7 +285,7 @@
 
   path.biodiversity {
     stroke: rebeccapurple;
-    opacity: 0.3;
+    opacity: 0.5;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;

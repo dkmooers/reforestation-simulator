@@ -4,9 +4,10 @@ import { treeSpecies } from "$lib/treeSpecies";
 import SimulationWorker from '../lib/simulation.worker?worker'
 // import type { Run, Scenario, Tree, TreeSpecies } from "../types";
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
+import type { Run } from "../types";
 
 let useMultithreading = true
-const numWorkers = 4
+const numWorkers = 3
 let workers: Worker[] = []
 const numWorkersReady = writable(0)
 export const allWorkersReady = derived(
