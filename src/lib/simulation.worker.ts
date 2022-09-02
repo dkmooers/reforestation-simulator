@@ -1,15 +1,20 @@
-import { countBy, delay, last, max, random, rest, sortBy, sum, take, times } from "lodash";
-import { numYearsPerRun } from "../stores/store";
-import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
-import { derived, get, writable } from "svelte/store";
-import { treeSpecies } from "./treeSpecies";
+import { countBy, last, sortBy, sum, take, times } from "lodash";
+import type { Run, Scenario, Tree, TreeSpecies } from "../types";
+// import { numYearsPerRun } from "../stores/store";
+// import { treeSpecies } from "./treeSpecies" 
+// import type { Run, Scenario, Tree, TreeSpecies } from "../types";
+// import { derived, get, writable } from "svelte/store";
+
+// const numYearsPerRun = 100
 
 onmessage = (msg) => {
   const { type, value } = msg.data
   if (type === 'runScenario') {
     reset()
-    scenario.set(value.scenario)
-    currentRunId.set(value.id)
+    scenario = value.scenario
+    currentRunId = value.id
+    treeSpecies = value.treeSpecies
+    numYearsPerRun = value.numYearsPerRun
     runScenario()
   } else if (type === 'ping') {
     postMessage({ type: 'ready' })
@@ -17,12 +22,14 @@ onmessage = (msg) => {
   }
 };
 
-export const isRunning = writable(false)
-export const currentRunId = writable<number>(0)
+let currentRunId = 0
 
-export const yearlyCarbon = writable([0])
-export const yearlyTrees = writable([0])
-export const yearlyBiodiversity = writable([0])
+let treeSpecies: TreeSpecies[] = []
+let numYearsPerRun = 0
+let yearlyCarbon = [0]
+let yearlyTrees = [0]
+let yearlyBiodiversity = [0]
+let averageBiodiversity = 0
 
 const width = 612; // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
 const height = 176;
@@ -32,59 +39,56 @@ const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 2;
 
-export const scenario = writable<Scenario>()
-export const trees = writable<Tree[]>([])
-const initialTrees = writable<Tree[]>([])
-export const numSpecies = derived(
-  trees,
-  trees => Object.keys(countBy(trees, 'speciesId'))?.length || 0
-)
-const deadTrees = writable<Tree[]>([])
-export const year = writable(0);
-export const carbon = derived(
-  yearlyCarbon,
-  yearlyCarbon => last(yearlyCarbon) ?? 0
-)
-export const biodiversity = derived(
-  trees,
-  trees => {
+let scenario: Scenario
+let trees: Tree[] = []
+let initialTrees: Tree[] = []
+let deadTrees: Tree[] = []
+let year = 0
 
-    // const numTreesBySpecies = countBy(trees, 'speciesId')
-    const numTrees = trees.length
-    // const arrayOfSpeciesCounts = Object.values(numTreesBySpecies).filter(count => count !== 0) // remove zero-counts to avoid driving biodiversity to 0 if one species is not included
-    // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
 
-    // new flow:
-    // get num of trees by species
-    const numTreesBySpecies = treeSpecies.map(species => {
-      return trees.filter(tree => tree.speciesId === species.id).length
-    })
-    // divide each by nTrees
-    const scaledTreesBySpecies = numTreesBySpecies.map(num => num / numTrees)
-    // get ideal avg (1/nSpecies)
-    const targetScaledNumTreesPerSpecies = 1 / treeSpecies.length
-    // get variances from avg (abs)
-    const absVariancesFromTarget = scaledTreesBySpecies.map(num => Math.abs(num - targetScaledNumTreesPerSpecies))
-    // sum variances
-    const sumOfVariancesFromTarget = sum(absVariancesFromTarget)
-    // invert it => 1 / (sum + 1)
-    const invertedSumOfVariances = 1 / (sumOfVariancesFromTarget + 1)
-    // square it (optional) - to steepen the curve, and spread out values more (i.e. to weight biodiversity more strongly)
-    const biodiversity = Math.pow(invertedSumOfVariances, 2)
-    // const biodiversity = invertedSumOfVariances
-    return biodiversity
+const getBiodiversity = () => {
+  const numTrees = trees.length
+  // const arrayOfSpeciesCounts = Object.values(numTreesBySpecies).filter(count => count !== 0) // remove zero-counts to avoid driving biodiversity to 0 if one species is not included
+  // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
 
-    // const maxSpeciesCount = max(arrayOfSpeciesCounts)
-    // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
-    // const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
-    // // take square root to spread out the curve
-    // const scaledBiodiversity = Math.pow(rawBiodiversity, 0.5)//.toFixed(3)
-    // if (get(year) === numYearsPerRun) {
-    //   console.log(scaledBiodiversity * 100, arrayOfSpeciesCounts, scaledArrayOfSpeciesCounts)
-    // }
-    // return scaledBiodiversity
-  }
-)
+  // new flow:
+  // get num of trees by species
+  const numTreesBySpecies = treeSpecies.map(species => {
+    return trees.filter(tree => tree.speciesId === species.id).length
+  })
+  // divide each by nTrees
+  const scaledTreesBySpecies = numTreesBySpecies.map(num => num / numTrees)
+  // get ideal avg (1/nSpecies)
+  const targetScaledNumTreesPerSpecies = 1 / treeSpecies.length
+  // get variances from avg (abs)
+  const absVariancesFromTarget = scaledTreesBySpecies.map(num => Math.abs(num - targetScaledNumTreesPerSpecies))
+  // sum variances
+  const sumOfVariancesFromTarget = sum(absVariancesFromTarget)
+  // invert it => 1 / (sum + 1)
+  const invertedSumOfVariances = 1 / (sumOfVariancesFromTarget + 1)
+  // square it (optional) - to steepen the curve, and spread out values more (i.e. to weight biodiversity more strongly)
+  const biodiversity = Math.pow(invertedSumOfVariances, 2)
+  // const biodiversity = invertedSumOfVariances
+  return biodiversity
+}
+
+// export const biodiversity = derived(
+//   trees,
+//   trees => {
+
+//     // const numTreesBySpecies = countBy(trees, 'speciesId')
+    
+//     // const maxSpeciesCount = max(arrayOfSpeciesCounts)
+//     // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
+//     // const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
+//     // // take square root to spread out the curve
+//     // const scaledBiodiversity = Math.pow(rawBiodiversity, 0.5)//.toFixed(3)
+//     // if (get(year) === numYearsPerRun) {
+//     //   console.log(scaledBiodiversity * 100, arrayOfSpeciesCounts, scaledArrayOfSpeciesCounts)
+//     // }
+//     // return scaledBiodiversity
+//   }
+// )
 // export const fitness = derived(
 //   [biodiversity, carbon],
 //   ([biodiversity, carbon]) => {
@@ -98,10 +102,10 @@ const getCarbonFromTree = (tree: Tree) => {
 
 const calculateCarbon = () => {
   let carbonSum = 0
-  get(trees).forEach(tree => {
+  trees.forEach(tree => {
     carbonSum += getCarbonFromTree(tree)
   })
-  get(deadTrees).forEach(tree => {
+  deadTrees.forEach(tree => {
     carbonSum += getCarbonFromTree(tree)
   })
   return carbonSum 
@@ -111,7 +115,7 @@ const getRandomTreeSpecies = () => {
 
   // we're basically making a comparator here to find which tree species probability bin this random number goes into,
   // where the bins are sized according to the species probabilities defined in the random scenario generation
-  const speciesProbabilities = get(scenario).speciesProbabilities
+  const speciesProbabilities = scenario.speciesProbabilities
 
   let runningTotal = 0
   const treeSpeciesRandomValueThresholds = speciesProbabilities.map(probability => {
@@ -149,22 +153,23 @@ const getTreeSpeciesById = (id: string): TreeSpecies => {
 }
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
-  yearlyCarbon.set([])
-  yearlyTrees.set([])
-  yearlyBiodiversity.set([])
-  trees.set(opts?.initialTrees ?? [])
-  deadTrees.set([])
-  initialTrees.set([])
-  year.set(0)
+  yearlyCarbon = []
+  yearlyTrees = []
+  yearlyBiodiversity = []
+  averageBiodiversity = 0
+  trees = opts?.initialTrees ?? []
+  deadTrees = []
+  initialTrees = []
+  year = 0
 }
 
 // const msPerFrame = 33.33
 const msPerFrame = 1
-export const elapsedTime = writable(0)
+export const elapsedTime = 0
 
 const calculateFitness = (): number => {
-  const averageBiodiversity = sum(get(yearlyBiodiversity)) / get(yearlyBiodiversity).length
-  const biodiversityTimesCarbonTons = averageBiodiversity * get(carbon) / 2000
+  averageBiodiversity = sum(yearlyBiodiversity) / yearlyBiodiversity.length
+  const biodiversityTimesCarbonTons = averageBiodiversity * last(yearlyCarbon) / 2000
   // console.log(get(biodiversity), get(carbon)/2000, biodiversityTimesCarbonTons)
   // const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
   // const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
@@ -175,13 +180,13 @@ const calculateFitness = (): number => {
 
 const runScenario = () => {
   const newInitialTrees = addNRandomTrees(200)
-  initialTrees.set(newInitialTrees)
+  initialTrees = newInitialTrees
   stepNYears(numYearsPerRun);
   postMessage({type: 'success'})
 }
 
 const getAverageBiodiversity = () => {
-  const averageBiodiversity = sum(get(yearlyBiodiversity)) / get(yearlyBiodiversity).length
+  const averageBiodiversity = sum(yearlyBiodiversity) / yearlyBiodiversity.length
   return averageBiodiversity
 }
 
@@ -195,10 +200,10 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
   // if (get(year) < numYears) {
     // delay(() => {
-      year.update(prevYear => prevYear + 1);
+      year++
 
       // Grow trees
-      trees.update(prevTrees => prevTrees.map(tree => {
+      trees = trees.map(tree => {
         const species = treeSpecies.find(species => species.id === tree.speciesId)
         if (species) {
           return {
@@ -209,33 +214,31 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
         } else {
           return tree
         }
-      }))
+      })
 
       const newCarbon = calculateCarbon()
 
-      yearlyCarbon.update(data => [...data, newCarbon])
-      yearlyTrees.update(data => [...data, get(trees).length])
-      yearlyBiodiversity.update(data => [...data, get(biodiversity)])
+      yearlyCarbon.push(newCarbon)
+      yearlyTrees.push(trees.length)
+      yearlyBiodiversity.push(getBiodiversity())
 
       const sendLiveUpdates = true
 
       if (sendLiveUpdates) {
         const updatedRun: Run = {
-          // trees: get(trees),
           trees: [],
           deadTrees: [],
-          // deadTrees: get(deadTrees),
-          id: get(currentRunId),
+          initialTrees: [],
+          id: currentRunId,
           yearlyData: {
-            carbon: get(yearlyCarbon),
-            trees: get(yearlyTrees),
-            biodiversity: get(yearlyBiodiversity),
+            carbon: yearlyCarbon,
+            trees: yearlyTrees,
+            biodiversity: yearlyBiodiversity,
           },
-          scenario: get(scenario),
+          scenario: scenario,
           fitness: 0,
           isAllocated: true,
           averageBiodiversity: getAverageBiodiversity(),
-          // scenario: get(scenario),
         }
 
         postMessage({type: 'updatedRun', value: updatedRun})
@@ -260,18 +263,18 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
     // console.log('run complete! attempting to return data...')
 
     const runData: Run = {
-      id: get(currentRunId),
+      id: currentRunId,
       yearlyData: {
-        carbon: get(yearlyCarbon),
-        trees: get(yearlyTrees),
-        biodiversity: get(yearlyBiodiversity),
+        carbon: yearlyCarbon,
+        trees: yearlyTrees,
+        biodiversity: yearlyBiodiversity,
       },
-      trees: get(trees),
-      deadTrees: [],//get(deadTrees),
-      initialTrees: get(initialTrees),
-      scenario: get(scenario),
+      trees: trees,
+      deadTrees: [],
+      initialTrees: initialTrees,
+      scenario: scenario,
       fitness: calculateFitness(),
-      averageBiodiversity: get(biodiversity),
+      averageBiodiversity: averageBiodiversity,
       isComplete: true,
       isAllocated: true,
     }
@@ -289,13 +292,13 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 // }
 
 export const pruneOverflowTrees = () => {
-  trees.update(prevTrees => prevTrees.filter(tree => {
+  trees = trees.filter(tree => {
     return !(tree.x < 0 || tree.x > width || tree.y < 0 || tree.y > height)
-  }))
+  })
 }
 
 const selectivelyHarvestTrees = () => {
-  // const prevTrees = get(trees)
+  // const prevTrees = trees
   // const harvestedTrees = prevTrees.filter()
   // trees.update(trees => trees.map(tree => {
   //   // if above a certain age, harvest at random chance; add to dead trees
@@ -315,13 +318,12 @@ const calculateTreeHealth = () => {
   // OR WAIT... can we just naively get all overlapping trees, calculate the radius diff, and approximate the overlap?
 
 
-  // get(trees).forEach(tree => {
+  // trees.forEach(tree => {
   //   // 
   // })
 
-  const prevTrees = get(trees)
 
-  const newTrees = prevTrees.map(baseTree => {
+  const newTrees = trees.map(baseTree => {
     // 
     const overlappingTrees = getOverlappingTreesForTree(baseTree);
     // calculate overlaps
@@ -359,15 +361,15 @@ const calculateTreeHealth = () => {
   const newlyDeadTrees = newTrees.filter(tree => tree.isDead)
   const livingTrees = newTrees.filter(tree => !tree.isDead)
 
-  trees.set(livingTrees)
-  deadTrees.update(prevDeadTrees => [...prevDeadTrees, ...newlyDeadTrees])
+  trees = livingTrees
+  deadTrees = [...deadTrees, ...newlyDeadTrees]
 }
 
 // filter out dead trees
 export const propagateSeeds = () => {
   const seedlings: Tree[] = []
-  trees.update(prevTrees => {
-    prevTrees.forEach(tree => {
+  // trees.update(prevTrees => {
+    trees.forEach(tree => {
       // send out random number of seedlings
       if (tree.age >= minReproductiveAge) {
         times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.age) / 3), () => {
@@ -381,8 +383,8 @@ export const propagateSeeds = () => {
         })
       }
     })
-    return [...prevTrees, ...seedlings]
-  })
+    trees = [...trees, ...seedlings]
+  // })
   pruneOverflowTrees()
 }
 
@@ -394,7 +396,7 @@ const getDistanceBetweenTwoTrees = (tree1: Tree, tree2: Tree) => {
 }
 
 const getOverlappingTreesForTree = (baseTree: Tree) => {
-  const overlappingTrees = get(trees).filter(tree => {
+  const overlappingTrees = trees.filter(tree => {
     if (tree === baseTree) { // skip this tree
       return false
     }
@@ -405,7 +407,7 @@ const getOverlappingTreesForTree = (baseTree: Tree) => {
 }
 
 const getNearestTreesForTree = (baseTree: Tree): Array<Tree & { distance: number }> => {
-  const treesByDistance = get(trees).map(tree => {
+  const treesByDistance = trees.map(tree => {
     if (tree === baseTree) { // skip this tree
       return false
     }
@@ -428,19 +430,19 @@ const getMatureOverlapBetweenTwoTrees = (tree1: Tree, tree2: Tree) => {
 }
 
 const areAnyOverlappingTrees = () => {
-  return get(trees).some(baseTree => {
+  return trees.some(baseTree => {
     return getOverlappingTreesForTree(baseTree).length > 0
   })
 }
 
 export const declusterTrees = () => {
   times(2, () => {
-    const currentTrees = get(trees)
+    const currentTrees = trees
     currentTrees.forEach(baseTree => {
       const nearestTrees = getNearestTreesForTree(baseTree)
       // for each neartree... move this one in the opposite direction
       nearestTrees.forEach(nearTree => {
-        trees.update(prevTrees => prevTrees.map(prevTree => {
+        trees = trees.map(prevTree => {
           if (prevTree === baseTree) {
 
             // first figure out if the trees will overlap at max age
@@ -465,7 +467,7 @@ export const declusterTrees = () => {
             }
           }
           return prevTree
-        }))
+        })
       })
     })
     pruneOverflowTrees()
@@ -474,13 +476,12 @@ export const declusterTrees = () => {
 
 export const calculateOverlaps = () => {
   while (areAnyOverlappingTrees()) {
-    const currentTrees = get(currentRun)?.trees
-    currentTrees?.forEach(baseTree => {
+    trees.forEach(baseTree => {
       const overlappingTrees = getOverlappingTreesForTree(baseTree)
       // for each neartree... move this one in the opposite direction
       overlappingTrees.forEach(overlappingTree => {
 
-        const updatedTrees = get(currentRun)?.trees?.map(prevTree => {
+        const updatedTrees = trees.map(prevTree => {
           if (prevTree === baseTree) {
             // find direction vector toward nearTree
             const vector = {
@@ -501,7 +502,7 @@ export const calculateOverlaps = () => {
         })
 
         if (updatedTrees) {
-          trees.set(updatedTrees)
+          trees = updatedTrees
         }
 
       })
@@ -512,7 +513,7 @@ export const calculateOverlaps = () => {
 
 export const addNRandomTrees = (numTrees: number): Tree[] => {
 
-  let remainingTreesToPlant = numTrees - get(trees).length
+  let remainingTreesToPlant = numTrees - trees.length
 
   const newTrees: Tree[] = [];
   for (let index = 0; index < remainingTreesToPlant; index++) {
@@ -528,13 +529,13 @@ export const addNRandomTrees = (numTrees: number): Tree[] => {
       sizeMultiplier: Math.random() / 2 + 0.5,
     })
   }
-  trees.update(prevTrees => [...prevTrees, ...newTrees])
+  trees = [...trees, ...newTrees]
   declusterTrees()
   if (remainingTreesToPlant > 0) {
     addNRandomTrees(remainingTreesToPlant)
   }
 
-  return get(trees)
+  return trees
 }
 
 

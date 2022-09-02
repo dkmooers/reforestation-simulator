@@ -1,4 +1,4 @@
-import type { TreeSpecies } from "src/types";
+// import type { TreeSpecies } from "../types";
 
 export const treeSpecies: TreeSpecies[] = [
   {

@@ -1,12 +1,13 @@
 import { derived, get, writable } from "svelte/store"
 import { times, delay, sortBy, take, countBy, last, reverse, first, sum, random } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
-import type { Run, Scenario, Tree, TreeSpecies } from "src/types";
+import SimulationWorker from '../lib/simulation.worker?worker'
+// import type { Run, Scenario, Tree, TreeSpecies } from "../types";
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
 
 let useMultithreading = true
 const numWorkers = 4
-let syncWorkers: Worker[] = []
+let workers: Worker[] = []
 const numWorkersReady = writable(0)
 export const allWorkersReady = derived(
   numWorkersReady,
@@ -126,20 +127,23 @@ const handleMessage = (e) => {
 
 export const loadWorker = async () => {
 
-  numWorkersReady.set(0)
+  // numWorkersReady.set(0)
 
-  const SyncWorker = await import('../lib/simulation.worker?worker');
+  // const SyncWorker = await import('../lib/simulation.worker?worker');
   
-  // clear prevoius sync workers
-  syncWorkers = []
+
+  // clear previous sync workers
+  // TODO should we destroy them instead of just nulling the array?
+  workers = []
   // create N workers
   times(numWorkers, () => {
-    const syncWorker = new SyncWorker.default()
-    syncWorker.postMessage({type: 'ping'})
-    syncWorker.onmessage = (e) => {
+    // const worker = new Worker(new URL('../lib/simulation.worker.ts', import.meta.url))
+    const worker = new SimulationWorker()
+    worker.postMessage({type: 'ping'})
+    worker.onmessage = (e) => {
       handleMessage(e)
     }
-    syncWorkers.push(syncWorker)
+    workers.push(worker)
   })
 };
 
@@ -385,7 +389,9 @@ const dispatchNextRunToWorker = (worker: Worker) => {
   if (firstUnallocatedRun) {
     worker.postMessage({type: 'runScenario', value: {
       scenario: firstUnallocatedRun.scenario,
-      id: firstUnallocatedRun.id
+      id: firstUnallocatedRun.id,
+      treeSpecies, // send this because importing it inside the worker was causing circular build errors
+      numYearsPerRun, // send this because importing it inside the worker was causing circular build errors
     }})
     runs.update(prevRuns => prevRuns.map(run => {
       if (run.id !== firstUnallocatedRun.id) {
@@ -402,8 +408,8 @@ const dispatchNextRunToWorker = (worker: Worker) => {
 
 const runPopulation = () => {
   // send a message to each worker to start going on a run (the instructions to continue after that come from handleMessage func)
-  syncWorkers.forEach(syncWorker => {
-    dispatchNextRunToWorker(syncWorker)
+  workers.forEach(worker => {
+    dispatchNextRunToWorker(worker)
   })
 }
 

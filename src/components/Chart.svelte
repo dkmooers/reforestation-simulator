@@ -1,8 +1,6 @@
 <script>
   import * as Pancake from '@sveltejs/pancake';
-  import { yearlyCarbon, yearlyTrees, yearlyBiodiversity, runs, carbon, currentRunId, numYearsPerRun } from '../stores/store';
-  import { get } from 'svelte/store';
-  import { insolationData } from '../data/insolation.js';
+  import { runs, currentRunId, numYearsPerRun } from '../stores/store';
   import { fade } from "svelte/transition"
   import { last } from 'lodash';
   import { max } from 'lodash';
@@ -254,7 +252,7 @@
   }
 
   .swatch.biodiversity {
-    background-color: rebeccapurple;
+    background-color: #af62ff;
   }
 
   path.trees {

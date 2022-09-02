@@ -221,8 +221,11 @@
             <span>{$numSpecies}</span>
           </div>
           <div class="statistic !w-24">
-            <label>biodiversity</label>
-            <span>{currentRunBiodiversity}%</span>
+            <div class="flex items-center justify-center">
+              <label>biodiversity </label>
+              <!-- <Tooltip position="left">Biodiversity is calculated based on having an even spread of many sp</Tooltip> -->
+            </div>
+            <span class="text-[#af62ff]">{currentRunBiodiversity}%</span>
           </div>
           <div class="statistic !w-24">
             <label>carbon (tons)</label>
@@ -237,7 +240,7 @@
             <span>{(Math.round($carbon / 2000 / $year) || 0).toLocaleString('en-US')}</span>
           </div>
           <div class="statistic !w-24">
-            <div class="flex items-center justify-center">
+            <div class="flex items-center justify-center mt-[-2px]">
               <label>fitness </label>
               <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
             </div>
@@ -480,7 +483,7 @@
             {/each}
           </table>
 
-          {#if $rounds.length > 0}
+          <!-- {#if $rounds.length > 0} -->
             <div class="statistic !w-full mt-5">
               <label>Total fitness improvement</label>
               <div class="h-[1.8rem]">
@@ -508,7 +511,7 @@
                 </div>
               {/each}
             </div>
-          {/if}
+          <!-- {/if} -->
 
         </div>
         <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
