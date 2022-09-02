@@ -494,7 +494,7 @@
                 {/key} -->
               </div>
             </div>
-            <div class="flex items-center mt-4 mb-1 text-subtle text-xs uppercase">
+            <div class="flex items-center justify-center mt-4 mb-1 text-subtle text-xs uppercase">
               <span>Best fitness by round</span>
               <!-- <Tooltip position="left">Fitness sometimes drops round to round, because simulations are run non-deterministically, i.e. for any initial scenario, running that scenario over and over will produce somewhat different results due to random seed propagation.</Tooltip> -->
             </div>
