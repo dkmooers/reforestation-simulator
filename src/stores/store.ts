@@ -14,10 +14,10 @@ export const allWorkersReady = derived(
 )
 export const bestRun = writable<Run>()
 export const numYearsPerRun = 100
-export const maxRounds = 100
+export const maxRounds = 20
 export const populationSize = 20
 const numElites = 2
-const preserveEliteRunData = false
+const preserveEliteRunData = true // if true, don't re-run elite scenarios in the next round - re-use their tree growth run data and fitness from previous round
 const crossoverFraction = 0.7
 const randomFraction = 0.1
 const mutationStrength = 0.2

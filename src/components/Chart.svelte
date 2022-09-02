@@ -82,7 +82,7 @@
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
   <div class="mx-auto font-light -mb-3 text-[#ad8c6a] text-sm flex items-center">
     <span class="swatch carbon"></span>
-    Carbon sequestered by run <span class="font-light">(tons)</span>
+    Carbon sequestered by run<span class="font-light ml-1">(tons)</span>
     <span class="swatch trees ml-6"></span>
     Number of trees
     <span class="swatch biodiversity ml-6"></span>

@@ -171,7 +171,7 @@
                   {/if}
                   </div>
 
-                <span>Run</span>
+                <span>{$isRunning ? 'Pause' : 'Run'}</span>
               </button>
 
               <!-- <button on:click={() => stepNYears(1)}>+1 year</button>
@@ -266,9 +266,9 @@
               style={'background: var(--accfentColor); color: var(--backgroundColor);'}
             >1</div>
           </div>
-          {#if !$isRunning}
+          <!-- {#if !$isRunning}
             <div in:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
-          {/if}
+          {/if} -->
         {:else}
           {#each $runs.filter(run => run.isAllocated) as run, index}
             <div class="flex flex-col items-center justify-end">
@@ -309,11 +309,11 @@
                   runSimulation();
                 }}
               >
-                <span class="w-8">
+                <span class="w-10">
                   {#if $isRunning}
-                    <Loader class="mr-2" />
+                    <Loader size="2rem" class="mr-2" />
                   {:else}
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                     </svg>
                   {/if}
@@ -321,6 +321,11 @@
 
                 <span>Run</span>
               </button>
+            </div>
+          {/if}
+          {#if $currentRound === 1 && $runs.filter(run => run.isComplete).length === 0}
+            <div class="w-full h-full absolute inset-0 flex items-center justify-center flex-grow">
+              <Loader size="4rem" />
             </div>
           {/if}
           <svg viewBox="0 0 612 176" class="w-full">
@@ -437,7 +442,7 @@
   <!-- Sidebar -->
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-y-auto flex flex-col min-h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-y-auto overflow-x-visible flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3 text-sm">
@@ -479,13 +484,16 @@
             <div class="statistic !w-full mt-5">
               <label>Total fitness improvement</label>
               <div class="h-[1.8rem]">
-                <span class="text-yellow-500">{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
+                <span class="text-yellow-500">{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%</span>
                 <!-- {#key $currentRound}
                   <span class="text-yellow-500" in:fade={{duration: 200, delay: 300}} out:fade={{duration: 200}}>{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
                 {/key} -->
               </div>
             </div>
-            <div class="mt-4 mb-1 text-subtle text-xs uppercase">Best fitness by round</div>
+            <div class="flex items-center mt-4 mb-1 text-subtle text-xs uppercase">
+              <span>Best fitness by round</span>
+              <!-- <Tooltip position="left">Fitness sometimes drops round to round, because simulations are run non-deterministically, i.e. for any initial scenario, running that scenario over and over will produce somewhat different results due to random seed propagation.</Tooltip> -->
+            </div>
             <div class="grid grid-cols-2">
               {#each $bestFitnessByRound as fitness, index}
                 <div class="text-xs">
