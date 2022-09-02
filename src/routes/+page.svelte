@@ -485,7 +485,7 @@
                 {/key} -->
               </div>
             </div>
-            <div class="mt-3 mb-1 text-subtle text-sm">Best fitness by round</div>
+            <div class="mt-4 mb-1 text-subtle text-xs uppercase">Best fitness by round</div>
             <div class="grid grid-cols-2">
               {#each $bestFitnessByRound as fitness, index}
                 <div class="text-xs">
