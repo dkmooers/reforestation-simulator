@@ -5,7 +5,7 @@
   import Slider from '../components/Slider.svelte';
   import Modal from '../components/Modal.svelte';
 	import {
-    loadWorker,
+    loadWorkers,
     allWorkersReady,
 		addNRandomTrees,
 		calculateOverlaps,
@@ -69,14 +69,14 @@
           console.log('left')
         }
     });
-    loadWorker()
+    setTimeout(() => {
+      loadWorkers()
+    }, 10)
   })
 
 </script>
 
 <div class="flex">
-
-
 
   <div
     class="flex flex-grow flex-col items-stretch h-screen overflow-hidden"

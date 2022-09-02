@@ -125,13 +125,7 @@ const handleMessage = (e) => {
   // }
 }
 
-export const loadWorker = async () => {
-
-  // numWorkersReady.set(0)
-
-  // const SyncWorker = await import('../lib/simulation.worker?worker');
-  
-
+export const loadWorkers = async () => {
   // clear previous sync workers
   // TODO should we destroy them instead of just nulling the array?
   workers = []
