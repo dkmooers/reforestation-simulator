@@ -1,5 +1,5 @@
 import { derived, get, writable } from "svelte/store"
-import { times, delay, sortBy, take, countBy, last, reverse, first, sum, random } from "lodash"
+import { times, delay, sortBy, take, countBy, last, reverse, first, sum, random, update } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
 import SimulationWorker from '../lib/simulation.worker?worker'
 // import type { Run, Scenario, Tree, TreeSpecies } from "../types";
@@ -93,7 +93,7 @@ const handleMessage = (e) => {
       yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
       yearlyCarbon.set(updatedRun.yearlyData.carbon)
       // only render trees every Nth year step to avoid choking the graphics engine
-      if (updatedRun.yearlyData.biodiversity.length % 4 === 0) {
+      if (updatedRun.yearlyData.carbon.length % 4 === 0) {
         trees.set(updatedRun.trees)
       }
     }
@@ -102,6 +102,13 @@ const handleMessage = (e) => {
     runs.update(prevRuns => prevRuns.map((run, index) => {
       if (run.id === updatedRun.id) {
         // console.log(updatedRun.id)
+
+        // live-update trees if run data is sending them
+        // only render trees every Nth year step to avoid choking the graphics engine
+        // if (updatedRun.trees.length && updatedRun.yearlyData.carbon.length % 5 === 0) {
+        //   trees.set(updatedRun.trees)
+        // }
+
         return updatedRun
       } else {
         return run
@@ -378,7 +385,7 @@ const createInitialPopulation = (): Scenario[] => {
   })
 }
 
-const dispatchNextRunToWorker = (worker: Worker) => {
+const dispatchNextRunToWorker = (worker: Worker, opts?: { sendLiveTreeUpdates?: boolean }) => {
   const firstUnallocatedRun = first(get(runs).filter(run => !run.isAllocated))
   if (firstUnallocatedRun) {
     worker.postMessage({type: 'runScenario', value: {
@@ -386,6 +393,7 @@ const dispatchNextRunToWorker = (worker: Worker) => {
       id: firstUnallocatedRun.id,
       treeSpecies, // send this because importing it inside the worker was causing circular build errors
       numYearsPerRun, // send this because importing it inside the worker was causing circular build errors
+      sendLiveTreeUpdates: opts?.sendLiveTreeUpdates,
     }})
     runs.update(prevRuns => prevRuns.map(run => {
       if (run.id !== firstUnallocatedRun.id) {
@@ -403,7 +411,9 @@ const dispatchNextRunToWorker = (worker: Worker) => {
 const runPopulation = () => {
   // send a message to each worker to start going on a run (the instructions to continue after that come from handleMessage func)
   workers.forEach(worker => {
-    dispatchNextRunToWorker(worker)
+    // only send live tree updates for the very first run that's dispatched
+    const sendLiveTreeUpdates = get(currentRound) === 1 && get(runs).filter(run => run.isAllocated).length === 0 
+    dispatchNextRunToWorker(worker, { sendLiveTreeUpdates })
   })
 }
 

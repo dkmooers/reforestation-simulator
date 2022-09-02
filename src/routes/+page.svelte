@@ -327,7 +327,8 @@
             </div>
           {/if}
           {#if $currentRound === 1 && $runs.filter(run => run.isComplete).length === 0}
-            <div class="w-full h-full absolute inset-0 flex items-center justify-center flex-grow">
+            <div class="flex flex-col w-full h-full absolute inset-0 flex items-center justify-center flex-grow">
+              Running simulation...
               <Loader size="4rem" />
             </div>
           {/if}
@@ -345,9 +346,9 @@
               <g in:fade={{delay: 50}} out:fade={{duration: 50}}>
                 {#if renderGraphics}
                   <!-- trunks -->
-                  {#each $trees as tree}
+                  <!-- {#each $trees as tree}
                     <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
-                  {/each}
+                  {/each} -->
                   <!-- foliage canopies -->
                   {#each $trees as tree}
                     {#if colorMode === 'colorized'}

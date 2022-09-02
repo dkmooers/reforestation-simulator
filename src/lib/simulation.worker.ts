@@ -15,6 +15,7 @@ onmessage = (msg) => {
     currentRunId = value.id
     treeSpecies = value.treeSpecies
     numYearsPerRun = value.numYearsPerRun
+    sendLiveTreeUpdates = value.sendLiveTreeUpdates
     runScenario()
   } else if (type === 'ping') {
     postMessage({ type: 'ready' })
@@ -30,6 +31,7 @@ let yearlyCarbon = [0]
 let yearlyTrees = [0]
 let yearlyBiodiversity = [0]
 let averageBiodiversity = 0
+let sendLiveTreeUpdates = false
 
 const width = 612; // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
 const height = 176;
@@ -226,6 +228,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
       if (sendLiveUpdates) {
         const updatedRun: Run = {
+          // trees: sendLiveTreeUpdates ? trees : [],
           trees: [],
           deadTrees: [],
           initialTrees: [],
