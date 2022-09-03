@@ -297,7 +297,7 @@
 
       <!-- Diagram -->
       <div class="mb-2 flex bg-[#efe1db] rounded z-10">
-        <div class="flex-grow rounded flex items-center justify-center relative">
+        <div class="flex-grow rounded-lg flex items-center justify-center relative">
           {#if $currentRound === 0}
             <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow">
               <button
