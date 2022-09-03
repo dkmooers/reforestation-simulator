@@ -556,7 +556,10 @@ const attemptToRunNextRound = () => {
   }
 
   // save last round
-  const lastRound = get(runs)
+  const lastRound = get(runs).map(run => ({
+    ...run,
+    trees: [] // don't save trees on past rounds, to prevent crashing of the app due to memory usage overload
+  }))
   if (lastRound.length) {
     rounds.update(prevRounds => [...prevRounds, lastRound])
   }
