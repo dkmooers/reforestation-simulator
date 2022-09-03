@@ -1,4 +1,4 @@
-import { countBy, last, sortBy, sum, take, times } from "lodash";
+import { countBy, last, random, sortBy, sum, take, times } from "lodash";
 import type { Run, Scenario, Tree, TreeSpecies } from "../types";
 // import { numYearsPerRun } from "../stores/store";
 // import { treeSpecies } from "./treeSpecies" 
@@ -36,7 +36,7 @@ let sendLiveTreeUpdates = false
 const width = 612; // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
 const height = 176;
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-const growthMultiplier = 2; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
+const growthMultiplier = 1.8; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 2;
@@ -259,7 +259,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       // calculate shade + health
       // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
       // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
-      selectivelyHarvestTrees()
+      // selectivelyHarvestTrees()
       calculateTreeHealth()
       propagateSeeds()
 
@@ -304,9 +304,11 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 // }
 
 export const pruneOverflowTrees = () => {
+  // console.log('before pruning:', trees.length)
   trees = trees.filter(tree => {
     return !(tree.x < 0 || tree.x > width || tree.y < 0 || tree.y > height)
   })
+  // console.log('after pruning:', trees.length)
 }
 
 const selectivelyHarvestTrees = () => {
@@ -395,27 +397,24 @@ const calculateTreeHealth = () => {
   deadTrees = [...deadTrees, ...newlyDeadTrees]
 }
 
-// filter out dead trees
 export const propagateSeeds = () => {
   const seedlings: Tree[] = []
-  // trees.update(prevTrees => {
-    trees.forEach(tree => {
-      // send out random number of seedlings
-      if (tree.stemAge >= minReproductiveAge) {
-        times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.stemAge) / 3), () => {
-          seedlings.push({
-            ...tree,
-            age: 0,
-            stemAge: 0,
-            radius: 0,
-            x: tree.x + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
-            y: tree.y + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
-          })
+  trees.forEach(tree => {
+    // send out random number of seedlings
+    if (tree.stemAge >= random(minReproductiveAge, minReproductiveAge + 3)) {
+      times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.stemAge) / 3), () => {
+        seedlings.push({
+          ...tree,
+          age: 0,
+          stemAge: 0,
+          radius: 0,
+          x: tree.x + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
+          y: tree.y + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
         })
-      }
-    })
-    trees = [...trees, ...seedlings]
-  // })
+      })
+    }
+  })
+  trees = [...trees, ...seedlings]
   pruneOverflowTrees()
 }
 

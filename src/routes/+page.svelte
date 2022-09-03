@@ -224,7 +224,7 @@
         <div class="statistic !w-24">
           <div class="flex items-center justify-center mt-[-2px]">
             <label>carbon (t) </label>
-            <Tooltip position="left">This is a placeholder measurement, not a more physically accurate DBH-based measurement.</Tooltip>
+            <Tooltip position="left">This is a guesstimate for prototyping purposes, in lieu of a more physically accurate DBH-based calculation.</Tooltip>
           </div>
           <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
         </div>
@@ -239,7 +239,7 @@
         <div class="statistic !w-24">
           <div class="flex items-center justify-center mt-[-2px]">
             <label>fitness </label>
-            <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
+            <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity.</Tooltip>
           </div>
           <span class="text-yellow-500">{$currentRun?.fitness?.toLocaleString('en-US') || 0}</span>
         </div>
@@ -441,7 +441,7 @@
   <!-- Sidebar -->
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? 'w-[19rem]' : 'w-0'} overflow-y-auto overflow-x-visible flex flex-col min-h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? 'w-[19rem] overflow-visible' : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3 text-sm">
@@ -467,8 +467,12 @@
               <th class="min-w-[3rem]" title="Carbon">Car...</th>
               <th class="min-w-[3rem]" title="Biodiversity">Bio...</th>
               <!-- <th class="min-w-[3rem]" title="Coppice Min Age">CMA</th> -->
-              <th class="min-w-[3rem]" title="Harvest Min Radius (Canopy)">HMR</th>
-              <th class="min-w-[3rem]" title="Harvest Chance">HC</th>
+              <th class="min-w-[3rem]" title="Harvest Min Radius (Canopy)">HMR
+                <Tooltip position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
+              </th>
+              <th class="min-w-[3rem]" title="Harvest Chance">HC
+                <Tooltip position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
+              </th>
 
             </thead>
             {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
@@ -560,14 +564,16 @@
 		font-weight: 100;
 		line-height: 1;
 	}
-
+  th {
+    padding: 0.2rem 0.4rem;
+  }
   td, th {
     border: 1px solid #ad8c6a99;
-    padding: 0 0.4rem;
   }
   td {
     color: #ad8c6a;
     transition: color 0.2s;
+    padding: 0 0.4rem;
   }
   tr.current-run {
     color: white !important;

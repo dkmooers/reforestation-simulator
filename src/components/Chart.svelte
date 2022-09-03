@@ -78,7 +78,7 @@
 </script>
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
-  <div class="z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-17px] text-[#ad8c6a] text-sm flex items-center">
+  <div class="z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-13px] text-[#ad8c6a] text-sm flex items-center">
     <span class="swatch carbon"></span>
     Carbon sequestered by run<span class="font-light ml-1">(tons)</span>
     <span class="swatch trees ml-6"></span>
@@ -304,6 +304,10 @@
   path.active {
     stroke-width: 2px !important;
     opacity: 1 !important;
+  }
+
+  path.trees.active {
+    opacity: 0.8 !important;
   }
 
   path.biodiversity {
