@@ -99,7 +99,7 @@ const getBiodiversity = () => {
 // )
 
 const getCarbonFromTree = (tree: Tree) => {
-  return Math.pow(tree.radius, 2)// * 1.5
+  return Math.pow(tree.radius, 2) * 2
 }
 
 const calculateCarbon = () => {
