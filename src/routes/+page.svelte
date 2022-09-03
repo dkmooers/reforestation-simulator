@@ -223,7 +223,7 @@
         </div>
         <div class="statistic !w-24">
           <div class="flex items-center justify-center mt-[-2px]">
-            <label>carbon (tons) </label>
+            <label>carbon (t) </label>
             <Tooltip position="left">This is a placeholder measurement, not a more physically accurate DBH-based measurement.</Tooltip>
           </div>
           <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
