@@ -196,7 +196,7 @@
       <div class="flex -ml-6">
         <div class="statistic !w-32 border-r border-subtle">
           <label>round</label>
-          <span>{$currentRound}/{maxRounds}</span>
+          <span>{$currentRound} / {maxRounds}</span>
         </div>
         <div class="statistic !w-20f">
           <label>year</label>
