@@ -78,7 +78,7 @@
 </script>
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
-  <div class="mx-auto font-light -mb-3 text-[#ad8c6a] text-sm flex items-center">
+  <div class="z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-17px] text-[#ad8c6a] text-sm flex items-center">
     <span class="swatch carbon"></span>
     Carbon sequestered by run<span class="font-light ml-1">(tons)</span>
     <span class="swatch trees ml-6"></span>
@@ -107,7 +107,29 @@
           <path class="carbon active" {d} />
         </Pancake.SvgLine> -->
 
+
+
         {#each runsData as data}
+
+        <!-- <Pancake.Point x={last(data).date} y={last(data).carbon}>
+          <div class="text">
+            XYZ
+          </div>
+        </Pancake.Point> -->
+
+          {#if data.length < numYearsPerRun}
+            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.carbon}" let:d>
+              <path class="carbon scatter" {d} />
+            </Pancake.SvgScatterplot>
+            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.biodiversity}" let:d>
+              <path class="biodiversity scatter" {d} />
+            </Pancake.SvgScatterplot>
+            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.trees}" let:d>
+              <path class="trees scatter" {d} />
+            </Pancake.SvgScatterplot>
+          {/if}
+
+
           <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
             <path class="carbon" class:active={data?.[0].id === $currentRunId} {d} />
           </Pancake.SvgLine>
@@ -266,7 +288,8 @@
   }
 
   path.scatter {
-    stroke-width: 3px;
+    opacity: 1 !important;
+    stroke-width: 2px !important;
   }
 
   path.carbon {

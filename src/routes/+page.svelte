@@ -222,7 +222,10 @@
           <span class="text-[#af62ff]">{currentRunBiodiversity}%</span>
         </div>
         <div class="statistic !w-24">
-          <label>carbon (tons)</label>
+          <div class="flex items-center justify-center mt-[-2px]">
+            <label>carbon (tons) </label>
+            <Tooltip position="left">This is a placeholder measurement, not a more physically accurate DBH-based measurement.</Tooltip>
+          </div>
           <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
         </div>
         <!-- <div class="statistic !w-36">
