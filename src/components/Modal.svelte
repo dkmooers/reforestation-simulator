@@ -23,8 +23,8 @@
       </h1>
       <div class="space-y-3 flex flex-col">
         <p>This app prototype uses genetic algorithms to find optimal reforestation scenarios that maximize both carbon sequestration <em>and</em> biodiversity.</p>
-        <p>The app plants different mixtures of tree species on 1 hectare of land, and then simulates 100 years of tree growth and self-seeding by calculating the sunlight available to each tree.</p>
-        <p>The goal is to find the initial mix of tree species and densities that leads to the highest sequestered carbon and biodiversity.</p>
+        <p>The app plants different mixtures of tree species on one hectare of land, and then simulates 100 years of tree growth, harvesting, and self-seeding by calculating the sunlight available to each tree.</p>
+        <p>The goal is to find the initial makeup of tree species, and the frequency of harvesting, that leads to the highest sequestered carbon and biodiversity.</p>
         <p>It runs multiple simulations in parallel using multithreaded web workers, charts the carbon values, then evolves the next generation using crossover and mutation, stopping after 20 generations.</p>
         <div>
           <button class="px-8 py-2 mt-3 mb-2 text-lg font-bfold mx-auto flex space-x-2" on:click={() => isVisible = false}>

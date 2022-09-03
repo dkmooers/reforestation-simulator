@@ -464,8 +464,8 @@
               <th class="min-w-[3rem]" title="Carbon">Car...</th>
               <th class="min-w-[3rem]" title="Biodiversity">Bio...</th>
               <!-- <th class="min-w-[3rem]" title="Coppice Min Age">CMA</th> -->
-              <th class="min-w-[3rem]" title="Coppice Min Radius">CMR</th>
-              <th class="min-w-[3rem]" title="Coppice Chance">CC</th>
+              <th class="min-w-[3rem]" title="Harvest Min Radius (Canopy)">HMR</th>
+              <th class="min-w-[3rem]" title="Harvest Chance">HC</th>
 
             </thead>
             {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
