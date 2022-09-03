@@ -259,7 +259,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       // calculate shade + health
       // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
       // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
-      // selectivelyHarvestTrees()
+      selectivelyHarvestTrees()
       calculateTreeHealth()
       propagateSeeds()
 
