@@ -279,7 +279,7 @@
 
   path.trees {
     stroke: #aea798;
-    opacity: 0.3;
+    opacity: 0.2;
     transition: opacity 0.2s stroke-width 0.2s;
     stroke-linejoin: round;
     stroke-linecap: round;
