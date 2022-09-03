@@ -2,6 +2,8 @@ type Scenario = {
   speciesProbabilities: Array<number>
   numTrees: number
   declusteringStrength: number
+  coppiceMinRadius: number
+  coppiceChance: number
 }
 
 type TreeSpecies = {
@@ -20,6 +22,7 @@ export type Tree = {
   speciesId: string
   color: string
   age: number
+  stemAge: number
   sizeMultiplier: number
   health: number // 0 to 1
   isDead?: boolean

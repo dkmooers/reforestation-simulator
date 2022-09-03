@@ -205,13 +205,22 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       year++
 
       // Grow trees
-      trees = trees.map(tree => {
+      trees = trees.map((tree, index) => {
         const species = treeSpecies.find(species => species.id === tree.speciesId)
         if (species) {
+          // const radius = tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier
+
+          // const radius = tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius
+
+          // if (index === 0) {
+          //   console.log(year, radius)
+          // }
           return {
             ...tree,
+            // radius: tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier,
             radius: tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius,
             age: tree.age + 1,
+            stemAge: tree.stemAge + 1,
           }
         } else {
           return tree
@@ -301,6 +310,24 @@ export const pruneOverflowTrees = () => {
 }
 
 const selectivelyHarvestTrees = () => {
+
+  // coppice trees older than X years, and bigger than Y radius (feet)
+  // retain their age, but set radius to 0
+  trees = trees.map(tree => {
+    const isHarvestable = tree.radius > scenario.coppiceMinRadius
+    const shouldHarvestThisTree = Math.random() < scenario.coppiceChance
+    if (isHarvestable && shouldHarvestThisTree) {
+      deadTrees.push({...tree}) // count the harvested part as sequestered carbon
+      return {
+        ...tree,
+        radius: 0,
+        stemAge: 0,
+      }
+    } else {
+      return tree
+    }
+  })
+
   // const prevTrees = trees
   // const harvestedTrees = prevTrees.filter()
   // trees.update(trees => trees.map(tree => {
@@ -332,7 +359,7 @@ const calculateTreeHealth = () => {
     // calculate overlaps
     let totalOverlapArea = 0;
     const treesThatActuallyShadeThisOne = overlappingTrees.filter(overlappingTree => {
-      return overlappingTree.age > 0.75 * baseTree.age
+      return overlappingTree.stemAge > 0.75 * baseTree.stemAge
     })
     treesThatActuallyShadeThisOne.forEach(overlappingTree => {
       // get distance
@@ -347,7 +374,7 @@ const calculateTreeHealth = () => {
     let health = baseTree.health
     if (shadeFraction > species?.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
-      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.age, 0.8) * 0.8
+      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.8) * 0.8
     } else {
       // health += Math.abs(shadeFraction - species?.shadeTolerance)
       health += 0.3
@@ -357,7 +384,7 @@ const calculateTreeHealth = () => {
     return {
       ...baseTree,
       health,
-      isDead: health < 0 || baseTree.age > species.lifespan
+      isDead: health < 0 || baseTree.stemAge > species.lifespan
     }
   });
 
@@ -374,11 +401,12 @@ export const propagateSeeds = () => {
   // trees.update(prevTrees => {
     trees.forEach(tree => {
       // send out random number of seedlings
-      if (tree.age >= minReproductiveAge) {
-        times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.age) / 3), () => {
+      if (tree.stemAge >= minReproductiveAge) {
+        times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.stemAge) / 3), () => {
           seedlings.push({
             ...tree,
             age: 0,
+            stemAge: 0,
             radius: 0,
             x: tree.x + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
             y: tree.y + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
@@ -529,7 +557,9 @@ export const addNRandomTrees = (numTrees: number): Tree[] => {
       health: 1,
       radius: 0,
       age: 0,
-      sizeMultiplier: Math.random() / 2 + 0.5,
+      stemAge: 0,
+      sizeMultiplier: 1,
+      // sizeMultiplier: Math.random() / 2 + 0.5,
     })
   }
   trees = [...trees, ...newTrees]

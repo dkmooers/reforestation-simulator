@@ -1,10 +1,10 @@
 import { derived, get, writable } from "svelte/store"
-import { times, delay, sortBy, take, countBy, last, reverse, first, sum, random, update } from "lodash"
+import { times, delay, sortBy, take, countBy, last, reverse, first, sum, random, update, without } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
 import SimulationWorker from '../lib/simulation.worker?worker'
 // import type { Run, Scenario, Tree, TreeSpecies } from "../types";
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
-import type { Run } from "../types";
+import type { Run, Scenario } from "../types";
 
 let useMultithreading = true
 const numWorkers = 3
@@ -377,6 +377,9 @@ const generateScenario = (): Scenario => {
     speciesProbabilities: normalizeSpeciesProbabilities(speciesProbabilities),
     numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
+    coppiceChance: random(0, 0.1),
+    coppiceMinAge: random(15, 60),
+    coppiceMinRadius: random(5, 25)
   }
 }
 
@@ -430,12 +433,20 @@ const generateCrossoverFromParents = (parent1: Run, parent2: Run): Scenario => {
   // combine randomly
   const scenario1 = parent1.scenario
   const scenario2 = parent2.scenario
-  const child: Partial<Scenario> = {}
-  child.declusteringStrength = getRandomArrayElement([scenario1, scenario2]).declusteringStrength
-  child.numTrees = getRandomArrayElement([scenario1, scenario2]).numTrees
+  let child: Scenario = { ...scenario1 }
+  without(Object.keys(child), 'speciesProbabilities').forEach(prop => {
+    child[prop] = getRandomArrayElement([scenario1, scenario2])[prop]
+  })
+  // child.declusteringStrength = getRandomArrayElement([scenario1, scenario2]).declusteringStrength
+  // child.numTrees = getRandomArrayElement([scenario1, scenario2]).numTrees
   child.speciesProbabilities = normalizeSpeciesProbabilities(scenario1.speciesProbabilities.map((probability, index) => {
     return getRandomArrayElement([scenario1, scenario2]).speciesProbabilities[index]
   }))
+
+  // do random mutations?
+  child = generateMutantFromParent(child)
+
+  // child.coppiceChance = getRandomArrayElement([scenario1, scenario2]).coppiceChance
   return child as Scenario
 }
 
@@ -450,17 +461,18 @@ const getRandomMutationMultiplier = () => {
   return Math.pow((Math.random() - 0.5) * 2, 3) + 1
 }
 
-const generateMutantFromParent = (parent: Run): Scenario => {
-  const parentScenario = parent.scenario
+const generateMutantFromParent = (parent: Scenario): Scenario => {
+  // const parentScenario = parent.scenario
   const mutant = {
-    ...parentScenario
+    ...parent
   }
-  mutant.declusteringStrength = mutant.declusteringStrength * getRandomMutationMultiplier() // multiply by 0.8 to 1.2
-  mutant.numTrees = Math.round(mutant.numTrees * getRandomMutationMultiplier()) // multiply by 0.8 to 1.2
+  // randomly mutate all numerical properties (not speciesProbabilities which is an array)
+  without(Object.keys(mutant), 'speciesProbabilities').forEach(prop => {
+    mutant[prop] *= getRandomMutationMultiplier()
+  })
   mutant.speciesProbabilities = normalizeSpeciesProbabilities(mutant.speciesProbabilities.map(probability => (
     probability * getRandomMutationMultiplier()
   )))
-  // console.log('MUTATION:', sum(mutant.speciesProbabilities), mutant.speciesProbabilities)
   return mutant
 }
 
@@ -516,7 +528,7 @@ const selectNewPopulation = () => {
     times(numMutants, () => {
       const randomParent = getRandomArrayElement(elites)
       // const randomParent = selectRandomParentByFitness()
-      newRunPartials.push({scenario: generateMutantFromParent(randomParent)})
+      newRunPartials.push({scenario: generateMutantFromParent(randomParent.scenario)})
     })
   }
 

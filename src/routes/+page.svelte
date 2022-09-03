@@ -102,9 +102,9 @@
     </div>
 
     <div class="p-4 flex-grow flex flex-col">
-      <div class="flex items-start space-x-6">
+      <div class="flex items-center space-x-6 -mt-2">
         <!-- <div class="flex"> -->
-          <h1 class="whitespace-nowrap mb-1 flex flex-grow items-center">
+          <h1 class="whitespace-nowrap mt-3 flex items-center">
             <div class="-mt-3"><TreeIcon /></div>
             <span class="-mt-2">Reforestation Simulator</span>
             <Tooltip>
@@ -113,38 +113,9 @@
             </Tooltip>
             <!-- <span class="rounded-full bg-[#ad8c6a] text-base h-6 w-6">?</span> -->
           </h1>
-          <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
-
-        <!-- </div> -->
-      
-        <div class="flex space-x-4 items-center -mt-2 -mr-2 ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
-          <!-- <label class="flex items-center whitespace-nowrap">
-            Render graphics
-            <input type="checkbox" bind:checked={renderGraphics} />
-          </label> -->
-          <!-- <span class="opacity-30">•</span> -->
-          <label class="flex items-center whitespace-nowrap">
-            Show tree labels
-            <input type="checkbox" bind:checked={showTreeLabels} />
-          </label>
-          <span class="opacity-30">•</span>
-          <label class="whitespace-nowrap">
-            Color mode
-            <select bind:value={colorMode}>
-              <option value="colorized" label="Colorized">
-              <option value="shaded" label="Green shading">
-            </select>
-          </label>
-        </div>
-      </div>
-
-      <!-- Controls -->
-      <div class="flex items-end flex-wrap">
-
-        <div class="flex flex-col max-w-md mr-6">
 
           <!-- Buttons -->
-          <div class="mb-[4px]">
+          <div class="flex-grow">
             <div class="whitespace-nowrap flex">
               <button
                 class="text-black text-opacity-75 transition-opacity hover:opacity-80 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
@@ -195,66 +166,88 @@
               <button on:click={() => declusterTrees()}>Decluster</button>
             </div> -->
           </div>
-        </div>
+          <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
 
-
-        <!-- Statistics -->
-        <div class="flex">
-          <div class="statistic !w-32 border-r border-subtle">
-            <label>round</label>
-            <span>{$currentRound}/{maxRounds}</span>
-          </div>
-          <div class="statistic !w-20f">
-            <label>year</label>
-            <span>{$year}</span>
-          </div>
-          <div class="statistic !w-24">
-            <label>trees planted</label>
-            <span>{$currentRun?.initialTrees.length || 0}</span>
-          </div>
-          <div class="statistic !w-20">
-            <label>final trees</label>
-            <span>{($trees.length || 0).toLocaleString('en-US')}</span>
-          </div>
-          <div class="statistic !w-24">
-            <label>final species</label>
-            <span>{$numSpecies}</span>
-          </div>
-          <div class="statistic !w-24">
-            <div class="flex items-center justify-center">
-              <label>biodiversity </label>
-              <!-- <Tooltip position="left">Biodiversity is calculated based on having an even spread of many sp</Tooltip> -->
-            </div>
-            <span class="text-[#af62ff]">{currentRunBiodiversity}%</span>
-          </div>
-          <div class="statistic !w-24">
-            <label>carbon (tons)</label>
-            <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
-          </div>
-          <!-- <div class="statistic !w-36">
-            <label>avg carbon (all runs)</label>
-            <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
-          </div> -->
-          <div class="statistic !w-20">
-            <label>tons / year</label>
-            <span>{(Math.round($carbon / 2000 / $year) || 0).toLocaleString('en-US')}</span>
-          </div>
-          <div class="statistic !w-24">
-            <div class="flex items-center justify-center mt-[-2px]">
-              <label>fitness </label>
-              <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
-            </div>
-            <span class="text-yellow-500">{$currentRun?.fitness?.toLocaleString('en-US') || 0}</span>
-          </div>
-          <!-- <div class="statistic">
-            <label>area (ha)</label>
-            <span>1.0</span>
-          </div> -->
-          <!-- <div class="statistic !w-56 border-l border-[#ad8c6a] border-opacity-30 pl-4">
-            <label>avg carbon across runs (tons)</label>
-            <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
-          </div> -->
+        <!-- </div> -->
+      
+        <!-- Controls -->
+        <div class="flex space-x-4 items-center ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
+          <!-- <label class="flex items-center whitespace-nowrap">
+            Render graphics
+            <input type="checkbox" bind:checked={renderGraphics} />
+          </label> -->
+          <!-- <span class="opacity-30">•</span> -->
+          <label class="flex items-center whitespace-nowrap">
+            Show tree labels
+            <input type="checkbox" bind:checked={showTreeLabels} />
+          </label>
+          <span class="opacity-30">•</span>
+          <label class="whitespace-nowrap">
+            Color mode
+            <select bind:value={colorMode}>
+              <option value="colorized" label="Colorized">
+              <option value="shaded" label="Green shading">
+            </select>
+          </label>
         </div>
+      </div>
+
+      <!-- Statistics -->
+      <div class="flex -ml-6">
+        <div class="statistic !w-32 border-r border-subtle">
+          <label>round</label>
+          <span>{$currentRound}/{maxRounds}</span>
+        </div>
+        <div class="statistic !w-20f">
+          <label>year</label>
+          <span>{$year}</span>
+        </div>
+        <div class="statistic !w-24">
+          <label>trees planted</label>
+          <span>{$currentRun?.initialTrees.length || 0}</span>
+        </div>
+        <div class="statistic !w-20">
+          <label>final trees</label>
+          <span>{($trees.length || 0).toLocaleString('en-US')}</span>
+        </div>
+        <div class="statistic !w-24">
+          <label>final species</label>
+          <span>{$numSpecies}</span>
+        </div>
+        <div class="statistic !w-24">
+          <div class="flex items-center justify-center">
+            <label>biodiversity </label>
+            <!-- <Tooltip position="left">Biodiversity is calculated based on having an even spread of many sp</Tooltip> -->
+          </div>
+          <span class="text-[#af62ff]">{currentRunBiodiversity}%</span>
+        </div>
+        <div class="statistic !w-24">
+          <label>carbon (tons)</label>
+          <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
+        </div>
+        <!-- <div class="statistic !w-36">
+          <label>avg carbon (all runs)</label>
+          <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
+        </div> -->
+        <div class="statistic !w-20">
+          <label>tons / year</label>
+          <span>{(Math.round($carbon / 2000 / $year) || 0).toLocaleString('en-US')}</span>
+        </div>
+        <div class="statistic !w-24">
+          <div class="flex items-center justify-center mt-[-2px]">
+            <label>fitness </label>
+            <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity, and minimizing the number of initial trees that need to be planted.</Tooltip>
+          </div>
+          <span class="text-yellow-500">{$currentRun?.fitness?.toLocaleString('en-US') || 0}</span>
+        </div>
+        <!-- <div class="statistic">
+          <label>area (ha)</label>
+          <span>1.0</span>
+        </div> -->
+        <!-- <div class="statistic !w-56 border-l border-[#ad8c6a] border-opacity-30 pl-4">
+          <label>avg carbon across runs (tons)</label>
+          <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
+        </div> -->
       </div>
 
       <!-- <div class="flex grid-fols-2 gap-6 mt-2"> -->
@@ -305,30 +298,29 @@
           {#if $currentRound === 0}
             <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow">
               <button
-                class="mx-auto text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-8 py-4 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                class="mx-auto text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                 style="background: var(--accentColor);"
                 on:click={() => {
                   // reset();
                   runSimulation();
                 }}
               >
-                <span class="w-10">
-                  {#if $isRunning}
+                <span class="w-8">
+                  <!-- {#if $isRunning}
                     <Loader size="2rem" class="mr-2" />
-                  {:else}
+                  {:else} -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                     </svg>
-                  {/if}
+                  <!-- {/if} -->
                 </span>
 
-                <span>Run</span>
+                <span class="font-light">Run</span>
               </button>
             </div>
           {/if}
           {#if $currentRound === 1 && $runs.filter(run => run.isComplete).length === 0}
-            <div class="flex flex-col w-full h-full absolute inset-0 flex items-center justify-center flex-grow">
-              Running simulation...
+            <div class="flex-col w-full h-full absolute inset-0 flex items-center justify-center flex-grow">
               <Loader size="4rem" />
             </div>
           {/if}
@@ -446,7 +438,7 @@
   <!-- Sidebar -->
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? 'w-52' : 'w-0'} overflow-y-auto overflow-x-visible flex flex-col min-h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? 'w-[19rem]' : 'w-0'} overflow-y-auto overflow-x-visible flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3 text-sm">
@@ -471,6 +463,10 @@
               <th class="min-w-[3rem]" title="Fitness">Fit...</th>
               <th class="min-w-[3rem]" title="Carbon">Car...</th>
               <th class="min-w-[3rem]" title="Biodiversity">Bio...</th>
+              <!-- <th class="min-w-[3rem]" title="Coppice Min Age">CMA</th> -->
+              <th class="min-w-[3rem]" title="Coppice Min Radius">CMR</th>
+              <th class="min-w-[3rem]" title="Coppice Chance">CC</th>
+
             </thead>
             {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
             <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
@@ -478,7 +474,10 @@
                 <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
                 <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
                 <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
-                <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestBiodiversity}>{Math.round(last(run.yearlyData.biodiversity) * 100)}%</td>
+                <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round(last(run.yearlyData.biodiversity) * 100)}%</td>
+                <!-- <td class="text-right">{Math.round(run.scenario.coppiceMinAge || 0)}yr</td> -->
+                <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)}ft</td>
+                <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
 
               </tr>
             {/each}
@@ -519,7 +518,7 @@
       </div>
 
     <!-- {/if} -->
-    <div class="absolute -left-8 w-8 top-[3.25rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
+    <div class="absolute -left-8 w-8 top-[4.2rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
       <div class="rotate-90 mt-[1.3rem] text-xs">Ranking</div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-5 mb-1 w-5 h-5 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
         <path fill-rule="evenodd" d="M4.72 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L11.69 12 4.72 5.03a.75.75 0 010-1.06zm6 0a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L17.69 12l-6.97-6.97a.75.75 0 010-1.06z" clip-rule="evenodd" />
