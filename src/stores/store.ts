@@ -377,7 +377,7 @@ const generateScenario = (): Scenario => {
     speciesProbabilities: normalizeSpeciesProbabilities(speciesProbabilities),
     numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
-    coppiceChance: random(0, 0.2),
+    coppiceChance: random(0, 0.1),
     coppiceMinRadius: random(5, 25)
   }
 }
