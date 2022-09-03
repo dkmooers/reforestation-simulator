@@ -479,7 +479,7 @@
                 <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
                 <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round(last(run.yearlyData.biodiversity) * 100)}%</td>
                 <!-- <td class="text-right">{Math.round(run.scenario.coppiceMinAge || 0)}yr</td> -->
-                <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)}ft</td>
+                <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
                 <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
 
               </tr>
