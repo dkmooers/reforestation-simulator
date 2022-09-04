@@ -41,6 +41,7 @@
   import Tooltip from '../components/Tooltip.svelte';
   import Loader from '../components/Loader.svelte';
   import { run } from 'svelte/internal';
+  import Toggle from '../components/Toggle.svelte';
 
 	let renderGraphics = true;
   let showTreeLabels = true;
@@ -174,21 +175,22 @@
         <!-- </div> -->
       
         <!-- Controls -->
-        <div class="flex space-x-4 items-center ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
+        <div class="flex items-center ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
           <!-- <label class="flex items-center whitespace-nowrap">
             Render graphics
             <input type="checkbox" bind:checked={renderGraphics} />
           </label> -->
           <!-- <span class="opacity-30">•</span> -->
-          <label class="flex items-center whitespace-nowrap">
-            Enable selective harvesting
-            <input type="checkbox" disabled={$isRunning} checked={$enableSelectiveHarvesting} on:change={() => toggleSelectiveHarvesting()} />
-          </label>
+          <label class="whitespace-nowrap mr-1">Enable selective harvesting</label>
+          <Tooltip position="left" iconClass="!ml-0 mr-1">Selective harvesting has the potential to increase carbon sequestration. When disabled, only natural tree death is considered.</Tooltip>
+
+          <Toggle checked={$enableSelectiveHarvesting} disabled={$isRunning} />
+          <!-- <input type="checkbox" disabled={$isRunning} checked={$enableSelectiveHarvesting} on:change={() => toggleSelectiveHarvesting()} /> -->
           <!-- <label class="flex items-center whitespace-nowrap">
             Show tree labels
             <input type="checkbox" bind:checked={showTreeLabels} />
           </label> -->
-          <span class="opacity-30">•</span>
+          <span class="opacity-30 mx-4">•</span>
           <label class="whitespace-nowrap">
             Color mode
             <select bind:value={colorMode}>

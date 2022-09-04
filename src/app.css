@@ -54,11 +54,27 @@ input[type="checkbox"] {
 
 select {
   margin-left: 0.25rem;
-  background: transparent;
+  /* background: transparent; */
   border: 1px solid rgba(230, 201, 166, 0.35);
   border-radius: 0.25rem;
   color: inherit;
-  padding: 0.125rem 0.25rem;
+  padding: 0.125rem 1.5rem 0.125rem 0.5rem;
+  padding-right: 2.5rem;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  background-color: transparent;
+
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='transparent' viewBox='0 0 20 20'%3E%3Cpath stroke='%23ad8c6a' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  outline: 0 !important;
+}
+
+.bg-accent {
+  background-color: var(--accentColor);
 }
 
 .text-subtle {
