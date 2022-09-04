@@ -83,14 +83,14 @@
   >
     <Modal />
     <SuccessMessage />
-    {#if !$allWorkersReady}
+    <!-- {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
           <div class="font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
-    {/if}
+    {/if} -->
 
     <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
@@ -299,27 +299,30 @@
       <div class="mb-2 flex bg-[#efe1db] rounded z-10">
         <div class="flex-grow rounded-lg flex items-center justify-center relative">
           {#if $currentRound === 0}
-            <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow">
-              <button
-                class="mx-auto text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
-                style="background: var(--accentColor);"
-                on:click={() => {
-                  // reset();
-                  runSimulation();
-                }}
-              >
-                <span class="w-8">
-                  <!-- {#if $isRunning}
-                    <Loader size="2rem" class="mr-2" />
-                  {:else} -->
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                    </svg>
-                  <!-- {/if} -->
-                </span>
+            <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow p-6">
+              <div class="flex-grow items-center flex-initial flex flex-col">
+                <div class="text-dark max-w-md text-center mx-auto mb-4">Note: This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
+                <button
+                  class="mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                  style="background: var(--accentColor);"
+                  on:click={() => {
+                    // reset();
+                    runSimulation();
+                  }}
+                >
+                  <span class="w-8">
+                    <!-- {#if $isRunning}
+                      <Loader size="2rem" class="mr-2" />
+                    {:else} -->
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                      </svg>
+                    <!-- {/if} -->
+                  </span>
 
-                <span class="font-light">Run</span>
-              </button>
+                  <span class="font-light">Run</span>
+                </button>
+              </div>
             </div>
           {/if}
           {#if $currentRound === 1 && $runs.filter(run => run.isComplete).length === 0}
@@ -463,15 +466,21 @@
           <table class="border-collapse text-xs">
             <thead>
               <th title="Round Number">#</th>
-              <th class="min-w-[3rem]" title="Fitness">Fit...</th>
-              <th class="min-w-[3rem]" title="Carbon">Car...</th>
-              <th class="min-w-[3rem]" title="Biodiversity">Bio...</th>
-              <!-- <th class="min-w-[3rem]" title="Coppice Min Age">CMA</th> -->
-              <th class="min-w-[3rem]" title="Harvest Min Radius (Canopy)">HMR
-                <Tooltip position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
+              <th class="min-w-[3rem]" title="Fitness">Fit...
+                <Tooltip iconClass="!ml-0 w-full" position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
               </th>
-              <th class="min-w-[3rem]" title="Harvest Chance">HC
-                <Tooltip position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
+              <th class="min-w-[3rem]" title="Carbon">Car...
+                <Tooltip iconClass="!ml-0 w-full" position="left">Carbon sequestered</Tooltip>
+              </th>
+              <th class="min-w-[3rem]" title="Biodiversity">Bio...
+                <Tooltip iconClass="!ml-0 w-full" position="left">Biodiversity</Tooltip>
+              </th>
+              <!-- <th class="min-w-[3rem]" title="Coppice Min Age">CMA</th> -->
+              <th title="Harvest Min Radius (Canopy)">HMR<br />
+                <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
+              </th>
+              <th title="Harvest Chance" class="text-center">HC<br />
+                <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
               </th>
 
             </thead>
@@ -525,7 +534,7 @@
       </div>
 
     <!-- {/if} -->
-    <div class="absolute -left-8 w-8 top-[4.2rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
+    <div class="absolute -left-8 w-8 top-[4.1rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20" on:click={() => isSidebarOpen = !isSidebarOpen}>
       <div class="rotate-90 mt-[1.3rem] text-xs">Ranking</div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-5 mb-1 w-5 h-5 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
         <path fill-rule="evenodd" d="M4.72 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L11.69 12 4.72 5.03a.75.75 0 010-1.06zm6 0a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L17.69 12l-6.97-6.97a.75.75 0 010-1.06z" clip-rule="evenodd" />

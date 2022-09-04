@@ -72,3 +72,7 @@ select {
 .border-subtle {
   border-color: #ad8c6a;
 }
+
+.text-dark {
+  color: var(--backgroundColor);
+}
