@@ -6,29 +6,20 @@
   import Modal from '../components/Modal.svelte';
 	import {
     loadWorkers,
-    allWorkersReady,
-		addNRandomTrees,
-		calculateOverlaps,
 		runSimulation,
 		reset,
-		stepNYears,
     numSpecies,
 		year,
 		carbon,
-    averageCarbonAcrossRuns,
     runIdWithHighestCarbon,
     runIdWithHighestBiodiversity,
     runIdWithHighestFitness,
-		biodiversity,
-		pruneOverflowTrees,
-		declusterTrees,
     runs,
     rounds,
     displayRun,
     currentRunId,
     currentRun,
     trees,
-    initialTrees,
     isRunning,
     clearRunHistory,
     currentRound,
@@ -39,15 +30,17 @@
     maxRounds,
     progressPercent,
     populationSize,
+    enableSelectiveHarvesting,
 	} from '../stores/store';
   import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
   import SuccessMessage from '../components/SuccessMessage.svelte';
   import { prettifyNumber } from '$lib/helpers';
-  import { sortBy, reverse } from 'lodash';
+  import { sortBy, reverse, rest } from 'lodash';
   import { last } from 'lodash';
   import Tooltip from '../components/Tooltip.svelte';
   import Loader from '../components/Loader.svelte';
+  import { run } from 'svelte/internal';
 
 	let renderGraphics = true;
   let showTreeLabels = true;
@@ -57,7 +50,18 @@
   // $: currentRunBiodiversity = Math.round((last($currentRun?.yearlyData.biodiversity) || 0) * 100)
   // $: isRunButtonDisabled = $isRunning || !$allWorkersReady
 
+  // reset state when user changes selective harvesting toggle
+  // $: {
+  //   const shouldHarvest = $enableSelectiveHarvesting
+  //   reset()
+  // }
 
+  $: runsDisplayedInTable = reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', ))
+
+  const toggleSelectiveHarvesting = () => {
+    reset();
+    $enableSelectiveHarvesting = !$enableSelectiveHarvesting
+  }
   // $: console.log($runs.map(r => r))
 
   onMount(() => {
@@ -151,7 +155,6 @@
               <button on:click={() => stepNYears(50)}>+50 years</button> -->
               <button class="{$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" on:click={() => {
                 reset()
-                clearRunHistory()
               }}>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
@@ -178,9 +181,13 @@
           </label> -->
           <!-- <span class="opacity-30">•</span> -->
           <label class="flex items-center whitespace-nowrap">
+            Enable selective harvesting
+            <input type="checkbox" disabled={$isRunning} checked={$enableSelectiveHarvesting} on:change={() => toggleSelectiveHarvesting()} />
+          </label>
+          <!-- <label class="flex items-center whitespace-nowrap">
             Show tree labels
             <input type="checkbox" bind:checked={showTreeLabels} />
-          </label>
+          </label> -->
           <span class="opacity-30">•</span>
           <label class="whitespace-nowrap">
             Color mode
@@ -444,7 +451,7 @@
   <!-- Sidebar -->
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? 'w-[19rem] overflow-visible' : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[18rem]' : 'w-[13rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3 text-sm">
@@ -465,7 +472,7 @@
 
           <table class="border-collapse text-xs">
             <thead>
-              <th title="Round Number">#</th>
+              <th class="min-w-[1.75rem]" title="Round Number">#</th>
               <th class="min-w-[3rem]" title="Fitness">Fit...
                 <Tooltip iconClass="!ml-0 w-full" position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
               </th>
@@ -475,26 +482,26 @@
               <th class="min-w-[3rem]" title="Biodiversity">Bio...
                 <Tooltip iconClass="!ml-0 w-full" position="left">Biodiversity</Tooltip>
               </th>
-              <!-- <th class="min-w-[3rem]" title="Coppice Min Age">CMA</th> -->
-              <th title="Harvest Min Radius (Canopy)">HMR<br />
-                <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
-              </th>
-              <th title="Harvest Chance" class="text-center">HC<br />
-                <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
-              </th>
-
+              {#if $enableSelectiveHarvesting}
+                <th title="Harvest Min Radius (Canopy)">HMR<br />
+                  <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
+                </th>
+                <th title="Harvest Chance" class="min-w-[2.55rem] text-center">HC<br />
+                  <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
+                </th>
+              {/if}
             </thead>
-            {#each reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index}
+            {#each runsDisplayedInTable as run, index}
             <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
               <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
                 <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
                 <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
                 <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
-                <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round(run.averageBiodiversity * 100)}%</td>
-                <!-- <td class="text-right">{Math.round(run.scenario.coppiceMinAge || 0)}yr</td> -->
-                <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
-                <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
-
+                <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
+                {#if $enableSelectiveHarvesting}
+                  <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
+                  <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
+                {/if}
               </tr>
             {/each}
           </table>

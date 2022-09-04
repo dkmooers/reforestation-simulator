@@ -16,6 +16,7 @@ onmessage = (msg) => {
     treeSpecies = value.treeSpecies
     numYearsPerRun = value.numYearsPerRun
     sendLiveTreeUpdates = value.sendLiveTreeUpdates
+    enableSelectiveHarvesting = value.enableSelectiveHarvesting
     runScenario()
   } else if (type === 'ping') {
     postMessage({ type: 'ready' })
@@ -24,7 +25,7 @@ onmessage = (msg) => {
 };
 
 let currentRunId = 0
-
+let enableSelectiveHarvesting = true
 let treeSpecies: TreeSpecies[] = []
 let numYearsPerRun = 0
 let yearlyCarbon = [0]
@@ -46,7 +47,6 @@ let trees: Tree[] = []
 let initialTrees: Tree[] = []
 let deadTrees: Tree[] = []
 let year = 0
-
 
 const getBiodiversity = () => {
   const numTrees = trees.length

@@ -31,6 +31,7 @@ export const bestFitnessByRound = derived(
   rounds,
   rounds => rounds.map(runs => last(sortBy(runs, 'fitness'))?.fitness || 0)
 )
+export const enableSelectiveHarvesting = writable(true)
 
 const pauseQueue: Array<{
   fn: Function,
@@ -349,6 +350,7 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   deadTrees.set([])
 
   year.set(0)
+  clearRunHistory()
 }
 
 export const clearRunHistory = () => {
@@ -397,6 +399,7 @@ const dispatchNextRunToWorker = (worker: Worker, opts?: { sendLiveTreeUpdates?: 
       treeSpecies, // send this because importing it inside the worker was causing circular build errors
       numYearsPerRun, // send this because importing it inside the worker was causing circular build errors
       sendLiveTreeUpdates: opts?.sendLiveTreeUpdates,
+      enableSelectiveHarvesting: get(enableSelectiveHarvesting),
     }})
     runs.update(prevRuns => prevRuns.map(run => {
       if (run.id !== firstUnallocatedRun.id) {
