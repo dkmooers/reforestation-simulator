@@ -81,6 +81,10 @@ select {
   background-color: var(--accentColor);
 }
 
+.text-accent {
+  color: var(--accentColor);
+}
+
 .text-subtle {
   color: #ad8c6a;
 }

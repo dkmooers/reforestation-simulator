@@ -144,6 +144,7 @@ export const loadWorkers = async () => {
 };
 
 export const isRunning = writable(false)
+export const isComplete = writable(false)
 export const runs = writable<Run[]>([])
 
 export const progressPercent = derived(
@@ -296,6 +297,7 @@ const getEmptyRun = (): Run => ({
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
 
+  isComplete.set(false)
   const mostRecentRunId = last(get(runs))?.id || 0
   const newRunId = mostRecentRunId + 1
   rounds.set([])
@@ -321,6 +323,7 @@ export const clearRunHistory = () => {
 }
 
 const msPerFrame = 1
+const startTime = writable(0)
 export const elapsedTime = writable(0)
 
 const normalizeSpeciesProbabilities = (probabilities: number[]) => {
@@ -502,8 +505,12 @@ const selectNewPopulation = () => {
 }
 
 const completeSimulation = () => {
+  const endTime = new Date().getTime()  
+  elapsedTime.set(((endTime - get(startTime)) / 1000))
+  console.log(get(elapsedTime))
   console.log('complete simulation!')
   isRunning.set(false);
+  isComplete.set(true);
   window.postMessage({type: 'runFinished'})
   currentRunId.set(get(runIdWithHighestFitness))
 }
@@ -560,11 +567,9 @@ export const runSimulation = () => {
   } else {
     currentRound.set(0)
     isRunning.set(true)
-    const startTime = new Date().getTime()
+    startTime.set(new Date().getTime())
     elapsedTime.set(0)
     attemptToRunNextRound()
-    const endTime = new Date().getTime()
-    elapsedTime.set(((endTime - startTime) / 1000).toFixed(1))
   }
 }
 

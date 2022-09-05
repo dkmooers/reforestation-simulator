@@ -21,6 +21,7 @@
     currentRun,
     trees,
     isRunning,
+    isComplete,
     allWorkersReady,
     currentRound,
     numYearsPerRun,
@@ -42,6 +43,7 @@
   import Loader from '../components/Loader.svelte';
   import { run } from 'svelte/internal';
   import Toggle from '../components/Toggle.svelte';
+  import SuccessModal from '../components/SuccessModal.svelte';
 
 	let renderGraphics = true;
   let showTreeLabels = true;
@@ -87,15 +89,15 @@
     class="flex flex-grow flex-col items-stretch h-screen overflow-hidden"
   >
     <Modal />
-    <SuccessMessage />
-    {#if !$allWorkersReady}
+    <SuccessModal />
+    <!-- {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
           <div class="font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
-    {/if}
+    {/if} -->
 
     <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
@@ -125,7 +127,7 @@
           <div class="flex-grow">
             <div class="whitespace-nowrap flex">
               <button
-                class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 select-none {$isComplete ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"
                 on:click={() => {
                   // reset();
                   runSimulation();
@@ -314,7 +316,7 @@
           {#if $currentRound === 0}
             <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow p-6">
               <div class="flex-grow items-center flex-initial flex flex-col">
-                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70">Note: This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
+                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 leading-5">Note: This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
                 <button
                   class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {
