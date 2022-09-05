@@ -21,7 +21,7 @@
     currentRun,
     trees,
     isRunning,
-    clearRunHistory,
+    allWorkersReady,
     currentRound,
     numYearsPerRun,
     roundIndexViewedInTable,
@@ -88,14 +88,14 @@
   >
     <Modal />
     <SuccessMessage />
-    <!-- {#if !$allWorkersReady}
+    {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
           <div class="font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
-    {/if} -->
+    {/if}
 
     <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
@@ -182,9 +182,9 @@
           </label> -->
           <!-- <span class="opacity-30">•</span> -->
           <label class="whitespace-nowrap mr-1">Enable selective harvesting</label>
-          <Tooltip position="left" iconClass="!ml-0 mr-1">Selective harvesting has the potential to increase carbon sequestration. When disabled, only natural tree death is considered.</Tooltip>
+          <Tooltip position="left" iconClass="!ml-0 mr-1">Randomly selects a percentage of eligible trees for harvesting, preferring clumped/crowded trees. Selective harvesting has the potential to increase carbon sequestration if managed properly, but can also eliminate some special types of habitat, and reduce overall ecosystem biodiversity.</Tooltip>
 
-          <Toggle checked={$enableSelectiveHarvesting} disabled={$isRunning} />
+          <Toggle bind:checked={$enableSelectiveHarvesting} disabled={$isRunning} />
           <!-- <input type="checkbox" disabled={$isRunning} checked={$enableSelectiveHarvesting} on:change={() => toggleSelectiveHarvesting()} /> -->
           <!-- <label class="flex items-center whitespace-nowrap">
             Show tree labels
@@ -215,8 +215,11 @@
           <label>trees planted</label>
           <span>{$currentRun?.initialTrees.length || 0}</span>
         </div>
-        <div class="statistic !w-20">
-          <label>final trees</label>
+        <div class="statistic !w-24">
+          <div class="flex items-center justify-center mt-[-2px]">
+            <label>final trees</label>
+            <Tooltip>This can be much larger than trees planted due to seed-based propagation.</Tooltip>
+          </div>
           <span>{($trees.length || 0).toLocaleString('en-US')}</span>
         </div>
         <div class="statistic !w-24">
@@ -243,7 +246,7 @@
         </div> -->
         <div class="statistic !w-20">
           <label>tons / year</label>
-          <span>{(Math.round($carbon / 2000 / $year) || 0).toLocaleString('en-US')}</span>
+          <span>{(Math.round($carbon / 2000 / $year) || 0).toFixed(1).toLocaleString('en-US')}</span>
         </div>
         <div class="statistic !w-24">
           <div class="flex items-center justify-center mt-[-2px]">
@@ -339,7 +342,7 @@
               <Loader size="4rem" />
             </div>
           {/if}
-          <svg viewBox="0 0 612 176" class="w-full">
+          <svg viewBox="0 0 392 112" class="w-full">
             <defs>
               <radialGradient id="treeGradient">
                 <stop offset="0%" stop-color="rgba(20,100,20,1)" />
@@ -384,14 +387,19 @@
                     />
                     {#if showTreeLabels}
                       <text
-                        x={tree.x - 5}
-                        y={tree.y - 2}
+                        x={tree.x - tree.speciesId.length}
+                        y={tree.y}
                         style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.speciesId}</text
                       >
-                      <text
+                      <!-- <text
                         x={tree.x - 5}
                         y={tree.y + 2}
                         style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
+                      > -->
+                      <!-- <text
+                        x={tree.x - 5}
+                        y={tree.y + 6}
+                        style="z-index: 10; font-family: monospace; font-size: 4px;">{Math.round(tree.radius * 2)} ft</text -->
                       >
                       <!-- <text
                         x={tree.x - 4}

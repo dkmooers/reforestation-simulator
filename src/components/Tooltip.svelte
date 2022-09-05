@@ -1,6 +1,6 @@
 <script lang="ts">
   export let position: 'right' | 'left' = 'right';
-  export let iconClass: string;
+  export let iconClass = '';
 </script>
 
 

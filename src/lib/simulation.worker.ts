@@ -34,13 +34,18 @@ let yearlyBiodiversity = [0]
 let averageBiodiversity = 0
 let sendLiveTreeUpdates = false
 
-const width = 612; // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
-const height = 176;
+// 112x392 = 1 acre
+// const width = 612 // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
+// const height = 176
+const width = 392
+const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-const growthMultiplier = 1.8; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
+const growthMultiplier = 1; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
-const maxSeedlings = 2;
+const maxSeedlings = 1;
+
+let deadTreeCarbon = 0
 
 let scenario: Scenario
 let trees: Tree[] = []
@@ -99,17 +104,17 @@ const getBiodiversity = () => {
 // )
 
 const getCarbonFromTree = (tree: Tree) => {
-  return Math.pow(tree.radius, 2) * 2
+  return Math.pow(tree.radius, 3) * 0.3
 }
 
 const calculateCarbon = () => {
-  let carbonSum = 0
+  let carbonSum = deadTreeCarbon
   trees.forEach(tree => {
     carbonSum += getCarbonFromTree(tree)
   })
-  deadTrees.forEach(tree => {
-    carbonSum += getCarbonFromTree(tree)
-  })
+  // deadTrees.forEach(tree => {
+  //   carbonSum += getCarbonFromTree(tree)
+  // })
   return carbonSum 
 }
 
@@ -163,6 +168,7 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   deadTrees = []
   initialTrees = []
   year = 0
+  deadTreeCarbon = 0
 }
 
 // const msPerFrame = 33.33
@@ -205,27 +211,38 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       year++
 
       // Grow trees
-      trees = trees.map((tree, index) => {
-        const species = treeSpecies.find(species => species.id === tree.speciesId)
-        if (species) {
-          // const radius = tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier
+      // trees = trees.map((tree, index) => {
+      //   const species = treeSpecies.find(species => species.id === tree.speciesId)
+      //   if (species) {
+      //     // logistic growth curve
+      //     // const radius = tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier
 
-          // const radius = tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius
+      //     // const radius = tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius
 
-          // if (index === 0) {
-          //   console.log(year, radius)
-          // }
-          return {
-            ...tree,
-            // radius: tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier,
-            radius: tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius,
-            age: tree.age + 1,
-            stemAge: tree.stemAge + 1,
-          }
-        } else {
-          return tree
-        }
-      })
+      //     // if (index === 0) {
+      //     //   console.log(year, radius)
+      //     // }
+      //     return {
+      //       ...tree,
+      //       // radius: Math.min(radius, species.maxRadius), // optimize this to not calculate the radius change if we're already at max radius
+      //       // radius: tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier,
+      //       radius: tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius,
+      //       age: tree.age + 1,
+      //       stemAge: tree.stemAge + 1,
+      //     }
+      //   } else {
+      //     return tree
+      //   }
+      // })
+
+
+
+      // calculate shade + health
+      // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
+      // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
+      selectivelyHarvestTrees()
+      calculateTreeHealth()
+      propagateSeeds()
 
       const newCarbon = calculateCarbon()
 
@@ -237,8 +254,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
       if (sendLiveUpdates) {
         const updatedRun: Run = {
-          // trees: sendLiveTreeUpdates ? trees : [],
-          trees: [],
+          trees: sendLiveTreeUpdates ? trees : [],
+          // trees: [],
           deadTrees: [],
           initialTrees: [],
           id: currentRunId,
@@ -256,23 +273,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
         postMessage({type: 'updatedRun', value: updatedRun})
       }
       
-      // calculate shade + health
-      // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
-      // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
-      selectivelyHarvestTrees()
-      calculateTreeHealth()
-      propagateSeeds()
 
-      // stepNYears(numYears, currentRunYear - 1)
-
-    // }, msPerFrame);
-    
-  // } else {
     }
-
-    // store the run data after the run is over
-
-    // console.log('run complete! attempting to return data...')
 
     const runData: Run = {
       id: currentRunId,
@@ -315,20 +317,61 @@ const selectivelyHarvestTrees = () => {
 
   // coppice trees older than X years, and bigger than Y radius (feet)
   // retain their age, but set radius to 0
+
+
+  // find eligible trees
+  const eligibleTrees = trees.filter(tree => tree.radius >= scenario.coppiceMinRadius)
+  // // sort by which ones are most crowded by other trees
+  // const eligibleTreesSortedByCrowdedness = sortBy(eligibleTrees, (tree) => {
+  //   // find distance to closest tree
+  //   const nearTree = getNearestNTreesForTree(tree, 1)?.[0]
+  //   return nearTree?.distance || Infinity // return Infinity if there are no close trees to this one
+  //   // console.log(nearTrees)
+  // })
+  // console.log(eligibleTreesSortedByCrowdedness)
+
+  let numTreesToHarvest = Math.floor(eligibleTrees.length * scenario.coppiceChance)
+  // console.log(numTreesToHarvest)
+  // const treeIdsToHarvest = take(eligibleTreesSortedByCrowdedness, numTreesToHarvest).map(tree => tree.id)
+  // console.log('attempt to harvest:', numTreesToHarvest)
   trees = trees.map(tree => {
-    const isHarvestable = tree.radius > scenario.coppiceMinRadius
-    const shouldHarvestThisTree = Math.random() < scenario.coppiceChance
-    if (isHarvestable && shouldHarvestThisTree) {
-      deadTrees.push({...tree}) // count the harvested part as sequestered carbon
-      return {
-        ...tree,
-        radius: 0,
-        stemAge: 0,
+    if (numTreesToHarvest > 0) {
+      const isHarvestable = tree.radius >= scenario.coppiceMinRadius
+      if (isHarvestable) {
+        const nearestTree = getNearestNTreesForTree(tree, 1)?.[0]
+        if (nearestTree) {
+          const isCrowded = nearestTree?.distance < tree.radius / 4
+          if (isCrowded) {
+            numTreesToHarvest--
+            deadTreeCarbon += getCarbonFromTree(tree)
+            // deadTrees.push({...tree}) // count the harvested part as sequestered carbon
+            return {
+              ...tree,
+              radius: 0,
+              stemAge: 0,
+            }
+          } 
+        }
       }
-    } else {
-      return tree
     }
+    return tree
   })
+  // console.log('remaining didnt harvest:', numTreesToHarvest)
+
+  // trees = trees.map(tree => {
+  //   const isHarvestable = tree.radius > scenario.coppiceMinRadius
+  //   const shouldHarvestThisTree = Math.random() < scenario.coppiceChance
+  //   if (isHarvestable && shouldHarvestThisTree) {
+  //     deadTrees.push({...tree}) // count the harvested part as sequestered carbon
+  //     return {
+  //       ...tree,
+  //       radius: 0,
+  //       stemAge: 0,
+  //     }
+  //   } else {
+  //     return tree
+  //   }
+  // })
 
   // const prevTrees = trees
   // const harvestedTrees = prevTrees.filter()
@@ -370,22 +413,32 @@ const calculateTreeHealth = () => {
       totalOverlapArea += 0.433 * (triangleSideLength * triangleSideLength) * 2
     })
     const baseTreeArea = Math.PI * baseTree.radius * baseTree.radius
-    const shadeFraction = Math.min(1, totalOverlapArea / baseTreeArea)
-
+    const shadeFraction = Math.min(1, totalOverlapArea / baseTreeArea) || 0
     const species = treeSpecies.find(species => species.id === baseTree.speciesId)
     let health = baseTree.health
     if (shadeFraction > species?.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
-      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.8) * 0.8
+      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 1) * 2
     } else {
-      // health += Math.abs(shadeFraction - species?.shadeTolerance)
-      health += 0.3
+      health += Math.abs(shadeFraction - species?.shadeTolerance)
+      // health += 0.3
       health = Math.min(1, health)
     }
+
+    // calculate tree growth based on shade fraction
+    // console.log(baseTree)
+    // console.log(1-shadeFraction)
+    const radius = baseTree.radius < species?.maxRadius * baseTree.sizeMultiplier ? baseTree.radius + species?.growthRate * growthMultiplier * baseTree.sizeMultiplier * (1 - shadeFraction) : baseTree.radius
+    // console.log(radius)
 
     return {
       ...baseTree,
       health,
+      // radius: Math.min(radius, species.maxRadius), // optimize this to not calculate the radius change if we're already at max radius
+      // radius: tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier,
+      radius,
+      age: baseTree.age + 1,
+      stemAge: baseTree.stemAge + 1,
       isDead: health < 0 || baseTree.stemAge > species.lifespan
     }
   });
@@ -394,7 +447,12 @@ const calculateTreeHealth = () => {
   const livingTrees = newTrees.filter(tree => !tree.isDead)
 
   trees = livingTrees
-  deadTrees = [...deadTrees, ...newlyDeadTrees]
+  // sum carbon from dead trees and bank it - no reason to store all the dead trees in an array, we don't need them anymore
+  const newDeadCarbon = sum(newlyDeadTrees.map(tree => getCarbonFromTree(tree)))
+  // console.log(newDeadCarbon)
+  deadTreeCarbon += newDeadCarbon
+  // console.log('deadTreeCarbon:', deadTreeCarbon)
+  // deadTrees = [...deadTrees, ...newlyDeadTrees]
 }
 
 export const propagateSeeds = () => {
@@ -436,7 +494,7 @@ const getOverlappingTreesForTree = (baseTree: Tree) => {
   return overlappingTrees
 }
 
-const getNearestTreesForTree = (baseTree: Tree): Array<Tree & { distance: number }> => {
+const getNearestNTreesForTree = (baseTree: Tree, numTrees: number): Array<Tree & { distance: number }> => {
   const treesByDistance = trees.map(tree => {
     if (tree === baseTree) { // skip this tree
       return false
@@ -447,7 +505,7 @@ const getNearestTreesForTree = (baseTree: Tree): Array<Tree & { distance: number
       distance,
     }
   })
-  return take(sortBy(treesByDistance, 'distance'), 2).filter(tree => tree.distance < 50)
+  return take(sortBy(treesByDistance, 'distance'), numTrees).filter(tree => tree.distance < 50)
 }
 
 const getMatureOverlapBetweenTwoTrees = (tree1: Tree, tree2: Tree) => {
@@ -466,10 +524,34 @@ const areAnyOverlappingTrees = () => {
 }
 
 export const declusterTrees = () => {
-  times(2, () => {
+  times(5, () => {
+
+    // trees = trees.map(baseTree => {
+    //   const nearestTrees = getNearestNTreesForTree(baseTree, 3)
+    //   // get the sum of vectors toward the nearest trees, and move this tree in the opposite direction
+    //   const vector = [0, 0]
+    //   nearestTrees.forEach(tree => {
+    //     const overlapAtMaturity = getMatureOverlapBetweenTwoTrees(tree, baseTree)
+    //     const magnitudeOfDistanceVector = Math.sqrt(Math.pow(tree.x - baseTree.x, 2) * Math.pow(tree.y - baseTree.y, 2))
+    //     const scalingFactor = magnitudeOfDistanceVector / overlapAtMaturity
+        
+    //     vector[0] += (tree.x - baseTree.x) / scalingFactor
+    //     vector[1] += (tree.y - baseTree.y) / scalingFactor
+    //   })
+    //   const oppositeDirectionVector = [-vector[0], -vector[1]]
+    //   return {
+    //     ...baseTree,
+    //     x: baseTree.x + oppositeDirectionVector[0],
+    //     y: baseTree.y + oppositeDirectionVector[1],
+    //   }
+    // })
+
     const currentTrees = trees
     currentTrees.forEach(baseTree => {
-      const nearestTrees = getNearestTreesForTree(baseTree)
+      const nearestTrees = getNearestNTreesForTree(baseTree, 3)
+      
+      // sum the vector here, then move the tree by that vector
+      
       // for each neartree... move this one in the opposite direction
       nearestTrees.forEach(nearTree => {
         trees = trees.map(prevTree => {
@@ -489,7 +571,7 @@ export const declusterTrees = () => {
             // move away from nearTree
             // the repulsion strength should be based on the overlap amount at the final mature tree size - we don't need to repulse tiny trees that will not be overlapping at mature size, for instance.
             // const repulsion = 1
-            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * 0.1//get(scenario)?.declusteringStrength
+            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * 0.05//get(scenario)?.declusteringStrength
             if (repulsion > 0) {
               // const repulsion = getTreeSpeciesById(near)
               prevTree.x -= normalizedVector.x * repulsion
