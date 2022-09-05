@@ -425,6 +425,10 @@ const generateMutantFromParent = (parent: Scenario): Scenario => {
   // randomly mutate all numerical properties (not speciesProbabilities which is an array)
   without(Object.keys(mutant), 'speciesProbabilities').forEach(prop => {
     mutant[prop] *= getRandomMutationMultiplier()
+    // cap coppice chance at 1 (100%)
+    if (prop === 'coppiceChance') {
+      mutant[prop] = Math.min(1, mutant[prop])
+    }
   })
   mutant.speciesProbabilities = normalizeSpeciesProbabilities(mutant.speciesProbabilities.map(probability => (
     probability * getRandomMutationMultiplier()

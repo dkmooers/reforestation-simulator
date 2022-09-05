@@ -41,7 +41,7 @@ let sendLiveTreeUpdates = false
 const width = 392
 const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-const growthMultiplier = 1; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
+const growthMultiplier = 0.5; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 1;
@@ -241,7 +241,9 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
       // calculate shade + health
       // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
       // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
-      selectivelyHarvestTrees()
+      if (enableSelectiveHarvesting) {
+        selectivelyHarvestTrees()
+      }
       calculateTreeHealth()
       propagateSeeds()
 
@@ -316,10 +318,8 @@ export const pruneOverflowTrees = () => {
 }
 
 const selectivelyHarvestTrees = () => {
-
   // coppice trees older than X years, and bigger than Y radius (feet)
   // retain their age, but set radius to 0
-
 
   // find eligible trees
   const eligibleTrees = trees.filter(tree => tree.radius >= scenario.coppiceMinRadius)
