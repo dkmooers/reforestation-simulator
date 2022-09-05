@@ -556,6 +556,11 @@ export const runSimulation = () => {
   if (get(currentRound) > 0) {
     isRunning.update(prevRunning => !prevRunning)
 
+    const wasJustPaused = !get(isRunning)
+    if (wasJustPaused) {
+      window.postMessage({type: 'paused'})
+    }
+
     // if we're restarting, run queued items from last time the run was paused
     if (get(isRunning)) {
       if (get(runs).filter(run => !run.isComplete).length === 0) {

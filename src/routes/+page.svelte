@@ -35,7 +35,7 @@
 	} from '../stores/store';
   // import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
-  import SuccessMessage from '../components/SuccessMessage.svelte';
+  import PauseMessage from '../components/PauseMessage.svelte';
   import { prettifyNumber } from '$lib/helpers';
   import { sortBy, reverse, rest } from 'lodash';
   import { last } from 'lodash';
@@ -90,6 +90,7 @@
   >
     <Modal />
     <SuccessModal />
+    <PauseMessage />
     {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
@@ -315,9 +316,10 @@
           {#if $currentRound === 0}
             <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow p-6">
               <div class="flex-grow items-center flex-initial flex flex-col">
-                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">Note: This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
+                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
+                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">Depending on your computer's speed, the simulation can take up to 10 minutes to complete. Feel free to pause it at any time.</div>
                 <button
-                  class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
+                  class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-xl px-6 py-2 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {
                     runSimulation();
                   }}
@@ -378,7 +380,7 @@
                       stroke="rgba(0,50,0,0.2)"
                       style="z-index: 1"
                       fill="transparent"
-                      stroke-width="0.5"
+                      stroke-width="0.25"
                     />
                     {#if showTreeLabels}
                       <text
@@ -477,21 +479,23 @@
 
           <table class="border-collapse text-xs">
             <thead>
-              <th class="min-w-[1.75rem]" title="Round Number">#</th>
-              <th class="min-w-[3rem]" title="Fitness">Fit...
+              <th class="min-w-[1.75rem]" title="Round Number">#
+                <Tooltip iconClass="!ml-0 w-full" position="left">Round Number</Tooltip>
+              </th>
+              <th class="min-w-[3rem]">Fit...
                 <Tooltip iconClass="!ml-0 w-full" position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
               </th>
-              <th class="min-w-[3rem]" title="Carbon">Car...
+              <th class="min-w-[3rem]">Car...
                 <Tooltip iconClass="!ml-0 w-full" position="left">Carbon sequestered</Tooltip>
               </th>
-              <th class="min-w-[3rem]" title="Biodiversity">Bio...
+              <th class="min-w-[3rem]">Bio...
                 <Tooltip iconClass="!ml-0 w-full" position="left">Biodiversity</Tooltip>
               </th>
               {#if $enableSelectiveHarvesting}
-                <th title="Harvest Min Radius (Canopy)">HMR<br />
+                <th>HMR<br />
                   <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
                 </th>
-                <th title="Harvest Chance" class="min-w-[2.55rem] text-center">HC<br />
+                <th class="min-w-[2.55rem] text-center">HC<br />
                   <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
                 </th>
               {/if}
