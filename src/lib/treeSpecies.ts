@@ -6,7 +6,7 @@ export const treeSpecies: TreeSpecies[] = [
     color: '#ff0000',
     growthRate: 0.7,
     maxRadius: 60,
-    shadeTolerance: 0.43,
+    shadeTolerance: 0.45,
     lifespan: 200,
     // isCoppiceable: false,
   },

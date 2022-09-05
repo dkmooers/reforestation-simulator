@@ -344,7 +344,7 @@ const generateScenario = (): Scenario => {
     numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
     coppiceChance: random(0, 0.2),
-    coppiceMinRadius: random(10, 20)
+    coppiceMinRadius: random(8, 20)
   }
 }
 
