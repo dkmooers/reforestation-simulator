@@ -32,7 +32,7 @@
     populationSize,
     enableSelectiveHarvesting,
 	} from '../stores/store';
-  import TreeIcon from '../components/TreeIcon.svelte';
+  // import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
   import SuccessMessage from '../components/SuccessMessage.svelte';
   import { prettifyNumber } from '$lib/helpers';
@@ -110,7 +110,9 @@
       <div class="flex items-center space-x-6 -mt-2">
         <!-- <div class="flex"> -->
           <h1 class="whitespace-nowrap mt-3 flex items-center">
-            <div class="-mt-3"><TreeIcon /></div>
+            <div class="-mt-3 mr-2 w-8">
+              <img alt="Tree icon" src="/treeicon.png" />
+            </div>
             <span class="-mt-2">Reforestation Simulator</span>
             <Tooltip>
               A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
