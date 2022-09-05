@@ -90,14 +90,14 @@
   >
     <Modal />
     <SuccessModal />
-    <!-- {#if !$allWorkersReady}
+    {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
           <div class="font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
-    {/if} -->
+    {/if}
 
     <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
@@ -120,7 +120,6 @@
               A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
               <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
             </Tooltip>
-            <!-- <span class="rounded-full bg-[#ad8c6a] text-base h-6 w-6">?</span> -->
           </h1>
 
           <!-- Buttons -->
@@ -320,18 +319,13 @@
                 <button
                   class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {
-                    // reset();
                     runSimulation();
                   }}
                 >
                   <span class="w-8">
-                    <!-- {#if $isRunning}
-                      <Loader size="2rem" class="mr-2" />
-                    {:else} -->
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                       </svg>
-                    <!-- {/if} -->
                   </span>
 
                   <span class="font-light">Run</span>

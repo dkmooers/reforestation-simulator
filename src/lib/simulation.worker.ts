@@ -1,11 +1,5 @@
 import { countBy, last, random, sortBy, sum, take, times } from "lodash";
 import type { Run, Scenario, Tree, TreeSpecies } from "../types";
-// import { numYearsPerRun } from "../stores/store";
-// import { treeSpecies } from "./treeSpecies" 
-// import type { Run, Scenario, Tree, TreeSpecies } from "../types";
-// import { derived, get, writable } from "svelte/store";
-
-// const numYearsPerRun = 100
 
 onmessage = (msg) => {
   const { type, value } = msg.data
@@ -44,7 +38,6 @@ const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
 let growthMultiplier = 1; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
-// const minLivingHealth = 0.1;
 const maxSeedlings = 1;
 
 let deadTreeCarbon = 0
@@ -57,9 +50,6 @@ let year = 0
 
 const getBiodiversity = () => {
   const numTrees = trees.length
-  // const arrayOfSpeciesCounts = Object.values(numTreesBySpecies).filter(count => count !== 0) // remove zero-counts to avoid driving biodiversity to 0 if one species is not included
-  // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
-
   // new flow:
   // get num of trees by species
   const numTreesBySpecies = treeSpecies.map(species => {
@@ -81,30 +71,6 @@ const getBiodiversity = () => {
   return biodiversity
 }
 
-// export const biodiversity = derived(
-//   trees,
-//   trees => {
-
-//     // const numTreesBySpecies = countBy(trees, 'speciesId')
-    
-//     // const maxSpeciesCount = max(arrayOfSpeciesCounts)
-//     // const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / maxSpeciesCount)
-//     // const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
-//     // // take square root to spread out the curve
-//     // const scaledBiodiversity = Math.pow(rawBiodiversity, 0.5)//.toFixed(3)
-//     // if (get(year) === numYearsPerRun) {
-//     //   console.log(scaledBiodiversity * 100, arrayOfSpeciesCounts, scaledArrayOfSpeciesCounts)
-//     // }
-//     // return scaledBiodiversity
-//   }
-// )
-// export const fitness = derived(
-//   [biodiversity, carbon],
-//   ([biodiversity, carbon]) => {
-//     return Math.round(Number(biodiversity) * carbon / 2000 / (get(scenario)?.numTrees / 100))
-//   }
-// )
-
 const getCarbonFromTree = (tree: Tree) => {
   return Math.pow(tree.radius, 3) * 0.3
 }
@@ -114,9 +80,6 @@ const calculateCarbon = () => {
   trees.forEach(tree => {
     carbonSum += getCarbonFromTree(tree)
   })
-  // deadTrees.forEach(tree => {
-  //   carbonSum += getCarbonFromTree(tree)
-  // })
   return carbonSum 
 }
 
@@ -145,12 +108,7 @@ const getRandomTreeSpecies = () => {
     }
   })
 
-  // for (let index = 0; index < Object.keys(treeSpeciesRandomValueThresholds).length; index++) {
-  //   // check to see if the random value is in this species bin
-  //   const speciesId
-  //   const thisSpeciesThreshold = treeSpeciesRandomValueThresholds
-    
-  // }
+
   return treeSpecies[speciesIndexChosen ?? 0]
 
   // simple random species, same chance for each
@@ -180,7 +138,6 @@ export const elapsedTime = 0
 const calculateFitness = (): number => {
   averageBiodiversity = sum(yearlyBiodiversity) / yearlyBiodiversity.length
   const biodiversityTimesCarbonTons = averageBiodiversity * last(yearlyCarbon) / 2000
-  // console.log(get(biodiversity), get(carbon)/2000, biodiversityTimesCarbonTons)
   // const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
   // const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
   // const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
@@ -203,112 +160,66 @@ const getAverageBiodiversity = () => {
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
   for (let index = 0; index < numYears; index++) {
-    // console.log('step at year:', get(year))
 
-    // const element = array[index];
+    year++
     
-
-  // if (get(year) < numYears) {
-    // delay(() => {
-      year++
-
-      // Grow trees
-      // trees = trees.map((tree, index) => {
-      //   const species = treeSpecies.find(species => species.id === tree.speciesId)
-      //   if (species) {
-      //     // logistic growth curve
-      //     // const radius = tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier
-
-      //     // const radius = tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius
-
-      //     // if (index === 0) {
-      //     //   console.log(year, radius)
-      //     // }
-      //     return {
-      //       ...tree,
-      //       // radius: Math.min(radius, species.maxRadius), // optimize this to not calculate the radius change if we're already at max radius
-      //       // radius: tree.radius + 1 / (1 + Math.exp(-0.1 * tree.age)) * species?.growthRate * growthMultiplier * tree.sizeMultiplier,
-      //       radius: tree.radius < species?.maxRadius * tree.sizeMultiplier ? tree.radius + species?.growthRate * growthMultiplier * tree.sizeMultiplier : tree.radius,
-      //       age: tree.age + 1,
-      //       stemAge: tree.stemAge + 1,
-      //     }
-      //   } else {
-      //     return tree
-      //   }
-      // })
-
-
-
-      // calculate shade + health
-      // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
-      // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
-      if (enableSelectiveHarvesting) {
-        selectivelyHarvestTrees()
-      }
-      calculateTreeHealth()
-      propagateSeeds()
-
-      const newCarbon = calculateCarbon()
-
-      yearlyCarbon.push(newCarbon)
-      yearlyTrees.push(trees.length)
-      yearlyBiodiversity.push(getBiodiversity())
-
-      const sendLiveUpdates = true
-
-      if (sendLiveUpdates) {
-        const updatedRun: Run = {
-          trees,
-          // trees: sendLiveTreeUpdates ? trees : [],
-          // trees: [],
-          deadTrees: [],
-          initialTrees: [],
-          id: currentRunId,
-          yearlyData: {
-            carbon: yearlyCarbon,
-            trees: yearlyTrees,
-            biodiversity: yearlyBiodiversity,
-          },
-          scenario: scenario,
-          fitness: 0,
-          isAllocated: true,
-          averageBiodiversity: getAverageBiodiversity(),
-        }
-
-        postMessage({type: 'updatedRun', value: updatedRun})
-      }
-      
-
+    if (enableSelectiveHarvesting) {
+      selectivelyHarvestTrees()
     }
+    calculateTreeHealth()
+    propagateSeeds()
 
-    const runData: Run = {
-      id: currentRunId,
-      yearlyData: {
-        carbon: yearlyCarbon,
-        trees: yearlyTrees,
-        biodiversity: yearlyBiodiversity,
-      },
-      trees: trees,
-      deadTrees: [],
-      initialTrees: initialTrees,
-      scenario: scenario,
-      fitness: calculateFitness(),
-      averageBiodiversity: averageBiodiversity,
-      isComplete: true,
-      isAllocated: true,
+    const newCarbon = calculateCarbon()
+
+    yearlyCarbon.push(newCarbon)
+    yearlyTrees.push(trees.length)
+    yearlyBiodiversity.push(getBiodiversity())
+
+    const sendLiveUpdates = true
+
+    if (sendLiveUpdates) {
+      const updatedRun: Run = {
+        // trees,
+        trees: sendLiveTreeUpdates ? trees : [],
+        // trees: [],
+        deadTrees: [],
+        initialTrees: [],
+        id: currentRunId,
+        yearlyData: {
+          carbon: yearlyCarbon,
+          trees: yearlyTrees,
+          biodiversity: yearlyBiodiversity,
+        },
+        scenario: scenario,
+        fitness: 0,
+        isAllocated: true,
+        averageBiodiversity: getAverageBiodiversity(),
+      }
+
+      postMessage({type: 'updatedRun', value: updatedRun})
     }
-
-    // console.log(get(initialTrees))
-
-    postMessage({type: 'runData', value: runData})
-
-    // return 'Complete'
   }
 
+  const runData: Run = {
+    id: currentRunId,
+    yearlyData: {
+      carbon: yearlyCarbon,
+      trees: yearlyTrees,
+      biodiversity: yearlyBiodiversity,
+    },
+    trees: trees,
+    deadTrees: [],
+    initialTrees: initialTrees,
+    scenario: scenario,
+    fitness: calculateFitness(),
+    averageBiodiversity: averageBiodiversity,
+    isComplete: true,
+    isAllocated: true,
+  }
 
-  // times(numYears, (index) => {
-  //   // oops, this doesn't dynamicall adjust framerate, it schedules them all at once assuming a constant framerate!
-// }
+  postMessage({type: 'runData', value: runData})
+}
+
 
 export const pruneOverflowTrees = () => {
   // console.log('before pruning:', trees.length)
@@ -324,19 +235,8 @@ const selectivelyHarvestTrees = () => {
 
   // find eligible trees
   const eligibleTrees = trees.filter(tree => tree.radius >= scenario.coppiceMinRadius)
-  // // sort by which ones are most crowded by other trees
-  // const eligibleTreesSortedByCrowdedness = sortBy(eligibleTrees, (tree) => {
-  //   // find distance to closest tree
-  //   const nearTree = getNearestNTreesForTree(tree, 1)?.[0]
-  //   return nearTree?.distance || Infinity // return Infinity if there are no close trees to this one
-  //   // console.log(nearTrees)
-  // })
-  // console.log(eligibleTreesSortedByCrowdedness)
 
   let numTreesToHarvest = Math.floor(eligibleTrees.length * scenario.coppiceChance)
-  // console.log(numTreesToHarvest)
-  // const treeIdsToHarvest = take(eligibleTreesSortedByCrowdedness, numTreesToHarvest).map(tree => tree.id)
-  // console.log('attempt to harvest:', numTreesToHarvest)
   trees = trees.map(tree => {
     if (numTreesToHarvest > 0) {
       const isHarvestable = tree.radius >= scenario.coppiceMinRadius
@@ -347,7 +247,6 @@ const selectivelyHarvestTrees = () => {
           if (isCrowded) {
             numTreesToHarvest--
             deadTreeCarbon += getCarbonFromTree(tree)
-            // deadTrees.push({...tree}) // count the harvested part as sequestered carbon
             return {
               ...tree,
               radius: 0,
@@ -359,50 +258,18 @@ const selectivelyHarvestTrees = () => {
     }
     return tree
   })
-  // console.log('remaining didnt harvest:', numTreesToHarvest)
-
-  // trees = trees.map(tree => {
-  //   const isHarvestable = tree.radius > scenario.coppiceMinRadius
-  //   const shouldHarvestThisTree = Math.random() < scenario.coppiceChance
-  //   if (isHarvestable && shouldHarvestThisTree) {
-  //     deadTrees.push({...tree}) // count the harvested part as sequestered carbon
-  //     return {
-  //       ...tree,
-  //       radius: 0,
-  //       stemAge: 0,
-  //     }
-  //   } else {
-  //     return tree
-  //   }
-  // })
-
-  // const prevTrees = trees
-  // const harvestedTrees = prevTrees.filter()
-  // trees.update(trees => trees.map(tree => {
-  //   // if above a certain age, harvest at random chance; add to dead trees
-  //   if (tree)
-  // }).filter(tree => ))
 }
 
 const calculateTreeHealth = () => {
-  // calculate shade map
+  // calculate shade + health
+  // maybe on each step, write each tree's shade values to a bitmap, a width x height array, and use that to then calculate the amount of shade for each tree.
+  // can use a radius-dependent function so there's more shade at the center of a tree, and less at its edges.
   // const shadeGrid: number[][] = []
   // NO, this won't work, b/c for any given tree, we don't want to include its own shade in the shade map... maybe we just subtract its own shade then?
   // OR, we just calculate a local shade map for every tree, by finding overlapping trees... calculating rough size of overlap...
   // then summing the overlaps...
-  // let's do the overall shade map approach, and subtract each tree's own shade map from it when evaluating that tree's shade
-
-
-  // OR WAIT... can we just naively get all overlapping trees, calculate the radius diff, and approximate the overlap?
-
-
-  // trees.forEach(tree => {
-  //   // 
-  // })
-
 
   const newTrees = trees.map(baseTree => {
-    // 
     const overlappingTrees = getOverlappingTreesForTree(baseTree);
     // calculate overlaps
     let totalOverlapArea = 0;
@@ -429,10 +296,7 @@ const calculateTreeHealth = () => {
     }
 
     // calculate tree growth based on shade fraction
-    // console.log(baseTree)
-    // console.log(1-shadeFraction)
     const radius = baseTree.radius < species?.maxRadius * baseTree.sizeMultiplier ? baseTree.radius + species?.growthRate * growthMultiplier * baseTree.sizeMultiplier * (1 - shadeFraction) : baseTree.radius
-    // console.log(radius)
 
     return {
       ...baseTree,
@@ -452,10 +316,7 @@ const calculateTreeHealth = () => {
   trees = livingTrees
   // sum carbon from dead trees and bank it - no reason to store all the dead trees in an array, we don't need them anymore
   const newDeadCarbon = sum(newlyDeadTrees.map(tree => getCarbonFromTree(tree)))
-  // console.log(newDeadCarbon)
   deadTreeCarbon += newDeadCarbon
-  // console.log('deadTreeCarbon:', deadTreeCarbon)
-  // deadTrees = [...deadTrees, ...newlyDeadTrees]
 }
 
 export const propagateSeeds = () => {
