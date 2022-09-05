@@ -246,7 +246,7 @@
         </div> -->
         <div class="statistic !w-20">
           <label>tons / year</label>
-          <span>{(Math.round($carbon / 2000 / $year) || 0).toFixed(1).toLocaleString('en-US')}</span>
+          <span>{($carbon / 2000 / $year || 0).toFixed(1).toLocaleString('en-US')}</span>
         </div>
         <div class="statistic !w-24">
           <div class="flex items-center justify-center mt-[-2px]">
@@ -352,7 +352,6 @@
             </defs>
           
             {#key $currentRunId}  
-
               <g in:fade={{delay: 50}} out:fade={{duration: 50}}>
                 {#if renderGraphics}
                   <!-- trunks -->

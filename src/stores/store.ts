@@ -5,7 +5,7 @@ import SimulationWorker from '../lib/simulation.worker?worker'
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
 import type { Run, Scenario, Tree } from "../types";
 
-let useMultithreading = true
+let useMultithreading = true // disable this and set workers to 1 to show live tree updates during growth
 const numWorkers = 3
 let workers: Worker[] = []
 const numWorkersReady = writable(0)
@@ -40,13 +40,13 @@ const pauseQueue: Array<{
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
     const runData = e.data.value as Run;
-    trees.set(runData.trees)
-    deadTrees.set(runData.deadTrees)
-    initialTrees.set(runData.initialTrees)
-    yearlyTrees.set(runData.yearlyData.trees)
-    yearlyBiodiversity.set(runData.yearlyData.biodiversity)
-    yearlyCarbon.set(runData.yearlyData.carbon)
-    year.set(runData.yearlyData.carbon.length)
+    // trees.set(runData.trees)
+    // deadTrees.set(runData.deadTrees)
+    // initialTrees.set(runData.initialTrees)
+    // yearlyTrees.set(runData.yearlyData.trees)
+    // yearlyBiodiversity.set(runData.yearlyData.biodiversity)
+    // yearlyCarbon.set(runData.yearlyData.carbon)
+    // year.set(runData.yearlyData.carbon.length)
 
     runs.update(prevRuns => prevRuns.map((run, index) => {
       if (run.id === runData.id) {
@@ -78,14 +78,16 @@ const handleMessage = (e) => {
 
     // update tree graphics every year if we're not using web workers / multiple threads at once
     if (!useMultithreading) {
+      // currentRunId.set(run.id)
+      // displayRun(updated)
       year.set(updatedRun.yearlyData.biodiversity.length)
       yearlyTrees.set(updatedRun.yearlyData.trees)
       yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
       yearlyCarbon.set(updatedRun.yearlyData.carbon)
       // only render trees every Nth year step to avoid choking the graphics engine
-      if (updatedRun.yearlyData.carbon.length % 4 === 0) {
+      // if (updatedRun.yearlyData.carbon.length % 4 === 0) {
         trees.set(updatedRun.trees)
-      }
+      // }
     }
     
     // update everything else every single year
@@ -93,9 +95,18 @@ const handleMessage = (e) => {
     // trees.set(updatedRun.trees)
     // currentRunId.set(updatedRun.id)
 
+    // if (!get(runs).find(run => run.id === updatedRun.id)) {
+    //   runs.update(runs => [...runs, updatedRun])
+    // } else {
+
     runs.update(prevRuns => prevRuns.map((run, index) => {
       if (run.id === updatedRun.id) {
 
+        // if (!useMultithreading) {
+        //   console.log('setting trees...')
+        //   trees.set(updatedRun.trees)
+        //   year.set(updatedRun.yearlyData.carbon.length)
+        // }
         // live-update trees if run data is sending them
         // only render trees every Nth year step to avoid choking the graphics engine
         // if (updatedRun.trees.length && updatedRun.yearlyData.carbon.length % 5 === 0) {
@@ -108,6 +119,7 @@ const handleMessage = (e) => {
         return run
       }
     }))
+  // }
   } 
   else if (e.data.type === 'ready') {
     // log this worker as ready
@@ -264,7 +276,8 @@ const loadRun = (runId: number) => {
     yearlyTrees.set(run.yearlyData.trees)
     yearlyBiodiversity.set(run.yearlyData.biodiversity)
     trees.set(run.trees)
-    deadTrees.set(run.deadTrees)
+    year.set(run.yearlyData.carbon.length)
+    // deadTrees.set(run.deadTrees)
   }
 }
 

@@ -24,6 +24,7 @@ onmessage = (msg) => {
   }
 };
 
+// const sendLiveTreeUpdates = false
 let currentRunId = 0
 let enableSelectiveHarvesting = true
 let treeSpecies: TreeSpecies[] = []
@@ -254,7 +255,8 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
       if (sendLiveUpdates) {
         const updatedRun: Run = {
-          trees: sendLiveTreeUpdates ? trees : [],
+          trees,
+          // trees: sendLiveTreeUpdates ? trees : [],
           // trees: [],
           deadTrees: [],
           initialTrees: [],
