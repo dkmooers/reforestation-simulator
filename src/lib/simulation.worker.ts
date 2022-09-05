@@ -17,6 +17,7 @@ onmessage = (msg) => {
     numYearsPerRun = value.numYearsPerRun
     sendLiveTreeUpdates = value.sendLiveTreeUpdates
     enableSelectiveHarvesting = value.enableSelectiveHarvesting
+    // growthMultiplier = value.enableSelectiveHarvesting ? 1 : 0.5 // slow down growth rate for 
     runScenario()
   } else if (type === 'ping') {
     postMessage({ type: 'ready' })
@@ -41,7 +42,7 @@ let sendLiveTreeUpdates = false
 const width = 392
 const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-const growthMultiplier = 0.5; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
+let growthMultiplier = 1; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 // const minLivingHealth = 0.1;
 const maxSeedlings = 1;
