@@ -127,7 +127,7 @@
           <div class="flex-grow">
             <div class="whitespace-nowrap flex">
               <button
-                class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 select-none {$isComplete ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"
+              class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 select-none {$isComplete ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"
                 on:click={() => {
                   // reset();
                   runSimulation();
@@ -316,7 +316,7 @@
           {#if $currentRound === 0}
             <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow p-6">
               <div class="flex-grow items-center flex-initial flex flex-col">
-                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 leading-5">Note: This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
+                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">Note: This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
                 <button
                   class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {
