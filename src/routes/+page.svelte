@@ -125,8 +125,7 @@
           <div class="flex-grow">
             <div class="whitespace-nowrap flex">
               <button
-                class="text-black text-opacity-75 transition-opacity hover:opacity-80 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
-                style="background: var(--accentColor);"
+                class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                 on:click={() => {
                   // reset();
                   runSimulation();
@@ -317,8 +316,7 @@
               <div class="flex-grow items-center flex-initial flex flex-col">
                 <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70">Note: This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
                 <button
-                  class="mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
-                  style="background: var(--accentColor);"
+                  class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-2xl px-6 py-3 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {
                     // reset();
                     runSimulation();

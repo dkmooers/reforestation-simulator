@@ -37,6 +37,10 @@ button:hover {
   background-color: #886e53;
 }
 
+button.button-primary {
+  @apply bg-gradient-to-br from-green-400 to-emerald-600 text-black;
+}
+
 label {
   @apply text-sm text-stone-400
 }

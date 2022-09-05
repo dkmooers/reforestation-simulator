@@ -26,7 +26,7 @@
         <p>The goal is to find the initial makeup of tree species, and the frequency of harvesting, that leads to the highest sequestered carbon and biodiversity.</p>
         <p>It runs multiple scenarios in parallel using multithreaded web workers, evolves successive generations using crossover and mutation, and stops after 20 generations.</p>
         <div>
-          <button class="px-8 py-2 mt-3 mb-2 text-lg font-bfold mx-auto flex space-x-2" on:click={() => isVisible = false}>
+          <button class="button-primary px-8 py-2 mt-3 mb-2 text-lg font-bfold mx-auto flex space-x-2" on:click={() => isVisible = false}>
             <span>Go</span>
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
