@@ -144,6 +144,7 @@ export const loadWorkers = async () => {
 };
 
 export const isRunning = writable(false)
+export const isPaused = writable(false)
 export const isComplete = writable(false)
 export const runs = writable<Run[]>([])
 
@@ -297,7 +298,9 @@ const getEmptyRun = (): Run => ({
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
 
+  isPaused.set(false)
   isComplete.set(false)
+  isRunning.set(false)
   const mostRecentRunId = last(get(runs))?.id || 0
   const newRunId = mostRecentRunId + 1
   rounds.set([])
@@ -510,6 +513,7 @@ const completeSimulation = () => {
   console.log(get(elapsedTime))
   console.log('complete simulation!')
   isRunning.set(false);
+  isPaused.set(false);
   isComplete.set(true);
   window.postMessage({type: 'runFinished'})
   currentRunId.set(get(runIdWithHighestFitness))
@@ -558,7 +562,10 @@ export const runSimulation = () => {
 
     const wasJustPaused = !get(isRunning)
     if (wasJustPaused) {
+      isPaused.set(true)
       window.postMessage({type: 'paused'})
+    } else {
+      isPaused.set(false)
     }
 
     // if we're restarting, run queued items from last time the run was paused

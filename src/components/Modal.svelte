@@ -3,7 +3,18 @@
   import { fly } from "svelte/transition"
   let isVisible = false
 
+  export const trigger = () => {
+    isVisible = true
+  }
+
   onMount(() => {
+    console.log('mount')
+    window.onmessage = (msg) => {
+      console.log(msg)
+      if (msg.data.type === 'show-intro') {
+        isVisible = true
+      }
+    }
     setTimeout(() => {
       isVisible = true
     }, 1)
@@ -23,7 +34,7 @@
       <div class="space-y-3 flex flex-col">
         <p>This app prototype uses genetic algorithms to find optimal reforestation scenarios that maximize both carbon sequestration <em>and</em> biodiversity.</p>
         <p>The app plants different mixtures of temperate tree species on one acre of land, and then simulates 100 years of tree growth and self-seeding by calculating the sunlight available to each tree, with optional selective harvesting.</p>
-        <p>The goal is to find the initial makeup of tree species, and the frequency of harvesting, that leads to the highest sequestered carbon and biodiversity.</p>
+        <p>The goal is to find the initial makeup of tree species and the frequency of selective harvesting that leads to the highest sequestered carbon and biodiversity.</p>
         <p>It runs multiple scenarios in parallel using multithreaded web workers, evolves successive generations using crossover and mutation, and stops after 20 generations.</p>
         <div>
           <button class="button-primary px-8 py-2 mt-3 mb-2 text-lg font-bfold mx-auto flex space-x-2" on:click={() => isVisible = false}>

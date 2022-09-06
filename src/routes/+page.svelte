@@ -21,6 +21,7 @@
     currentRun,
     trees,
     isRunning,
+    isPaused,
     isComplete,
     allWorkersReady,
     currentRound,
@@ -45,6 +46,7 @@
   import Toggle from '../components/Toggle.svelte';
   import SuccessModal from '../components/SuccessModal.svelte';
 
+  let showIntro: () => {};
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
@@ -88,17 +90,17 @@
   <div
     class="flex flex-grow flex-col items-stretch h-screen overflow-hidden"
   >
-    <Modal />
+    <Modal bind:trigger={showIntro} />
     <SuccessModal />
     <PauseMessage />
-    {#if !$allWorkersReady}
+    <!-- {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
           <div class="font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
-    {/if}
+    {/if} -->
 
     <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
@@ -119,6 +121,9 @@
             <span class="-mt-2">Reforestation Simulator</span>
             <Tooltip>
               A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
+              <button class="button-primary my-4 font-normal" on:click|preventDefault|stopPropagation={() => {
+                showIntro()
+              }}>More Information</button>
               <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
             </Tooltip>
           </h1>
@@ -185,9 +190,13 @@
           </label> -->
           <!-- <span class="opacity-30">•</span> -->
           <label class="whitespace-nowrap mr-1">Enable selective harvesting</label>
-          <Tooltip position="left" iconClass="!ml-0 mr-1">Randomly selects a percentage of eligible trees for harvesting, preferring clumped/crowded trees. Selective harvesting has the potential to increase carbon sequestration if managed properly, but can also eliminate some special types of habitat, and reduce overall ecosystem biodiversity.</Tooltip>
-
-          <Toggle bind:checked={$enableSelectiveHarvesting} disabled={$isRunning} />
+          <Tooltip position="left" iconClass="!ml-0 mr-1">
+            Randomly selects a percentage of eligible trees for harvesting, preferring clumped/crowded trees. Selective harvesting has the potential to increase carbon sequestration if managed properly, but can also eliminate some special types of habitat, and reduce overall ecosystem biodiversity.
+            {#if $isPaused || $isRunning}
+              <div class="mt-2">Cannot be changed in the middle of a simulation as it would invalidate test results. Once you reset the simulation, then you'll be able to change this setting.</div>
+            {/if}
+          </Tooltip>
+          <Toggle bind:checked={$enableSelectiveHarvesting} disabled={$isRunning || $isPaused} />
           <!-- <input type="checkbox" disabled={$isRunning} checked={$enableSelectiveHarvesting} on:change={() => toggleSelectiveHarvesting()} /> -->
           <!-- <label class="flex items-center whitespace-nowrap">
             Show tree labels
@@ -207,7 +216,10 @@
       <!-- Statistics -->
       <div class="flex -ml-6">
         <div class="statistic !w-32 border-r border-subtle">
-          <label>round</label>
+          <div class="flex items-center justify-center mt-[-2px]">
+            <label>round</label>
+            <Tooltip>One "round" refers to one generation of 20 individual tree planting scenarios being simulated and evaluated for fitness. Each time one of these scenarios is simulated, that constitutes a "run".</Tooltip>
+          </div>
           <span>{$currentRound} / {maxRounds}</span>
         </div>
         <div class="statistic !w-20f">
@@ -272,7 +284,7 @@
 
       <div class="flex space-x-2 items-end">
         <div class="opacity-80 text-sm pb-[5px]">Run:</div>
-        {#if $runs.filter(run => run.isAllocated).length === 0}
+        {#if $runs.length === 0}
           <div class="flex flex-col items-center justify-end ">
             <div style="color: var(--accentColor);" class="leading-tight" class:opacity-10={true}>•</div>
             <div
