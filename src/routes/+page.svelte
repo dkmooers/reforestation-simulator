@@ -216,7 +216,7 @@
       <!-- Statistics -->
       <div class="flex -ml-6">
         <div class="statistic !w-36 border-r border-subtle">
-          <div class="flex items-center justify-center mt-[-2px]">
+          <div class="flex items-center justify-center">
             <label>generation</label>
           </div>
           <span>{$currentRound} / {maxRounds}</span>
