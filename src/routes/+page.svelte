@@ -215,10 +215,9 @@
 
       <!-- Statistics -->
       <div class="flex -ml-6">
-        <div class="statistic !w-32 border-r border-subtle">
+        <div class="statistic !w-36 border-r border-subtle">
           <div class="flex items-center justify-center mt-[-2px]">
-            <label>round</label>
-            <Tooltip>One "round" refers to one generation of 20 individual tree planting scenarios being simulated and evaluated for fitness. Each time one of these scenarios is simulated, that constitutes a "run".</Tooltip>
+            <label>generation</label>
           </div>
           <span>{$currentRound} / {maxRounds}</span>
         </div>
@@ -473,7 +472,7 @@
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3 text-sm">
-            <label class="mr-2 text-subtle">Round:</label>
+            <label class="mr-2 text-subtle">Generation:</label>
             <select bind:value={$roundIndexViewedInTable} class="text-sm">
               {#if !$rounds.length}
                 <option value={0} label="1" />
@@ -537,7 +536,7 @@
               </div>
             </div>
             <div class="flex items-center justify-center mt-4 mb-1 text-subtle text-xs uppercase">
-              <span>Best fitness by round</span>
+              <span>Best fitness by generation</span>
               <!-- <Tooltip position="left">Fitness sometimes drops round to round, because simulations are run non-deterministically, i.e. for any initial scenario, running that scenario over and over will produce somewhat different results due to random seed propagation.</Tooltip> -->
             </div>
             <div class="grid grid-cols-2">
