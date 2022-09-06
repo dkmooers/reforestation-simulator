@@ -216,8 +216,10 @@
       <!-- Statistics -->
       <div class="flex -ml-6">
         <div class="statistic !w-36 border-r border-subtle">
-          <div class="flex items-center justify-center">
+          <div class="flex items-center justify-center mt-[-2px]">
             <label>generation</label>
+            <Tooltip>Each generation consists of 20 individual reforestation scenarios. Each scenario is simulated for 100 years of tree growth and propagation, which equals one "run".</Tooltip>
+
           </div>
           <span>{$currentRound} / {maxRounds}</span>
         </div>
