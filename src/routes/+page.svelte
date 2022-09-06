@@ -93,14 +93,14 @@
     <Modal bind:trigger={showIntro} />
     <SuccessModal />
     <PauseMessage />
-    <!-- {#if !$allWorkersReady}
+    {#if !$allWorkersReady}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
           <div class="font-bold">Loading workers</div>
           <Loader size="6rem" />
         </div>
       </div>
-    {/if} -->
+    {/if}
 
     <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
@@ -296,7 +296,7 @@
             <div in:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
           {/if} -->
         {:else}
-          {#each $runs.filter(run => run.isAllocated) as run, index}
+          {#each $runs as run, index}
             <div class="flex flex-col items-center justify-end">
               <!-- Dots -->
               <div class="flex leading-tight">
@@ -309,8 +309,6 @@
                 on:click={() => displayRun(run.id)}
                 in:fade
                 class="text-sm transition-colors relative rounded-t border-t border-l border-r border-orange-100 border-opacity-20 px-2 py-[0.125rem] bg-white bg-opacity-0 hover:bg-opacity-20 cursor-pointer"
-                class:!bg-yellow-500={run.id === $runIdWithHighestFitness}
-                class:!text-stone-900={run.id === $runIdWithHighestFitness}
                 style="{run.id === $currentRunId ? 'background-color: #b6a393; color: var(--backgroundColor);' : ''}"
               >
                 <!-- Vertical progress bar background -->
@@ -330,7 +328,7 @@
               <div class="flex-grow items-center flex-initial flex flex-col">
                 <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
                 <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">Depending on your computer's speed, the simulation can take up to 10 minutes to complete. Feel free to pause it at any time.</div>
-                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">You can disable selective harvesting (above) to speed up the simulation.</div>
+                <!-- <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">You can disable selective harvesting (above) to speed up the simulation.</div> -->
                 <button
                   class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-xl px-6 py-2 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {

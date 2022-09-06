@@ -3,7 +3,7 @@
 
   import { fly } from "svelte/transition"
   let isVisible = false
-  let duration = 4000
+  let duration = 5000
   let isCountingDown = false
 
   onMount(() => {
