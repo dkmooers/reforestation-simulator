@@ -491,24 +491,24 @@
 
           <table class="border-collapse text-xs">
             <thead>
-              <th class="min-w-[1.75rem]" title="Round Number">#
-                <Tooltip iconClass="!ml-0 w-full" position="left">Round Number</Tooltip>
+              <th class="min-w-[1.75rem] text-center">#
+                <Tooltip padIcon={false} position="left">Run Number</Tooltip>
               </th>
               <th class="min-w-[3rem]">Fit...
-                <Tooltip iconClass="!ml-0 w-full" position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
+                <Tooltip padIcon={false} position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
               </th>
               <th class="min-w-[3rem]">Car...
-                <Tooltip iconClass="!ml-0 w-full" position="left">Carbon sequestered</Tooltip>
+                <Tooltip padIcon={false} position="left">Carbon sequestered</Tooltip>
               </th>
               <th class="min-w-[3rem]">Bio...
-                <Tooltip iconClass="!ml-0 w-full" position="left">Biodiversity</Tooltip>
+                <Tooltip padIcon={false} position="left">Biodiversity</Tooltip>
               </th>
               {#if $enableSelectiveHarvesting}
                 <th>HMR<br />
-                  <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
+                  <Tooltip padIcon={false} position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
                 </th>
                 <th class="min-w-[2.55rem] text-center">HC<br />
-                  <Tooltip iconClass="!ml-0 w-full" position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
+                  <Tooltip padIcon={false} position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
                 </th>
               {/if}
             </thead>
