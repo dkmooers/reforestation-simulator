@@ -470,7 +470,7 @@
   <!-- Sidebar -->
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[18rem]' : 'w-[13rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[18.4rem]' : 'w-[13.3rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3 text-sm">
@@ -528,7 +528,7 @@
           </table>
 
           <!-- {#if $rounds.length > 0} -->
-            <div class="statistic !w-full mt-5">
+            <div class="statistic !w-full mt-5 text-center">
               <label>Total fitness improvement</label>
               <div class="h-[1.8rem]">
                 <span class="text-yellow-500">{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%</span>
@@ -537,7 +537,7 @@
                 {/key} -->
               </div>
             </div>
-            <div class="flex items-center justify-center mt-4 mb-1 text-subtle text-xs uppercase">
+            <div class="flex items-center justify-center text-center mt-4 mb-1 text-subtle text-xs uppercase">
               <span>Best fitness by generation</span>
               <!-- <Tooltip position="left">Fitness sometimes drops round to round, because simulations are run non-deterministically, i.e. for any initial scenario, running that scenario over and over will produce somewhat different results due to random seed propagation.</Tooltip> -->
             </div>
