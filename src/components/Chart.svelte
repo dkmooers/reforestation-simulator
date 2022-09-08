@@ -7,7 +7,7 @@
 
   // let points = [] 
   let runsData = []
-  let showTrees = true
+  let showTrees = false
 
   let minx = 0;
   let maxx = numYearsPerRun;
@@ -329,7 +329,7 @@
     height: 10px;
     left: -5px;
     top: -5px;
-    border: 1px solid black;
+    border: 2px solid #16c264;
     border-radius: 50%;
     box-sizing: border-box;
   }
