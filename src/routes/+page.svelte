@@ -202,7 +202,7 @@
             Show tree labels
             <input type="checkbox" bind:checked={showTreeLabels} />
           </label> -->
-          <span class="opacity-30 mx-4">•</span>
+          <span class="opacity-30 mx-3">•</span>
           <label class="whitespace-nowrap">
             Color mode
             <select bind:value={colorMode}>
