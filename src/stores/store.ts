@@ -57,6 +57,8 @@ const handleMessage = (e) => {
       }
     }))
 
+    updateFitnessImprovement()
+
     displayRun(runData.id)
 
     // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
@@ -519,6 +521,22 @@ const completeSimulation = () => {
   currentRunId.set(get(runIdWithHighestFitness))
 }
 
+const updateFitnessImprovement = () => {
+  // update overall fitness improvement %
+  if (get(rounds).length > 0) {
+    const firstRoundMaxFitness = last(sortBy(first(get(rounds)), 'fitness'))?.fitness
+    let lastRoundMaxFitness = 0
+    if (get(rounds).length > 1) {
+      lastRoundMaxFitness = last(sortBy(last(get(rounds)), 'fitness'))?.fitness || 0
+    } else {
+      lastRoundMaxFitness = last(sortBy(get(runs), 'fitness'))?.fitness || 0
+    }
+    if (firstRoundMaxFitness && lastRoundMaxFitness) {
+      fitnessImprovement.set(lastRoundMaxFitness / firstRoundMaxFitness)
+    }
+  }
+}
+
 const attemptToRunNextRound = () => {
 
   const bestRunInLastRound = last(sortBy(get(runs), 'fitness'))
@@ -536,14 +554,7 @@ const attemptToRunNextRound = () => {
     rounds.update(prevRounds => [...prevRounds, lastRound])
   }
 
-  // update overall fitness improvement %
-  if (get(rounds).length > 1) {
-    const firstRoundMaxFitness = last(sortBy(first(get(rounds)), 'fitness'))?.fitness
-    const lastRoundMaxFitness = last(sortBy(last(get(rounds)), 'fitness'))?.fitness
-    if (firstRoundMaxFitness && lastRoundMaxFitness) {
-      fitnessImprovement.set(lastRoundMaxFitness / firstRoundMaxFitness)
-    }
-  }
+  // updateFitnessImprovement()
 
   if (get(currentRound) >= maxRounds || areStopConditionsMet()) {
     completeSimulation()

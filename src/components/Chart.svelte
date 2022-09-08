@@ -81,8 +81,10 @@
   <div class="z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-13px] text-[#ad8c6a] text-sm flex items-center">
     <span class="swatch carbon"></span>
     Carbon sequestered by run<span class="font-light ml-1">(tons)</span>
-    <span class="swatch trees ml-6"></span>
-    Number of trees
+    {#if showTrees}
+      <span class="swatch trees ml-6"></span>
+      Number of trees
+    {/if}
     <span class="swatch biodiversity ml-6"></span>
     Biodiversity
   </div>
@@ -121,12 +123,14 @@
             <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.carbon}" let:d>
               <path class="carbon scatter" {d} />
             </Pancake.SvgScatterplot>
-            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.biodiversity}" let:d>
+            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.biodiversity * maxy}" let:d>
               <path class="biodiversity scatter" {d} />
             </Pancake.SvgScatterplot>
-            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.trees}" let:d>
-              <path class="trees scatter" {d} />
-            </Pancake.SvgScatterplot>
+            {#if showTrees}
+              <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.trees}" let:d>
+                <path class="trees scatter" {d} />
+              </Pancake.SvgScatterplot> 
+            {/if}
           {/if}
 
 
@@ -289,12 +293,12 @@
 
   path.scatter {
     opacity: 1 !important;
-    stroke-width: 2px !important;
+    stroke-width: 2.5px !important;
   }
 
   path.carbon {
     stroke: #16c264;/*#ff3e00;*/
-    opacity: 0.3;
+    opacity: 0.25;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;
@@ -311,8 +315,8 @@
   }
 
   path.biodiversity {
-    stroke: rebeccapurple;
-    opacity: 0.5;
+    stroke: #af62ff;
+    opacity: 0.3;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;
