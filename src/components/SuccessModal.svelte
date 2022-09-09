@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { elapsedTime } from "../stores/store";
+  import { elapsedTime } from "../lib/simulator";
   import { onDestroy, onMount } from "svelte";
   import { fly } from "svelte/transition"
   import { browser } from "$app/environment";

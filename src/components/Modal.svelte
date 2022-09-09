@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { isRunning, isPaused } from "../stores/store";
+  import { isRunning, isPaused } from "../lib/simulator";
   import { fly } from "svelte/transition"
   let isVisible = false
 

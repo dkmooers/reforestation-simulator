@@ -20,9 +20,10 @@ export const allWorkersReady = derived(
   [numWorkers, numWorkersReady],
   ([numWorkers, numWorkersReady])  => numWorkersReady >= numWorkers
 )
+
 export const bestRun = writable<Run>()
 export const numYearsPerRun = 100
-export const maxRounds = 20
+export const maxRounds = 40
 export const populationSize = 20
 const numElites = 2
 const preserveEliteRunData = true // if true, don't re-run elite scenarios in the next round - re-use their tree growth run data and fitness from previous round
@@ -38,13 +39,14 @@ export const bestFitnessByRound = derived(
   rounds => rounds.map(runs => last(sortBy(runs, 'fitness'))?.fitness || 0)
 )
 export const enableSelectiveHarvesting = writable(true)
+const limitFramerateOfLiveTreeUpdates = false // if true, reduce frequency of live tree growth updates to reduce graphics stuttering when updating the tree growth diagram
 
 let pauseQueue: Array<{
   fn: Function,
   args: any
 }> = []
 
-const handleMessage = (e) => {
+const handleMessage = (e: MessageEvent) => {
   if (e.data.type === 'runData') {
     const runData = e.data.value as Run;
 
@@ -68,7 +70,10 @@ const handleMessage = (e) => {
       pauseQueue.push({fn: dispatchNextRunToWorker, args: e.srcElement})
     }
     else if (numUnallocatedRuns > 0) {
-      dispatchNextRunToWorker(e.srcElement)
+      const worker = e.currentTarget as Worker
+      if (worker) {
+        dispatchNextRunToWorker(worker)
+      }
     } else if (numUnfinishedRuns === 0) {
       attemptToRunNextRound()
     }
@@ -83,10 +88,14 @@ const handleMessage = (e) => {
       yearlyTrees.set(updatedRun.yearlyData.trees)
       yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
       yearlyCarbon.set(updatedRun.yearlyData.carbon)
-      // only render trees every Nth year step to avoid choking the graphics engine
-      // if (updatedRun.yearlyData.carbon.length % 4 === 0) {
-      trees.set(updatedRun.trees)
-      // }
+      if (limitFramerateOfLiveTreeUpdates) {
+        // only render trees every Nth year step to avoid choking the graphics engine
+        if (updatedRun.yearlyData.carbon.length % 4 === 0) {
+          trees.set(updatedRun.trees)
+        }
+      } else {
+        trees.set(updatedRun.trees)
+      }
     }
 
     runs.update(prevRuns => prevRuns.map((run, index) => {
@@ -136,8 +145,8 @@ export const progressPercentOverall = derived(
 
 export const progressPercentThisGeneration = derived(
   runs,
-  runs => {    
-    return sum(runs.map(run => run.yearlyData.carbon.length)) / (populationSize * numYearsPerRun) * 100
+  runs => {
+    return runs.filter(run => run.isComplete).length / populationSize * 100
   }
 )
 
@@ -225,7 +234,6 @@ export const biodiversity = derived(
 
 export const displayRun = (runId: number) => {
   currentRunId.set(runId)
-  // load all its data
   loadRun(runId)
 }
 
@@ -508,7 +516,7 @@ const attemptToRunNextRound = () => {
     bestRun.set(bestRunInLastRound)
   }
 
-  if (get(rounds).length) {
+  if (get(rounds).length && get(runs).filter(run => run.isComplete).length === populationSize) {
     dispatch('roundComplete')
   }
 

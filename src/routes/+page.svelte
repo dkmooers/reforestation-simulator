@@ -35,7 +35,7 @@
     progressPercentThisGeneration,
     populationSize,
     enableSelectiveHarvesting,
-	} from '../stores/store';
+	} from '../lib/simulator';
   // import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
   import PauseMessage from '../components/PauseMessage.svelte';

@@ -1,13 +1,18 @@
-<script>
+<script lang="ts">
   import * as Pancake from '@sveltejs/pancake';
-  import { runs, currentRunId, numYearsPerRun } from '../stores/store';
+  import { runs, currentRunId, numYearsPerRun } from '../lib/simulator';
   import { fade } from "svelte/transition"
   import { last } from 'lodash';
   import { max } from 'lodash';
-import Tooltip from './Tooltip.svelte';
+  import Tooltip from './Tooltip.svelte';
 
-  // let points = [] 
-  let runsData = []
+  let runsData: Array<{
+    date: number[]
+    carbon: number[]
+    trees: number[]
+    biodiversity: number[]
+    id: number
+  }> = []
   let showCarbon = true
   let showBiodiversity = true
   let showTrees = true
@@ -24,12 +29,6 @@ import Tooltip from './Tooltip.svelte';
     if (showTrees) {
       maxTrees = max($runs?.map(run => max(run.yearlyData.trees))) || 0
     }
-    // let maxCarbon = carbonValuesOfEachRun.reduce((max, thisRunCarbon) => thisRunCarbon > max ? thisRunCarbon : max, 0)
-    // const pointsMax = last(points)?.carbon
-    // console.log(pointsMax)
-    // if (pointsMax && pointsMax > maxCarbon) {
-    //   maxCarbon = pointsMax
-    // }
     const maxYToUse = (Math.max(maxCarbon, maxTrees))
     maxy = maxYToUse ? maxYToUse : maxy
   }
@@ -42,34 +41,7 @@ import Tooltip from './Tooltip.svelte';
     id: run.id
   })))
 
-  // $: console.log(runsData)
-
   $: currentRunData = runsData?.find(data => data?.[0].id === $currentRunId)
-
-  // $: {
-  //   points = $yearlyCarbon?.map((carbonValue, index) => {
-  //     return {
-  //       date: index + 1,
-  //       carbon: carbonValue / 2000,
-  //       trees: $yearlyTrees[index],
-  //     }
-  //   });
-  //   if (points?.length > 1) {
-  //     maxx = Math.max(numYearsPerRun, points?.[points.length - 1]?.date);
-  //     // for (let i = 0; i < points.length; i += 1) {
-  //     //   const point = points[i];
-
-  //     //   if (point.avg < miny) {
-  //     //     miny = point.avg;
-  //     //   }
-
-  //     //   if (point.avg > maxy) {
-  //     //     maxy = point.avg;
-  //     //     highest = point;
-  //     //   }
-  //     // }
-  //   }
-  // }
 
   miny = 0;
 
@@ -77,7 +49,6 @@ import Tooltip from './Tooltip.svelte';
     return 100 * (date - minx) / (maxx - minx);
   };
 
-  // getInsolationData()
 </script>
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
@@ -105,23 +76,7 @@ import Tooltip from './Tooltip.svelte';
   
     {#if runsData?.length}
       <Pancake.Svg>
-        <!-- <Pancake.SvgScatterplot data={points} x="{d => d.date}" y="{d => d.avg}" let:d>
-          <path class="avg scatter" {d} />
-        </Pancake.SvgScatterplot>
-
-        <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.carbon}" let:d>
-          <path class="carbon active" {d} />
-        </Pancake.SvgLine> -->
-
-
-
         {#each runsData as data}
-
-        <!-- <Pancake.Point x={last(data).date} y={last(data).carbon}>
-          <div class="text">
-            XYZ
-          </div>
-        </Pancake.Point> -->
 
           {#if data.length < numYearsPerRun}
             {#if showCarbon}
@@ -158,32 +113,8 @@ import Tooltip from './Tooltip.svelte';
           {/if}
         {/each}
 
-        <!-- <Pancake.SvgLine data={points} x="{d => d.date}" y="{d => d.trees}" let:d>
-          <path class="trees active" {d} />
-        </Pancake.SvgLine> -->
       </Pancake.Svg>
     {/if}
-
-    <!-- chart title -->
-    <!-- <Pancake.Point x={1962} y={390}>
-      <div class="text">
-        <h2>Daily Power</h2>
-
-        <p>
-          <span style="color: #676778">•</span>
-          <span>monthly average&nbsp;&nbsp;&nbsp;</span>
-          <span style="color: #ff3e00">—</span>
-          <span>trend</span>
-        </p>
-      </div>
-    </Pancake.Point> -->
-
-    <!-- annotate highest point -->
-    <!-- <Pancake.Point x={highest.date} y={highest.avg}>
-      <div class="annotation" style="position: absolute; right: 0.5em; top: -0.5em; white-space: nowrap; line-height: 1; color: #666;">
-        {highest.avg} parts per million (ppm) &rarr;
-      </div>
-    </Pancake.Point> -->
 
     {#if currentRunData}
 
@@ -204,14 +135,11 @@ import Tooltip from './Tooltip.svelte';
   <div class="absolute bottom-0 left-1/2 ">year</div>
 </div>
 
-<!-- <p>Source: <a target="_blank" href="https://scrippsco2.ucsd.edu/data/atmospheric_co2/primary_mlo_co2_record.html">Scripps Institution of Oceanography</a>. Based on <a href="https://www.bloomberg.com/graphics/climate-change-data-green/carbon-clock.html">Carbon Clock by Bloomberg</a>.</p> -->
-
 <style>
   .chart {
     height: 100%;
     padding: 0 0 2em 2em;
     margin: 0 0 36px 0;
-    /* max-width: 80em; */
     margin: 0 auto;
   }
 
@@ -240,7 +168,6 @@ import Tooltip from './Tooltip.svelte';
     line-height: 1;
     font-family: sans-serif;
     font-size: 14px;
-    /* color: #999; */
   }
 
   .year-label {
@@ -250,7 +177,6 @@ import Tooltip from './Tooltip.svelte';
     bottom: -30px;
     font-family: sans-serif;
     font-size: 14px;
-    /* color: #999; */
     text-align: center;
   }
 
@@ -275,7 +201,6 @@ import Tooltip from './Tooltip.svelte';
   }
 
   .swatch {
-    /* display: inline-block; */
     width: 12px;
     height: 12px;
     border-radius: 100%;
@@ -319,7 +244,7 @@ import Tooltip from './Tooltip.svelte';
   }
 
   path.carbon {
-    stroke: #16c264;/*#ff3e00;*/
+    stroke: #16c264;
     opacity: 0.25;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -361,7 +286,6 @@ import Tooltip from './Tooltip.svelte';
     white-space: nowrap;
     width: 8em;
     bottom: 1em;
-    /* background-color: white; */
     color: rgb(230 201 166);
     line-height: 1;
     text-shadow: 0 0 10px rgb(40 34 27), 0 0 10px rgb(40 34 27), 0 0 10px rgb(40 34 27), 0 0 10px rgb(40 34 27), 0 0 10px rgb(40 34 27), 0 0 10px rgb(40 34 27), 0 0 10px rgb(40 34 27);
@@ -371,10 +295,4 @@ import Tooltip from './Tooltip.svelte';
     font-size: 1.4em;
     display: block;
   }
-
-  /* @media (min-width: 800px) {
-    .chart {
-      height: 600px;
-    }
-  } */
 </style>
