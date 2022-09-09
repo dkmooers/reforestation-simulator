@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade, slide, fly } from 'svelte/transition'
+  import { fade } from 'svelte/transition'
   import Chart from '../components/Chart.svelte';
-  import Slider from '../components/Slider.svelte';
   import Modal from '../components/Modal.svelte';
 	import {
     loadWorkers,
@@ -33,13 +32,10 @@
     maxRounds,
     progressPercentOverall,
     progressPercentThisGeneration,
-    populationSize,
     enableSelectiveHarvesting,
 	} from '../lib/simulator';
-  // import TreeIcon from '../components/TreeIcon.svelte';
   import { treeSpecies } from '$lib/treeSpecies';
   import PauseMessage from '../components/PauseMessage.svelte';
-  import { prettifyNumber } from '$lib/helpers';
   import { sortBy, reverse, rest } from 'lodash';
   import { last } from 'lodash';
   import Tooltip from '../components/Tooltip.svelte';
@@ -50,35 +46,24 @@
   import RoundCompleteMessage from '../components/RoundCompleteMessage.svelte';
 
   let showIntro: () => {};
-  let showPauseMessage: () => {};
-  let showSuccessModal: () => {};
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
   let isSidebarOpen = true;
   $: currentRunBiodiversity = Math.round(($currentRun?.averageBiodiversity || 0) * 100)
-  // $: currentRunBiodiversity = Math.round((last($currentRun?.yearlyData.biodiversity) || 0) * 100)
-  // $: isRunButtonDisabled = $isRunning || !$allWorkersReady
   const dispatch = createEventDispatcher()
-  // reset state when user changes selective harvesting toggle
-  // $: {
-  //   const shouldHarvest = $enableSelectiveHarvesting
-  //   reset()
-  // }
 
   $: runsDisplayedInTable = ($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1}))
   // $: runsDisplayedInTable = reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', ))
-
 
   const toggleSelectiveHarvesting = () => {
     reset();
     $enableSelectiveHarvesting = !$enableSelectiveHarvesting
   }
-  // $: console.log($runs.map(r => r))
 
   onMount(() => {
     window.addEventListener('keydown', function(event) {
-        const key = event.key; // "ArrowRight", "ArrowLeft", "ArrowUp", or "ArrowDown"
+        const key = event.key;
         if (key === 'ArrowRight') {
           console.log('right')
         } else if (key === 'ArrowLeft') {
@@ -98,9 +83,9 @@
     class="flex flex-grow flex-col items-stretch h-screen overflow-hidden"
   >
     <Modal bind:trigger={showIntro} />
-    <SuccessModal bind:trigger={showSuccessModal} />
-    <PauseMessage bind:trigger={showPauseMessage} />
-    <RoundCompleteMessage />
+    <SuccessModal />
+    <PauseMessage />
+    <!-- <RoundCompleteMessage /> -->
     {#if !$allWorkersReady && !$isRunning && !$isPaused}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
@@ -114,6 +99,7 @@
     <div class="h-[3px] w-full bg-black relative">
       <div class="bg-yellow-500 absolute left-0 top-0 h-full" style="width: {$progressPercentOverall}%; transition: width 1s;" />
     </div>
+
     <!-- Progress bar (this round) -->
     <div class="h-[3px] w-full bg-black relative">
       <div class="bg-subtle absolute left-0 top-0 h-full" style="width: {$progressPercentThisGeneration}%; transition: width 1s;" />
@@ -121,85 +107,67 @@
 
     <div class="p-4 flex-grow flex flex-col">
       <div class="flex items-center space-x-6 -mt-2">
-        <!-- <div class="flex"> -->
-          <h1 class="whitespace-nowrap mt-3 flex items-center">
-            <div class="-mt-3 mr-2 w-8">
-              <img alt="Tree icon" src="/treeicon.png" />
-            </div>
-            <span class="-mt-2">Reforestation Simulator</span>
-            <Tooltip>
-              A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
-              <button class="button-primary my-4 font-normal" on:click|preventDefault|stopPropagation={() => {
-                showIntro()
-              }}>More Information</button>
-              <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
-            </Tooltip>
-          </h1>
+        <h1 class="whitespace-nowrap mt-3 flex items-center">
+          <div class="-mt-3 mr-2 w-8">
+            <img alt="Tree icon" src="/treeicon.png" />
+          </div>
+          <span class="-mt-2">Reforestation Simulator</span>
+          <Tooltip>
+            A reforestation simulator prototype with a basic biological tree growth model based on available sunlight, seed propagation, and a simplified carbon calculation model, using multithreaded web workers for speed enhancements and genetic algorithms for finding optimal tree planting scenarios.
+            <button class="button-primary my-4 font-normal" on:click|preventDefault|stopPropagation={() => {
+              showIntro()
+            }}>More Information</button>
+            <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+          </Tooltip>
+        </h1>
 
-          <!-- Buttons -->
-          <div class="flex-grow">
-            <div class="whitespace-nowrap flex">
-              <button
-              class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 select-none {$isComplete ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"
-                on:click={() => {
-                  // reset();
-                  if (!$isPaused) {
-                    dispatch('pause')
-                  }
-                  toggleRunSimulation();
-                }}
-              >
-                <div class="w-6 flex items-center h-full">
-                  {#if $isRunning}
-                    <div class="relative mt-1 h-full">
-                      <Loader class="absolute top-0 left-0" />
-                      <!-- Pause icon -->
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3 absolute top-[4px] left-[4px] text-white">
-                        <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
-                      </svg>
-                    </div>
-  
-                  {:else}
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+        <!-- Buttons -->
+        <div class="flex-grow">
+          <div class="whitespace-nowrap flex">
+            <button
+            class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 select-none {$isComplete ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"
+              on:click={() => {
+                // reset();
+                if (!$isPaused) {
+                  dispatch('pause')
+                }
+                toggleRunSimulation();
+              }}
+            >
+              <div class="w-6 flex items-center h-full">
+                {#if $isRunning}
+                  <div class="relative mt-1 h-full">
+                    <Loader class="absolute top-0 left-0" />
+                    <!-- Pause icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3 h-3 absolute top-[4px] left-[4px] text-white">
+                      <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />
                     </svg>
-                  {/if}
                   </div>
 
-                <span>{$isRunning ? 'Pause' : 'Run'}</span>
-              </button>
+                {:else}
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                  </svg>
+                {/if}
+                </div>
 
-              <!-- <button on:click={() => stepNYears(1)}>+1 year</button>
-              <button on:click={() => stepNYears(5)}>+5 years</button>
-              <button on:click={() => stepNYears(10)}>+10 years</button>
-              <button on:click={() => stepNYears(50)}>+50 years</button> -->
-              <button class="{$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" on:click={() => {
-                reset()
-              }}>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
-                </svg>
-                <span>Reset</span>
-              </button>
-            </div>
-            <!-- <div class="whitespace-nowrap">
-              <button on:click={() => addNRandomTrees(100)}>Plant Trees</button>
-              <button on:click={() => calculateOverlaps()}>Calculate Overlaps</button>
-              <button on:click={() => pruneOverflowTrees()}>Prune Overflow Trees</button>
-              <button on:click={() => declusterTrees()}>Decluster</button>
-            </div> -->
+              <span>{$isRunning ? 'Pause' : 'Run'}</span>
+            </button>
+
+            <button class="{$isRunning ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}" on:click={() => {
+              reset()
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" />
+              </svg>
+              <span>Reset</span>
+            </button>
           </div>
-          <!-- <div class="italic leading-tight mb-4 opacity-60 text-sm">An app prototype with a simplified biological tree growth model, propagation model, and carbon calculation model.</div> -->
 
-        <!-- </div> -->
-      
+        </div>
+
         <!-- Controls -->
         <div class="flex items-center ml-auto bg-black bg-opacity-70 pl-3 pr-1 py-1 rounded">
-          <!-- <label class="flex items-center whitespace-nowrap">
-            Render graphics
-            <input type="checkbox" bind:checked={renderGraphics} />
-          </label> -->
-          <!-- <span class="opacity-30">•</span> -->
           <label class="whitespace-nowrap mr-1">Enable selective harvesting</label>
           <Tooltip position="left" iconClass="!ml-0 mr-1">
             Randomly selects a percentage of eligible trees for harvesting, preferring clumped/crowded trees. Selective harvesting has the potential to increase carbon sequestration if managed properly, but can also eliminate some special types of habitat, and reduce overall ecosystem biodiversity.
@@ -207,15 +175,10 @@
               <div class="mt-2">Cannot be changed in the middle of a simulation as it would invalidate test results. Once you reset the simulation, then you'll be able to change this setting.</div>
             {/if}
           </Tooltip>
-          <Toggle id="enableSelectiveHarvesting" bind:checked={$enableSelectiveHarvesting} disabled={$isRunning || $isPaused} />
-          <!-- <input type="checkbox" disabled={$isRunning} checked={$enableSelectiveHarvesting} on:change={() => toggleSelectiveHarvesting()} /> -->
-          <!-- <label class="flex items-center whitespace-nowrap">
-            Show tree labels
-            <input type="checkbox" bind:checked={showTreeLabels} />
-          </label> -->
+          <Toggle bind:checked={$enableSelectiveHarvesting} disabled={$isRunning || $isPaused} />
           <span class="opacity-30 mx-3">•</span>
           <label class="whitespace-nowrap mr-3">Use multithreading</label>
-          <Toggle id="useMultithreading" bind:checked={$useMultithreading} disabled={$isRunning || $isPaused} />
+          <Toggle bind:checked={$useMultithreading} disabled={$isRunning || $isPaused} />
 
           <!-- <label class="whitespace-nowrap">
             Color mode
@@ -259,7 +222,6 @@
         <div class="statistic !w-24">
           <div class="flex items-center justify-center">
             <label>biodiversity </label>
-            <!-- <Tooltip position="left">Biodiversity is calculated based on having an even spread of many sp</Tooltip> -->
           </div>
           <span class="text-[#af62ff]">{currentRunBiodiversity}%</span>
         </div>
@@ -270,10 +232,6 @@
           </div>
           <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
         </div>
-        <!-- <div class="statistic !w-36">
-          <label>avg carbon (all runs)</label>
-          <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
-        </div> -->
         <div class="statistic !w-20">
           <label>tons / year</label>
           <span>{($carbon / 2000 / $year || 0).toFixed(1).toLocaleString('en-US')}</span>
@@ -285,17 +243,7 @@
           </div>
           <span class="text-yellow-500">{$currentRun?.fitness?.toLocaleString('en-US') || 0}</span>
         </div>
-        <!-- <div class="statistic">
-          <label>area (ha)</label>
-          <span>1.0</span>
-        </div> -->
-        <!-- <div class="statistic !w-56 border-l border-[#ad8c6a] border-opacity-30 pl-4">
-          <label>avg carbon across runs (tons)</label>
-          <span>{Math.round($averageCarbonAcrossRuns / 2000)}</span>
-        </div> -->
       </div>
-
-      <!-- <div class="flex grid-fols-2 gap-6 mt-2"> -->
 
       <div class="flex space-x-2 items-end">
         <div class="opacity-80 text-sm pb-[5px]">Run:</div>
@@ -307,13 +255,11 @@
               style={'background: var(--accfentColor); color: var(--backgroundColor);'}
             >1</div>
           </div>
-          <!-- {#if !$isRunning}
-            <div in:fade class="text-[#ad8c6a] text-sm mb-1 pl-2">(Click Run to run the simulation)</div>
-          {/if} -->
         {:else}
           {#each $runs as run, index}
             <div class="flex flex-col items-center justify-end">
-              <!-- Dots -->
+              
+              <!-- Indicator Dots for highest carbon and highest fitness runs -->
               <div class="flex leading-tight">
                 <div style="color: var(--accentColor);" class="opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestCarbon}>•</div>
                 <div class="text-yellow-400 opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestFitness}>•</div>
@@ -343,7 +289,6 @@
               <div class="flex-grow items-center flex-initial flex flex-col">
                 <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
                 <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">Depending on your computer's speed, the simulation can take up to 10 minutes to complete. Feel free to pause it at any time.</div>
-                <!-- <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">You can disable selective harvesting (above) to speed up the simulation.</div> -->
                 <button
                   class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-xl px-6 py-2 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {
@@ -442,7 +387,6 @@
             {/key}
 
           </svg>
-          <!-- <Slider min={0} max={100} bind:value={$year} /> -->
         </div>
       </div>
 
@@ -467,13 +411,12 @@
               >{species.id}: {Math.round($currentRun.scenario.speciesProbabilities[speciesIndex] * 100)}%</div>
             {/each}
           </div>
-            <!-- {JSON.stringify($currentRun?.scenario)} -->
         {:else}
           <div class="bg-black w-full rounded bg-opacity-80"></div>
         {/if}
       </div>
 
-      <!-- Carbon chart -->
+      <!-- Chart -->
       <div class="flex-grow rounded pt-3 pb-0 pr-2">
           <Chart />
       </div>
@@ -483,103 +426,95 @@
 
   <!-- Sidebar -->
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
-    <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[19.6rem]' : 'w-[13.3rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
-        <div class="px-4 flex-grow">
+    <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[19.6rem]' : 'w-[13.3rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
+      <div class="px-4 flex-grow">
 
-          <div class="flex items-center mb-3 text-sm">
-            <label class="mr-2 text-subtle">Generation:</label>
-            <select bind:value={$roundIndexViewedInTable} class="text-sm">
-              {#if !$rounds.length}
-                <option value={0} label="1" />
-              {:else}
-                {#each $rounds as round, index}
-                  <option value={index} label={String(index + 1)} />
-                {/each}
-                {#if $isRunning}
-                  <option value={$rounds.length} label={String($rounds.length + 1)} />
-                {/if}
-              {/if}
-            </select>
-          </div>
-
-          <table class="border-collapse text-xs">
-            <thead>
-              <th class="w-[1.4rem] text-center">#
-                <Tooltip padIcon={false} position="left">Run Number</Tooltip>
-              </th>
-              <th class="min-w-[2.3rem]">Fit
-                <Tooltip padIcon={false} position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
-              </th>
-              <th class="min-w-[2.3rem]">C
-                <Tooltip padIcon={false} position="left">Carbon sequestered</Tooltip>
-              </th>
-              <th class="min-w-[2.3rem]">Bio
-                <Tooltip padIcon={false} position="left">Biodiversity</Tooltip>
-              </th>
-              {#if $enableSelectiveHarvesting}
-                <th class="min-w-[2.8rem]">R<sub>min</sub><br />
-                  <Tooltip padIcon={false} position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
-                </th>
-                <th class="min-w-[3rem]">R<sub>max</sub><br />
-                  <Tooltip padIcon={false} position="left">Harvest Max Radius: The maximum tree canopy radius at which trees can be harvested.</Tooltip>
-                </th>
-                <th class="min-w-[2.5rem] text-center">H%<br />
-                  <Tooltip padIcon={false} position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
-                </th>
-              {/if}
-            </thead>
-            {#each runsDisplayedInTable as run, index}
-            <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
-              <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
-                <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
-                <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
-                <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
-                <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
-                {#if $enableSelectiveHarvesting}
-                  <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
-                  <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>                  
-                  <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
-                {/if}
-              </tr>
-            {/each}
-          </table>
-
-          <!-- {#if $rounds.length > 0} -->
-            <div class="statistic !w-full mt-5 text-center">
-              <label>Total fitness improvement</label>
-              <div class="h-[1.8rem]">
-                <span class="text-yellow-500">{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%</span>
-                <!-- {#key $currentRound}
-                  <span class="text-yellow-500" in:fade={{duration: 200, delay: 300}} out:fade={{duration: 200}}>{Math.round((($fitnessImprovement || 1) - 1) * 100)}%</span>
-                {/key} -->
-              </div>
-            </div>
-            <div class="flex items-center justify-center text-center mt-4 mb-1 text-subtle text-xs uppercase">
-              <span>Best fitness by generation</span>
-              <!-- <Tooltip position="left">Fitness sometimes drops round to round, because simulations are run non-deterministically, i.e. for any initial scenario, running that scenario over and over will produce somewhat different results due to random seed propagation.</Tooltip> -->
-            </div>
-            <div class="grid grid-cols-2">
-              {#each $bestFitnessByRound as fitness, index}
-                <div class="text-xs">
-                  <span class="text-subtle w-5 inline-block">{index + 1}:</span>
-                  <span>{fitness}</span>
-                  {#if index > 0}
-                    {@const improvement = Math.round(100 * (fitness / $bestFitnessByRound[index - 1] - 1))}
-                    {#if improvement > 0}
-                      <span class="font-mono text-yellow-500 text-[0.65rem]">+{improvement}%</span>
-                    {/if}    
-                  {/if}
-                </div>
+        <div class="flex items-center mb-3 text-sm">
+          <label class="mr-2 text-subtle">Generation:</label>
+          <select bind:value={$roundIndexViewedInTable} class="text-sm">
+            {#if !$rounds.length}
+              <option value={0} label="1" />
+            {:else}
+              {#each $rounds as round, index}
+                <option value={index} label={String(index + 1)} />
               {/each}
-            </div>
-          <!-- {/if} -->
-
+              {#if $isRunning}
+                <option value={$rounds.length} label={String($rounds.length + 1)} />
+              {/if}
+            {/if}
+          </select>
         </div>
-        <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
-      </div>
 
-    <!-- {/if} -->
+        <table class="border-collapse text-xs">
+          <thead>
+            <th class="w-[1.4rem] text-center">#
+              <Tooltip padIcon={false} position="left">Run Number</Tooltip>
+            </th>
+            <th class="min-w-[2.3rem]">Fit
+              <Tooltip padIcon={false} position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
+            </th>
+            <th class="min-w-[2.3rem]">C
+              <Tooltip padIcon={false} position="left">Carbon sequestered</Tooltip>
+            </th>
+            <th class="min-w-[2.3rem]">Bio
+              <Tooltip padIcon={false} position="left">Biodiversity</Tooltip>
+            </th>
+            {#if $enableSelectiveHarvesting}
+              <th class="min-w-[2.8rem]">R<sub>min</sub><br />
+                <Tooltip padIcon={false} position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
+              </th>
+              <th class="min-w-[3rem]">R<sub>max</sub><br />
+                <Tooltip padIcon={false} position="left">Harvest Max Radius: The maximum tree canopy radius at which trees can be harvested.</Tooltip>
+              </th>
+              <th class="min-w-[2.5rem] text-center">H%<br />
+                <Tooltip padIcon={false} position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
+              </th>
+            {/if}
+          </thead>
+          {#each runsDisplayedInTable as run, index}
+          <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
+            <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
+              <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
+              <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
+              <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
+              <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
+              {#if $enableSelectiveHarvesting}
+                <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
+                <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>                  
+                <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
+              {/if}
+            </tr>
+          {/each}
+        </table>
+
+        <div class="statistic !w-full mt-5 text-center">
+          <label>Total fitness improvement</label>
+          <div class="h-[1.8rem]">
+            <span class="text-yellow-500">{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-center text-center mt-4 mb-1 text-subtle text-xs uppercase">
+          <span>Best fitness by generation</span>
+        </div>
+        <div class="grid grid-cols-2">
+          {#each $bestFitnessByRound as fitness, index}
+            <div class="text-xs">
+              <span class="text-subtle w-5 inline-block">{index + 1}:</span>
+              <span>{fitness}</span>
+              {#if index > 0}
+                {@const improvement = Math.round(100 * (fitness / $bestFitnessByRound[index - 1] - 1))}
+                {#if improvement > 0}
+                  <span class="font-mono text-yellow-500 text-[0.65rem]">+{improvement}%</span>
+                {/if}    
+              {/if}
+            </div>
+          {/each}
+        </div>
+
+      </div>
+      <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+    </div>
+
     <div class="absolute -left-8 w-8 top-[4.1rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20"  style="background: var(--backgroundColor)" on:click={() => isSidebarOpen = !isSidebarOpen}>
       <div class="rotate-90 mt-[1.3rem] text-xs">Ranking</div>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-5 mb-1 w-5 h-5 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
@@ -592,15 +527,12 @@
 <style>
 	.statistics {
 		display: inline-flex;
-		/* margin-top: 1rem; */
 		margin-left: 1rem;
 	}
 	.statistic {
 		display: flex;
 		flex-direction: column;
-		/* margin-right: 2rem; */
 		text-align: center;
-		/* width: 9rem; */
     width: 4rem;
     margin-right: 1rem;
     flex-shrink: 0;
@@ -611,7 +543,6 @@
     color: #ad8c6a;
     text-transform: uppercase;
     font-size: 0.7rem;
-		/* color: #d49352; */
 	}
 	.statistic span {
 		font-size: 1.8rem;
