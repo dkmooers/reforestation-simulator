@@ -52,7 +52,7 @@ const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
 let growthMultiplier = 0.65; // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
 const seedScatterDistanceMultiplier = 4; // 2 is within the radius of the parent tree
-const maxSeedlings = 1;
+const seedDensity = 3;
 
 let deadTreeCarbon = 0
 
@@ -87,7 +87,7 @@ const getBiodiversity = () => {
 
 // This is a placeholder carbon calculation for prototyping purposes - should be replaced at some point with a more physically accurate DBH-based calculation.
 const getCarbonFromTree = (tree: Tree) => {
-  return Math.pow(tree.radius, 3)
+  return Math.pow(tree.radius, 3) * 0.75 // multiply by empirical scalar to get in the ballpark of actual forest carbon sequestration rates
 }
 
 const calculateCarbon = () => {
@@ -321,10 +321,9 @@ const calculateTreeHealth = () => {
     let health = baseTree.health
     if (shadeFraction > species.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
-      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.7) * 2
+      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.5)
     } else {
-      health += Math.abs(shadeFraction - species?.shadeTolerance)
-      // health += 0.3
+      health += species.shadeTolerance - shadeFraction
       health = Math.min(1, health)
     }
 
@@ -357,7 +356,7 @@ export const propagateSeeds = () => {
   trees.forEach(tree => {
     // send out random number of seedlings
     if (tree.stemAge >= random(minReproductiveAge, minReproductiveAge + 3)) {
-      times(Math.round(Math.random() * maxSeedlings * Math.sqrt(tree.stemAge) / 3), () => {
+      times(Math.round(Math.random() * seedDensity * Math.sqrt(tree.stemAge) / 3), () => {
         seedlings.push({
           ...tree,
           age: 0,

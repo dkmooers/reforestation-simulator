@@ -8,17 +8,18 @@ import { browser } from "$app/environment";
 import { dispatch } from "$lib/dispatcher";
 
 export const useMultithreading = writable(true) // when false, we show live tree growth updates every year
-const numWorkers = derived(
+const numWorkers = 3
+const numActiveWorkers = derived(
   useMultithreading,
   useMultithreading => {
-    return useMultithreading ? 2 : 1
+    return useMultithreading ? numWorkers : 1
   }
 )
 let workers: Worker[] = []
 const numWorkersReady = writable(0)
 export const allWorkersReady = derived(
-  [numWorkers, numWorkersReady],
-  ([numWorkers, numWorkersReady])  => numWorkersReady >= numWorkers
+  [numActiveWorkers, numWorkersReady],
+  ([numActiveWorkers, numWorkersReady])  => numWorkersReady >= numActiveWorkers
 )
 
 export const bestRun = writable<Run>()
@@ -116,7 +117,7 @@ export const loadWorkers = async () => {
   numWorkersReady.set(0)
   workers = []
   // create N workers
-  times(get(numWorkers), () => {
+  times(get(numActiveWorkers), () => {
     const worker = new SimulationWorker()
     worker.postMessage({type: 'ping'})
     worker.onmessage = (e) => {
@@ -316,7 +317,7 @@ const generateScenario = (): Scenario => {
     speciesProbabilities: normalizeSpeciesProbabilities(speciesProbabilities),
     numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
-    coppiceChance: random(0, 0.2),
+    coppiceChance: random(0, 0.05),
     coppiceMinRadius: random(5, 15),
     coppiceRadiusSpread: random(2, 15), // The difference between coppiceMinRadius and the max harvestable radius (defined this way instead of defining a max radius, because with mutation and crossover, that could result in a max radius that's lower than the min radius)
   }
