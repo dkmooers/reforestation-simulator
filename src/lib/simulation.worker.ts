@@ -50,9 +50,9 @@ let sendLiveTreeUpdates = false
 const width = 392
 const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-let growthMultiplier = 0.65; // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
-const seedScatterDistanceMultiplier = 4; // 2 is within the radius of the parent tree
-const seedDensity = 3;
+let growthMultiplier = 0.7; // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
+const seedScatterDistanceMultiplier = 3; // 2 is within the radius of the parent tree
+const seedDensity = 0.4;
 
 let deadTreeCarbon = 0
 
@@ -310,7 +310,6 @@ const calculateTreeHealth = () => {
       return overlappingTree.stemAge > 0.75 * baseTree.stemAge
     })
     treesThatActuallyShadeThisOne.forEach(overlappingTree => {
-      // get distance
       const distance = getDistanceBetweenTwoTrees(baseTree, overlappingTree)
       const triangleSideLength = overlappingTree.radius + baseTree.radius - distance
       totalOverlapArea += 0.433 * (triangleSideLength * triangleSideLength) * 2
@@ -321,7 +320,12 @@ const calculateTreeHealth = () => {
     let health = baseTree.health
     if (shadeFraction > species.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
-      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.5)
+      if (baseTree.stemAge < 10 && shadeFraction > 0.6) {
+        // Don't penalize seedlings for shading, since they will receive mycorrhizal delivery of nutrients and energy from parent trees that are shading them
+        // health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.02
+      } else {
+        health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.5
+      }
     } else {
       health += species.shadeTolerance - shadeFraction
       health = Math.min(1, health)

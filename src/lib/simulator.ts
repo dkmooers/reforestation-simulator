@@ -317,7 +317,7 @@ const generateScenario = (): Scenario => {
     speciesProbabilities: normalizeSpeciesProbabilities(speciesProbabilities),
     numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
-    coppiceChance: random(0, 0.05),
+    coppiceChance: random(0, 0.2),
     coppiceMinRadius: random(5, 15),
     coppiceRadiusSpread: random(2, 15), // The difference between coppiceMinRadius and the max harvestable radius (defined this way instead of defining a max radius, because with mutation and crossover, that could result in a max radius that's lower than the min radius)
   }
