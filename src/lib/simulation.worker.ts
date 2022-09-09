@@ -45,14 +45,13 @@ let yearlyBiodiversity = [0]
 let averageBiodiversity = 0
 let sendLiveTreeUpdates = false
 
-// 112x392 = 1 acre
-// const width = 612 // 418x258 feet is 1 hectare, or 490x220, or 328x328, 176x612
-// const height = 176
+// 1 acre: 112x392 feet
+// 1 hectare: 612x176 feet, or 418x258, or 490x220, or 328x328, 
 const width = 392
 const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-let growthMultiplier = 0.5; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
-const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
+let growthMultiplier = 0.65; // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
+const seedScatterDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 const maxSeedlings = 1;
 
 let deadTreeCarbon = 0
@@ -216,8 +215,10 @@ const step = () => {
       stepNYears(numYearsPerRun)
     }, 66)
   } else {
-    stepOneYear()
-    stepNYears(numYearsPerRun)
+    delay(() => {
+      stepOneYear()
+      stepNYears(numYearsPerRun)
+    }, 0)
   }
 }
 
@@ -320,7 +321,7 @@ const calculateTreeHealth = () => {
     let health = baseTree.health
     if (shadeFraction > species.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
-      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 1) * 2
+      health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.7) * 2
     } else {
       health += Math.abs(shadeFraction - species?.shadeTolerance)
       // health += 0.3
@@ -362,8 +363,8 @@ export const propagateSeeds = () => {
           age: 0,
           stemAge: 0,
           radius: 0,
-          x: tree.x + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
-          y: tree.y + (Math.random() - 0.5) * seedDistanceMultiplier * tree.radius,
+          x: tree.x + (Math.random() - 0.5) * seedScatterDistanceMultiplier * tree.radius,
+          y: tree.y + (Math.random() - 0.5) * seedScatterDistanceMultiplier * tree.radius,
         })
       })
     }
@@ -422,32 +423,10 @@ const areAnyOverlappingTrees = () => {
 export const declusterTrees = () => {
   times(5, () => {
 
-    // trees = trees.map(baseTree => {
-    //   const nearestTrees = getNearestNTreesForTree(baseTree, 3)
-    //   // get the sum of vectors toward the nearest trees, and move this tree in the opposite direction
-    //   const vector = [0, 0]
-    //   nearestTrees.forEach(tree => {
-    //     const overlapAtMaturity = getMatureOverlapBetweenTwoTrees(tree, baseTree)
-    //     const magnitudeOfDistanceVector = Math.sqrt(Math.pow(tree.x - baseTree.x, 2) * Math.pow(tree.y - baseTree.y, 2))
-    //     const scalingFactor = magnitudeOfDistanceVector / overlapAtMaturity
-        
-    //     vector[0] += (tree.x - baseTree.x) / scalingFactor
-    //     vector[1] += (tree.y - baseTree.y) / scalingFactor
-    //   })
-    //   const oppositeDirectionVector = [-vector[0], -vector[1]]
-    //   return {
-    //     ...baseTree,
-    //     x: baseTree.x + oppositeDirectionVector[0],
-    //     y: baseTree.y + oppositeDirectionVector[1],
-    //   }
-    // })
-
     const currentTrees = trees
     currentTrees.forEach(baseTree => {
       const nearestTrees = getNearestNTreesForTree(baseTree, 3)
-      
-      // sum the vector here, then move the tree by that vector
-      
+            
       // for each neartree... move this one in the opposite direction
       nearestTrees.forEach(nearTree => {
         trees = trees.map(prevTree => {

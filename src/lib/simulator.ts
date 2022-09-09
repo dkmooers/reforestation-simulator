@@ -11,7 +11,7 @@ export const useMultithreading = writable(true) // when false, we show live tree
 const numWorkers = derived(
   useMultithreading,
   useMultithreading => {
-    return useMultithreading ? 3 : 1
+    return useMultithreading ? 2 : 1
   }
 )
 let workers: Worker[] = []
@@ -317,8 +317,8 @@ const generateScenario = (): Scenario => {
     numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
     coppiceChance: random(0, 0.2),
-    coppiceMinRadius: random(8, 20),
-    coppiceRadiusSpread: random(5, 20), // The difference between coppiceMinRadius and the max harvestable radius (defined this way instead of defining a max radius, because with mutation and crossover, that could result in a max radius that's lower than the min radius)
+    coppiceMinRadius: random(5, 15),
+    coppiceRadiusSpread: random(2, 15), // The difference between coppiceMinRadius and the max harvestable radius (defined this way instead of defining a max radius, because with mutation and crossover, that could result in a max radius that's lower than the min radius)
   }
 }
 
@@ -549,9 +549,9 @@ export const toggleRunSimulation = () => {
 
     if (wasJustPaused) {
       isPaused.set(true)
-      if (get(useMultithreading)) {
-        dispatch('pause')
-      }
+      // if (get(useMultithreading)) {
+      //   dispatch('pause')
+      // }
       workers.forEach(worker => {
         worker.postMessage({type: 'pause'})
       })
