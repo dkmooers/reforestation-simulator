@@ -1,8 +1,16 @@
 import { countBy, delay, last, random, sortBy, sum, take, times } from "lodash";
 import type { Run, Scenario, Tree, TreeSpecies } from "../types";
 
+let pauseQueue: Array<{
+  fn: Function,
+  args?: any
+}> = []
+
+let isPaused = false
+
 onmessage = (msg) => {
   const { type, value } = msg.data
+
   if (type === 'runScenario') {
     reset()
     scenario = value.scenario
@@ -11,17 +19,22 @@ onmessage = (msg) => {
     numYearsPerRun = value.numYearsPerRun
     sendLiveTreeUpdates = value.sendLiveTreeUpdates
     enableSelectiveHarvesting = value.enableSelectiveHarvesting
-    // growthMultiplier = value.enableSelectiveHarvesting ? 1 : 0.5 // slow down growth rate for 
     runScenario()
+  } else if (type === 'resume') {
+    isPaused = false
+    pauseQueue?.forEach(({fn, args}) => fn(args))
+    pauseQueue = []
   } else if (type === 'ping') {
     postMessage({ type: 'ready' })
     console.log('Worker ready! 👋');
   } else if (type === 'reset') {
     reset()
+  } else if (type === 'pause') {
+    console.log('paused')
+    isPaused = true
   }
 };
 
-// const sendLiveTreeUpdates = false
 let currentRunId = 0
 let enableSelectiveHarvesting = true
 let treeSpecies: TreeSpecies[] = []
@@ -110,18 +123,17 @@ const getRandomTreeSpecies = () => {
     }
   })
 
-
   return treeSpecies[speciesIndexChosen ?? 0]
-
   // simple random species, same chance for each
   // return treeSpecies[Math.floor(Math.random() * treeSpecies.length)]
 }
 
 const getTreeSpeciesById = (id: string): TreeSpecies => {
-  return treeSpecies.find(species => species.id === id);
+  return treeSpecies.find(species => species.id === id) as TreeSpecies;
 }
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
+  isPaused = false
   yearlyCarbon = []
   yearlyTrees = []
   yearlyBiodiversity = []
@@ -148,6 +160,7 @@ const calculateFitness = (): number => {
 }
 
 const runScenario = () => {
+  isPaused = false
   const newInitialTrees = addNRandomTrees(200)
   initialTrees = newInitialTrees
   stepNYears(numYearsPerRun);
@@ -174,42 +187,47 @@ export const stepOneYear = () => {
   yearlyTrees.push(trees.length)
   yearlyBiodiversity.push(getBiodiversity())
 
-  // const sendLiveUpdates = true
+  const updatedRun: Run = {
+    // trees,
+    trees: sendLiveTreeUpdates ? trees : [],
+    // trees: [],
+    deadTrees: [],
+    initialTrees: [],
+    id: currentRunId,
+    yearlyData: {
+      carbon: yearlyCarbon,
+      trees: yearlyTrees,
+      biodiversity: yearlyBiodiversity,
+    },
+    scenario: scenario,
+    fitness: 0,
+    isAllocated: true,
+    averageBiodiversity: getAverageBiodiversity(),
+  }
 
-  // if (sendLiveUpdates) {
-    const updatedRun: Run = {
-      // trees,
-      trees: sendLiveTreeUpdates ? trees : [],
-      // trees: [],
-      deadTrees: [],
-      initialTrees: [],
-      id: currentRunId,
-      yearlyData: {
-        carbon: yearlyCarbon,
-        trees: yearlyTrees,
-        biodiversity: yearlyBiodiversity,
-      },
-      scenario: scenario,
-      fitness: 0,
-      isAllocated: true,
-      averageBiodiversity: getAverageBiodiversity(),
-    }
-
-    postMessage({type: 'updatedRun', value: updatedRun})
-  // }
+  postMessage({type: 'updatedRun', value: updatedRun})
 }
 
-export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
+const step = () => {
+  if (sendLiveTreeUpdates) { // slow down the simulation if running in live tree-growth showcase mode
+    delay(() => {
+      stepOneYear()
+      stepNYears(numYearsPerRun)
+    }, 66)
+  } else {
+    stepOneYear()
+    stepNYears(numYearsPerRun)
+  }
+}
+
+export const stepNYears = (numYears: number) => {
 
   if (year < numYears) {
-    if (sendLiveTreeUpdates) { // slow down the simulation if running in live tree-growth showcase mode
-      delay(() => {
-        stepOneYear()
-        stepNYears(numYears)
-      }, 66)
+    // put next step on pauseQueue if we're paused, otherwise continue to run
+    if (isPaused) { 
+      pauseQueue.push({fn: step})
     } else {
-      stepOneYear()
-      stepNYears(numYears)
+      step()
     }
   }
   else {
@@ -237,11 +255,9 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
 
 export const pruneOverflowTrees = () => {
-  // console.log('before pruning:', trees.length)
   trees = trees.filter(tree => {
     return !(tree.x < 0 || tree.x > width || tree.y < 0 || tree.y > height)
   })
-  // console.log('after pruning:', trees.length)
 }
 
 const selectivelyHarvestTrees = () => {
@@ -299,9 +315,9 @@ const calculateTreeHealth = () => {
     })
     const baseTreeArea = Math.PI * baseTree.radius * baseTree.radius
     const shadeFraction = Math.min(1, totalOverlapArea / baseTreeArea) || 0
-    const species = treeSpecies.find(species => species.id === baseTree.speciesId)
+    const species = treeSpecies.find(species => species.id === baseTree.speciesId) as TreeSpecies
     let health = baseTree.health
-    if (shadeFraction > species?.shadeTolerance) {
+    if (shadeFraction > species.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
       health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 1) * 2
     } else {
@@ -519,7 +535,6 @@ export const addNRandomTrees = (numTrees: number): Tree[] => {
       age: 0,
       stemAge: 0,
       sizeMultiplier: 1,
-      // sizeMultiplier: Math.random() / 2 + 0.5,
     })
   }
   trees = [...trees, ...newTrees]
@@ -530,9 +545,5 @@ export const addNRandomTrees = (numTrees: number): Tree[] => {
 
   return trees
 }
-
-
-
-
 
 export {};

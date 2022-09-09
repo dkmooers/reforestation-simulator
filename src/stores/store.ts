@@ -3,7 +3,12 @@ import { times, sortBy, take, countBy, last, reverse, first, sum, random, withou
 import { treeSpecies } from "$lib/treeSpecies";
 import SimulationWorker from '../lib/simulation.worker?worker'
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
-import type { Run, Scenario, Tree } from "../types";
+import type { Run, Scenario, Tree, TreeSpecies } from "../types";
+import { createEventDispatcher } from "svelte";
+import { browser } from "$app/environment";
+import { dispatch } from "$lib/dispatcher";
+
+// const dispatch = createEventDispatcher()
 
 export const useMultithreading = writable(true) // disable this and set workers to 1 to show live tree updates during growth
 const numWorkers = derived(
@@ -20,8 +25,8 @@ export const allWorkersReady = derived(
 )
 export const bestRun = writable<Run>()
 export const numYearsPerRun = 100
-export const maxRounds = 20
-export const populationSize = 20
+export const maxRounds = 1
+export const populationSize = 3
 const numElites = 2
 const preserveEliteRunData = true // if true, don't re-run elite scenarios in the next round - re-use their tree growth run data and fitness from previous round
 const crossoverFraction = 0.7
@@ -37,7 +42,7 @@ export const bestFitnessByRound = derived(
 )
 export const enableSelectiveHarvesting = writable(true)
 
-const pauseQueue: Array<{
+let pauseQueue: Array<{
   fn: Function,
   args: any
 }> = []
@@ -45,25 +50,16 @@ const pauseQueue: Array<{
 const handleMessage = (e) => {
   if (e.data.type === 'runData') {
     const runData = e.data.value as Run;
-    // trees.set(runData.trees)
-    // deadTrees.set(runData.deadTrees)
-    // initialTrees.set(runData.initialTrees)
-    // yearlyTrees.set(runData.yearlyData.trees)
-    // yearlyBiodiversity.set(runData.yearlyData.biodiversity)
-    // yearlyCarbon.set(runData.yearlyData.carbon)
-    // year.set(runData.yearlyData.carbon.length)
 
     runs.update(prevRuns => prevRuns.map((run, index) => {
       if (run.id === runData.id) {
-        // console.log(runData.id)
         return runData
       } else {
         return run
       }
     }))
 
-    updateFitnessImprovement()
-
+    updateOverallFitnessImprovement()
     displayRun(runData.id)
 
     // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
@@ -83,50 +79,26 @@ const handleMessage = (e) => {
 
     const updatedRun = e.data.value as Run
 
-    // update tree graphics every year if we're not using web workers / multiple threads at once
+    // update tree graphics every year if we're in single threaded mode
     if (!get(useMultithreading)) {
       currentRunId.set(updatedRun.id)
-      // displayRun(updated)
       year.set(updatedRun.yearlyData.biodiversity.length)
       yearlyTrees.set(updatedRun.yearlyData.trees)
       yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
       yearlyCarbon.set(updatedRun.yearlyData.carbon)
       // only render trees every Nth year step to avoid choking the graphics engine
       // if (updatedRun.yearlyData.carbon.length % 4 === 0) {
-        trees.set(updatedRun.trees)
+      trees.set(updatedRun.trees)
       // }
     }
-    
-    // update everything else every single year
-
-    // trees.set(updatedRun.trees)
-    // currentRunId.set(updatedRun.id)
-
-    // if (!get(runs).find(run => run.id === updatedRun.id)) {
-    //   runs.update(runs => [...runs, updatedRun])
-    // } else {
 
     runs.update(prevRuns => prevRuns.map((run, index) => {
       if (run.id === updatedRun.id) {
-
-        // if (!useMultithreading) {
-        //   console.log('setting trees...')
-        //   trees.set(updatedRun.trees)
-        //   year.set(updatedRun.yearlyData.carbon.length)
-        // }
-        // live-update trees if run data is sending them
-        // only render trees every Nth year step to avoid choking the graphics engine
-        // if (updatedRun.trees.length && updatedRun.yearlyData.carbon.length % 5 === 0) {
-          // trees.set(updatedRun.trees)
-          // year.set(updatedRun.yearlyData.carbon.length)
-        // }
-
         return updatedRun
       } else {
         return run
       }
     }))
-  // }
   } 
   else if (e.data.type === 'ready') {
     // log this worker as ready
@@ -136,15 +108,10 @@ const handleMessage = (e) => {
 
 export const loadWorkers = async () => {
   console.log('loadWorkers')
-  // clear previous workers
-  // workers.forEach(worker => {
-  //   worker.terminate()
-  // })
   numWorkersReady.set(0)
   workers = []
   // create N workers
   times(get(numWorkers), () => {
-    // const worker = new Worker(new URL('../lib/simulation.worker.ts', import.meta.url))
     const worker = new SimulationWorker()
     worker.postMessage({type: 'ping'})
     worker.onmessage = (e) => {
@@ -166,7 +133,6 @@ export const progressPercentOverall = derived(
     const baseCompletedFraction = completedRounds / maxRounds
     const completedRunsThisRound = runs.filter(run => run.isComplete)?.length || 0
     const thisRoundAdditionToCompletedFraction = completedRunsThisRound / populationSize / maxRounds
-    // const inProgressRunsAdditionToCompletedFraction = sum(runs.filter(run => run.isAllocated && !run.isComplete).map(run => run.yearlyData.carbon.length)) / (populationSize * numYearsPerRun)
     return (baseCompletedFraction + thisRoundAdditionToCompletedFraction) * 100
   }
 )
@@ -223,10 +189,6 @@ export const runIdWithHighestFitness = derived(
     let maxFitness = 0
     let maxFitnessRunId = 0
     runs.forEach(run => {
-      // const biodiversity = last(run.yearlyData.biodiversity) || 0
-      // const carbon = last(run.yearlyData.carbon) || 0
-      // const score = biodiversity * carbon / 2000
-      
       if (run.fitness > maxFitness) {
         maxFitness = run.fitness
         maxFitnessRunId = run.id
@@ -260,29 +222,9 @@ export const biodiversity = derived(
     const arrayOfSpeciesCounts = Object.keys(numTreesBySpecies).map(key => numTreesBySpecies[key])
     const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)
     const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
-    // return Math.log(Math.log(1 - rawBiodiversity + 1.718) + 1.718)
-    return Math.pow(1 - rawBiodiversity, 500)//.toFixed(3)
+    return Math.pow(1 - rawBiodiversity, 500)
   }
 )
-
-const calculateCarbon = () => {
-  let carbonSum = 0
-  get(trees).forEach(tree => {
-    carbonSum += tree.radius * 100
-  })
-  get(deadTrees).forEach(tree => {
-    carbonSum += tree.radius * 100
-  })
-  return carbonSum 
-}
-
-const getRandomTreeSpecies = () => {
-  return treeSpecies[Math.floor(Math.random() * treeSpecies.length)]
-}
-
-const getTreeSpeciesById = (id: string): TreeSpecies => {
-  return treeSpecies.find(species => species.id === id);
-}
 
 export const displayRun = (runId: number) => {
   currentRunId.set(runId)
@@ -298,7 +240,6 @@ const loadRun = (runId: number) => {
     yearlyBiodiversity.set(run.yearlyData.biodiversity)
     trees.set(run.trees)
     year.set(run.yearlyData.carbon.length)
-    // deadTrees.set(run.deadTrees)
   }
 }
 
@@ -313,6 +254,8 @@ const getEmptyRun = (): Run => ({
   deadTrees: [],
   scenario: generateScenario(),
   fitness: 0,
+  averageBiodiversity: 0,
+  initialTrees: [],
 })
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
@@ -433,11 +376,8 @@ const generateCrossoverFromParents = (parent1: Run, parent2: Run): Scenario => {
   }))
 
   // do random mutations on crossover children
-  // if (Math.random() < 0.25) {
-    child = generateMutantFromParent(child)
-  // }
+  child = generateMutantFromParent(child)
 
-  // child.coppiceChance = getRandomArrayElement([scenario1, scenario2]).coppiceChance
   return child as Scenario
 }
 
@@ -543,12 +483,13 @@ const completeSimulation = () => {
   isRunning.set(false);
   isPaused.set(false);
   isComplete.set(true);
-  window.postMessage({type: 'runFinished'})
+  if (browser) {
+    dispatch('runFinished')
+  }
   currentRunId.set(get(runIdWithHighestFitness))
 }
 
-const updateFitnessImprovement = () => {
-  // update overall fitness improvement %
+const updateOverallFitnessImprovement = () => {
   if (get(rounds).length > 0) {
     const firstRoundMaxFitness = last(sortBy(first(get(rounds)), 'fitness'))?.fitness
     let lastRoundMaxFitness = 0
@@ -571,7 +512,7 @@ const attemptToRunNextRound = () => {
   }
 
   if (get(rounds).length) {
-    window.postMessage({type: 'roundComplete'})
+    dispatch('roundComplete')
   }
 
   // save last round
@@ -584,9 +525,6 @@ const attemptToRunNextRound = () => {
     rounds.update(prevRounds => [...prevRounds, lastRound])
   }
 
-
-  // updateFitnessImprovement()
-
   if (get(currentRound) >= maxRounds || areStopConditionsMet()) {
     completeSimulation()
   } else {
@@ -597,16 +535,26 @@ const attemptToRunNextRound = () => {
   }
 }
 
-export const runSimulation = () => {
+export const toggleRunSimulation = () => {
 
   if (get(currentRound) > 0) {
+
     isRunning.update(prevRunning => !prevRunning)
 
     const wasJustPaused = !get(isRunning)
+
     if (wasJustPaused) {
       isPaused.set(true)
-      window.postMessage({type: 'paused'})
+      if (get(useMultithreading)) {
+        dispatch('pause')
+      }
+      workers.forEach(worker => {
+        worker.postMessage({type: 'pause'})
+      })
     } else {
+      workers.forEach(worker => {
+        worker.postMessage({type: 'resume'})
+      })
       isPaused.set(false)
     }
 
@@ -616,6 +564,7 @@ export const runSimulation = () => {
         attemptToRunNextRound()
       } else {
         pauseQueue?.forEach(({fn, args}) => fn(args))
+        pauseQueue = []
       }
     }
   } else {

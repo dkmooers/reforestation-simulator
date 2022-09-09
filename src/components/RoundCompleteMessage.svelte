@@ -1,22 +1,31 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
+  import { browser } from "$app/environment";
+  import { onDestroy, onMount } from "svelte";
   import { fly } from "svelte/transition"
   let isVisible = false
   let duration = 4000
   let isCountingDown = false
 
+  const trigger = () => {
+    isVisible = true
+    setTimeout(() => {
+      isCountingDown = true
+    }, 10)
+    setTimeout(() => isVisible = false, duration)
+  }
+
   onMount(() => {
-    self.onmessage = (msg) => {
-      if (msg.data.type === 'roundComplete') {
-        isVisible = true
-        setTimeout(() => {
-          isCountingDown = true
-        }, 10)
-        setTimeout(() => isVisible = false, duration)
-      }
+    if (browser) {
+      window.addEventListener('roundComplete', trigger)
     }
   })
+
+  onDestroy(() => {
+    if (browser) {
+      window.removeEventListener('roundComplete', trigger)
+    }
+  })
+
 </script>
 
 {#if isVisible}

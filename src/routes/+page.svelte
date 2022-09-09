@@ -7,7 +7,7 @@
 	import {
     loadWorkers,
     useMultithreading,
-		runSimulation,
+		toggleRunSimulation,
 		reset,
     numSpecies,
 		year,
@@ -44,12 +44,14 @@
   import { last } from 'lodash';
   import Tooltip from '../components/Tooltip.svelte';
   import Loader from '../components/Loader.svelte';
-  import { run } from 'svelte/internal';
+  import { createEventDispatcher, run } from 'svelte/internal';
   import Toggle from '../components/Toggle.svelte';
   import SuccessModal from '../components/SuccessModal.svelte';
   import RoundCompleteMessage from '../components/RoundCompleteMessage.svelte';
 
   let showIntro: () => {};
+  let showPauseMessage: () => {};
+  let showSuccessModal: () => {};
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
@@ -57,7 +59,7 @@
   $: currentRunBiodiversity = Math.round(($currentRun?.averageBiodiversity || 0) * 100)
   // $: currentRunBiodiversity = Math.round((last($currentRun?.yearlyData.biodiversity) || 0) * 100)
   // $: isRunButtonDisabled = $isRunning || !$allWorkersReady
-
+  const dispatch = createEventDispatcher()
   // reset state when user changes selective harvesting toggle
   // $: {
   //   const shouldHarvest = $enableSelectiveHarvesting
@@ -96,8 +98,8 @@
     class="flex flex-grow flex-col items-stretch h-screen overflow-hidden"
   >
     <Modal bind:trigger={showIntro} />
-    <SuccessModal />
-    <PauseMessage />
+    <SuccessModal bind:trigger={showSuccessModal} />
+    <PauseMessage bind:trigger={showPauseMessage} />
     <RoundCompleteMessage />
     {#if !$allWorkersReady && !$isRunning && !$isPaused}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
@@ -141,7 +143,10 @@
               class="button-primary text-black text-opacity-75 transition-opacity hover:opacity-80 select-none {$isComplete ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}"
                 on:click={() => {
                   // reset();
-                  runSimulation();
+                  if (!$isPaused) {
+                    dispatch('pause')
+                  }
+                  toggleRunSimulation();
                 }}
               >
                 <div class="w-6 flex items-center h-full">
@@ -342,7 +347,7 @@
                 <button
                   class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-xl px-6 py-2 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
                   on:click={() => {
-                    runSimulation();
+                    toggleRunSimulation();
                   }}
                 >
                   <span class="w-8">

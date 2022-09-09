@@ -1,33 +1,26 @@
 <script lang="ts">
-  import { bestRun, trees, elapsedTime } from "../stores/store";
-  import { onMount } from "svelte";
+  import { elapsedTime } from "../stores/store";
+  import { onDestroy, onMount } from "svelte";
   import { fly } from "svelte/transition"
-  import { treeSpecies } from "$lib/treeSpecies";
+  import { browser } from "$app/environment";
   let isVisible = false
 
-  // onMount(() => {
-  //   setTimeout(() => {
-  //     isVisible = true
-  //   }, 1)
-  // })
-
-
+  const trigger = () => {
+    isVisible = true
+  }
 
   onMount(() => {
-
-// setTimeout(() => isVisible = false, duration)
-
-    self.onmessage = (msg) => {
-      if (msg.data.type === 'runFinished') {
-        isVisible = true
-        // setTimeout(() => {
-        //   isCountingDown = true
-        // }, 10)
-        // setTimeout(() => isVisible = false, duration)
-      }
+    if (browser) {
+      window.addEventListener('runFinished', trigger)
     }
-
   })
+
+  onDestroy(() => {
+    if (browser) {
+      window.removeEventListener('runFinished', trigger)
+    }
+  })
+
 </script>
 
 {#if isVisible}
@@ -44,27 +37,7 @@
         </div>
         <div class="text-center">
           Close this window to see details of the best-performing tree planting scenario:
-          
-          <!-- {#each $bestRun.scenario.speciesProbabilities as probability, index}
-            {@const species = treeSpecies[index]}
-            <div><span class="capitalize">{species.id}</span>: {Math.round(probability * 100)}%</div>
-            
-          {/each} -->
-          <!-- <div class="flex flex-col w-full">
-            {#each $bestRun.scenario.speciesProbabilities as probability, speciesIndex}
-              {@const probabilityPercent = probability * 100}
-              {@const species = treeSpecies[speciesIndex]}
-              <div class="bg-white rounded" style="width: {probabilityPercent}%;">
-                <div
-                  style="background: {species?.color}99; transition: min-width 0.2s;"
-                  class="rounded px-2 hover:flex-grow min-w-0 hover:!min-w-[5.5rem] cursor-pointer whitespace-nowrap text-xs text-black border-r border-black border-opacity-20 overflow-hidden"
-                >{species.id}</div>
-              </div>
-
-            {/each}
-          </div> -->
         </div>
-
         <div>
           <button class="button-primary px-8 py-2 mt-3 mb-2 text-lg font-bfold mx-auto flex space-x-2" on:click={() => isVisible = false}>
             <span>See details</span>
