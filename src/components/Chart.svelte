@@ -4,10 +4,13 @@
   import { fade } from "svelte/transition"
   import { last } from 'lodash';
   import { max } from 'lodash';
+import Tooltip from './Tooltip.svelte';
 
   // let points = [] 
   let runsData = []
-  let showTrees = false
+  let showCarbon = true
+  let showBiodiversity = true
+  let showTrees = true
 
   let minx = 0;
   let maxx = numYearsPerRun;
@@ -79,16 +82,18 @@
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
   <div class="z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-13px] text-[#ad8c6a] text-sm flex items-center">
-    <span class="swatch carbon"></span>
+    <span class="swatch carbon" class:active={showCarbon} on:click={() => showCarbon = !showCarbon}></span>
     Carbon sequestered by run<span class="font-light ml-1">(tons)</span>
-    {#if showTrees}
-      <span class="swatch trees ml-6"></span>
+    <!-- {#if showTrees} -->
+      <span class="swatch trees ml-6" class:active={showTrees} on:click={() => showTrees = !showTrees}></span>
       Number of trees
-    {/if}
-    <span class="swatch biodiversity ml-6"></span>
+    <!-- {/if} -->
+    <span class="swatch biodiversity ml-6" class:active={showBiodiversity}  on:click={() => showBiodiversity = !showBiodiversity}></span>
     Biodiversity
+    <Tooltip>On its own scale, from 0 - 100% vertically.</Tooltip>
   </div>
   <Pancake.Chart x1={minx} x2={maxx} y1={miny} y2={maxy}>
+
     <Pancake.Grid horizontal count={3} let:value let:last>
       <div class="grid-line horizontal"><span>{value} {last ? '' : ''}</span></div>
     </Pancake.Grid>
@@ -97,8 +102,7 @@
       <div class="grid-line vertical"></div>
       <span class="year-label">{value}</span>
     </Pancake.Grid>
-    
-
+  
     {#if runsData?.length}
       <Pancake.Svg>
         <!-- <Pancake.SvgScatterplot data={points} x="{d => d.date}" y="{d => d.avg}" let:d>
@@ -120,12 +124,16 @@
         </Pancake.Point> -->
 
           {#if data.length < numYearsPerRun}
-            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.carbon}" let:d>
-              <path class="carbon scatter" {d} />
-            </Pancake.SvgScatterplot>
-            <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.biodiversity * maxy}" let:d>
-              <path class="biodiversity scatter" {d} />
-            </Pancake.SvgScatterplot>
+            {#if showCarbon}
+              <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.carbon}" let:d>
+                <path class="carbon scatter" {d} />
+              </Pancake.SvgScatterplot>
+            {/if}
+            {#if showBiodiversity}
+              <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.biodiversity * maxy}" let:d>
+                <path class="biodiversity scatter" {d} />
+              </Pancake.SvgScatterplot>
+            {/if}
             {#if showTrees}
               <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.trees}" let:d>
                 <path class="trees scatter" {d} />
@@ -133,13 +141,16 @@
             {/if}
           {/if}
 
-
-          <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
-            <path class="carbon" class:active={data?.[0].id === $currentRunId} {d} />
-          </Pancake.SvgLine>
-          <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.biodiversity * maxy}" let:d>
-            <path class="biodiversity" class:active={data?.[0].id === $currentRunId} {d} />
-          </Pancake.SvgLine>
+          {#if showCarbon}
+            <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
+              <path class="carbon" class:active={data?.[0].id === $currentRunId} {d} />
+            </Pancake.SvgLine>
+          {/if}
+          {#if showBiodiversity}
+            <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.biodiversity * maxy}" let:d>
+              <path class="biodiversity" class:active={data?.[0].id === $currentRunId} {d} />
+            </Pancake.SvgLine>
+          {/if}
           {#if showTrees}
             <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.trees}" let:d>
               <path class="trees" class:active={data?.[0].id === $currentRunId} {d} />
@@ -268,16 +279,27 @@
     width: 12px;
     height: 12px;
     border-radius: 100%;
+    border: 2px solid transparent;
     margin-right: 6px;
   }
+
   .swatch.carbon {
+    border-color: #16c264;
+  }
+  .swatch.carbon.active {
     background-color: #16c264;
   }
   .swatch.trees {
+    border-color: #aea798;
+  }
+  .swatch.trees.active {
     background-color: #aea798;
   }
 
   .swatch.biodiversity {
+    border-color: #af62ff;
+  }
+  .swatch.biodiversity.active {
     background-color: #af62ff;
   }
 

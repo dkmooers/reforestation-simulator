@@ -6,6 +6,7 @@
   import Modal from '../components/Modal.svelte';
 	import {
     loadWorkers,
+    useMultithreading,
 		runSimulation,
 		reset,
     numSpecies,
@@ -45,6 +46,7 @@
   import { run } from 'svelte/internal';
   import Toggle from '../components/Toggle.svelte';
   import SuccessModal from '../components/SuccessModal.svelte';
+  import RoundCompleteMessage from '../components/RoundCompleteMessage.svelte';
 
   let showIntro: () => {};
 	let renderGraphics = true;
@@ -61,7 +63,9 @@
   //   reset()
   // }
 
-  $: runsDisplayedInTable = reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', ))
+  $: runsDisplayedInTable = ($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1}))
+  // $: runsDisplayedInTable = reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', ))
+
 
   const toggleSelectiveHarvesting = () => {
     reset();
@@ -93,7 +97,8 @@
     <Modal bind:trigger={showIntro} />
     <SuccessModal />
     <PauseMessage />
-    {#if !$allWorkersReady}
+    <RoundCompleteMessage />
+    {#if !$allWorkersReady && !$isRunning && !$isPaused}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
           <div class="font-bold">Loading workers</div>
@@ -196,20 +201,23 @@
               <div class="mt-2">Cannot be changed in the middle of a simulation as it would invalidate test results. Once you reset the simulation, then you'll be able to change this setting.</div>
             {/if}
           </Tooltip>
-          <Toggle bind:checked={$enableSelectiveHarvesting} disabled={$isRunning || $isPaused} />
+          <Toggle id="enableSelectiveHarvesting" bind:checked={$enableSelectiveHarvesting} disabled={$isRunning || $isPaused} />
           <!-- <input type="checkbox" disabled={$isRunning} checked={$enableSelectiveHarvesting} on:change={() => toggleSelectiveHarvesting()} /> -->
           <!-- <label class="flex items-center whitespace-nowrap">
             Show tree labels
             <input type="checkbox" bind:checked={showTreeLabels} />
           </label> -->
           <span class="opacity-30 mx-3">•</span>
-          <label class="whitespace-nowrap">
+          <label class="whitespace-nowrap mr-3">Use multithreading</label>
+          <Toggle id="useMultithreading" bind:checked={$useMultithreading} disabled={$isRunning || $isPaused} />
+
+          <!-- <label class="whitespace-nowrap">
             Color mode
             <select bind:value={colorMode}>
               <option value="colorized" label="Colorized">
-              <option value="shaded" label="Green shading">
+              <option value="shaded" label="Shaded">
             </select>
-          </label>
+          </label> -->
         </div>
       </div>
 
@@ -347,7 +355,7 @@
               </div>
             </div>
           {/if}
-          {#if $currentRound === 1 && $runs.filter(run => run.isComplete).length === 0}
+          {#if $currentRound === 1 && $runs.filter(run => run.isAllocated).length === 0}
             <div class="flex-col w-full h-full absolute inset-0 flex items-center justify-center flex-grow">
               <Loader size="4rem" />
             </div>
@@ -470,7 +478,7 @@
   <!-- Sidebar -->
   <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
     <!-- {#if isSidebarOpen} -->
-      <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[18.4rem]' : 'w-[13.3rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
+      <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[19.6rem]' : 'w-[13.3rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
         <div class="px-4 flex-grow">
 
           <div class="flex items-center mb-3 text-sm">
@@ -491,23 +499,26 @@
 
           <table class="border-collapse text-xs">
             <thead>
-              <th class="min-w-[1.75rem] text-center">#
+              <th class="w-[1.4rem] text-center">#
                 <Tooltip padIcon={false} position="left">Run Number</Tooltip>
               </th>
-              <th class="min-w-[3rem]">Fit...
+              <th class="min-w-[2.3rem]">Fit
                 <Tooltip padIcon={false} position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
               </th>
-              <th class="min-w-[3rem]">Car...
+              <th class="min-w-[2.3rem]">C
                 <Tooltip padIcon={false} position="left">Carbon sequestered</Tooltip>
               </th>
-              <th class="min-w-[3rem]">Bio...
+              <th class="min-w-[2.3rem]">Bio
                 <Tooltip padIcon={false} position="left">Biodiversity</Tooltip>
               </th>
               {#if $enableSelectiveHarvesting}
-                <th>HMR<br />
+                <th class="min-w-[2.8rem]">R<sub>min</sub><br />
                   <Tooltip padIcon={false} position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
                 </th>
-                <th class="min-w-[2.55rem] text-center">HC<br />
+                <th class="min-w-[3rem]">R<sub>max</sub><br />
+                  <Tooltip padIcon={false} position="left">Harvest Max Radius: The maximum tree canopy radius at which trees can be harvested.</Tooltip>
+                </th>
+                <th class="min-w-[2.5rem] text-center">H%<br />
                   <Tooltip padIcon={false} position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
                 </th>
               {/if}
@@ -521,6 +532,7 @@
                 <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
                 {#if $enableSelectiveHarvesting}
                   <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
+                  <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>                  
                   <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
                 {/if}
               </tr>

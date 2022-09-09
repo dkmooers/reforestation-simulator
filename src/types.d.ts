@@ -4,6 +4,7 @@ type Scenario = {
   declusteringStrength: number
   coppiceMinRadius: number
   coppiceChance: number
+  coppiceRadiusSpread: number
 }
 
 type TreeSpecies = {

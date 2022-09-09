@@ -5,13 +5,18 @@ import SimulationWorker from '../lib/simulation.worker?worker'
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
 import type { Run, Scenario, Tree } from "../types";
 
-let useMultithreading = true // disable this and set workers to 1 to show live tree updates during growth
-const numWorkers = 3
+export const useMultithreading = writable(true) // disable this and set workers to 1 to show live tree updates during growth
+const numWorkers = derived(
+  useMultithreading,
+  useMultithreading => {
+    return useMultithreading ? 3 : 1
+  }
+)
 let workers: Worker[] = []
 const numWorkersReady = writable(0)
 export const allWorkersReady = derived(
-  numWorkersReady,
-  numWorkersReady => numWorkersReady === numWorkers
+  [numWorkers, numWorkersReady],
+  ([numWorkers, numWorkersReady])  => numWorkersReady >= numWorkers
 )
 export const bestRun = writable<Run>()
 export const numYearsPerRun = 100
@@ -79,8 +84,8 @@ const handleMessage = (e) => {
     const updatedRun = e.data.value as Run
 
     // update tree graphics every year if we're not using web workers / multiple threads at once
-    if (!useMultithreading) {
-      // currentRunId.set(run.id)
+    if (!get(useMultithreading)) {
+      currentRunId.set(updatedRun.id)
       // displayRun(updated)
       year.set(updatedRun.yearlyData.biodiversity.length)
       yearlyTrees.set(updatedRun.yearlyData.trees)
@@ -130,11 +135,15 @@ const handleMessage = (e) => {
 }
 
 export const loadWorkers = async () => {
-  // clear previous sync workers
-  // TODO should we destroy them instead of just nulling the array?
+  console.log('loadWorkers')
+  // clear previous workers
+  // workers.forEach(worker => {
+  //   worker.terminate()
+  // })
+  numWorkersReady.set(0)
   workers = []
   // create N workers
-  times(numWorkers, () => {
+  times(get(numWorkers), () => {
     // const worker = new Worker(new URL('../lib/simulation.worker.ts', import.meta.url))
     const worker = new SimulationWorker()
     worker.postMessage({type: 'ping'})
@@ -307,6 +316,7 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   const newRunId = mostRecentRunId + 1
   rounds.set([])
   currentRound.set(0)
+  fitnessImprovement.set(0)
 
   runs.update(prevRuns => [...prevRuns, getEmptyRun()])
 
@@ -349,7 +359,8 @@ const generateScenario = (): Scenario => {
     numTrees: random(100, 200),
     declusteringStrength: Number(Math.random().toFixed(2)),
     coppiceChance: random(0, 0.2),
-    coppiceMinRadius: random(8, 20)
+    coppiceMinRadius: random(8, 20),
+    coppiceRadiusSpread: random(5, 20), // The difference between coppiceMinRadius and the max harvestable radius (defined this way instead of defining a max radius, because with mutation and crossover, that could result in a max radius that's lower than the min radius)
   }
 }
 
@@ -367,7 +378,7 @@ const dispatchNextRunToWorker = (worker: Worker, opts?: { sendLiveTreeUpdates?: 
       id: firstUnallocatedRun.id,
       treeSpecies, // send this because importing it inside the worker was causing circular build errors
       numYearsPerRun, // send this because importing it inside the worker was causing circular build errors
-      sendLiveTreeUpdates: opts?.sendLiveTreeUpdates,
+      sendLiveTreeUpdates: !get(useMultithreading),// opts?.sendLiveTreeUpdates,
       enableSelectiveHarvesting: get(enableSelectiveHarvesting),
     }})
     runs.update(prevRuns => prevRuns.map(run => {
@@ -385,11 +396,13 @@ const dispatchNextRunToWorker = (worker: Worker, opts?: { sendLiveTreeUpdates?: 
 
 const runPopulation = () => {
   // send a message to each worker to start going on a run (the instructions to continue after that come from handleMessage func)
-  workers.forEach(worker => {
-    // only send live tree updates for the very first run that's dispatched
-    const sendLiveTreeUpdates = get(currentRound) === 1 && get(runs).filter(run => run.isAllocated).length === 0 
-    dispatchNextRunToWorker(worker, { sendLiveTreeUpdates })
-  })
+  if (get(useMultithreading)) {
+    workers.forEach(worker => {
+      dispatchNextRunToWorker(worker)
+    })
+  } else {
+    dispatchNextRunToWorker(workers[0])
+  }
 }
 
 const areStopConditionsMet = () => {
@@ -408,8 +421,10 @@ const generateCrossoverFromParents = (parent1: Run, parent2: Run): Scenario => {
     return getRandomArrayElement([scenario1, scenario2]).speciesProbabilities[index]
   }))
 
-  // do random mutations?
-  child = generateMutantFromParent(child)
+  // do random mutations on crossover children
+  // if (Math.random() < 0.25) {
+    child = generateMutantFromParent(child)
+  // }
 
   // child.coppiceChance = getRandomArrayElement([scenario1, scenario2]).coppiceChance
   return child as Scenario
@@ -553,6 +568,7 @@ const attemptToRunNextRound = () => {
   if (lastRound.length) {
     rounds.update(prevRounds => [...prevRounds, lastRound])
   }
+  window.postMessage({type: 'roundComplete'})
 
   // updateFitnessImprovement()
 

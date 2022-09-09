@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { isRunning, isPaused } from "../stores/store";
   import { fly } from "svelte/transition"
   let isVisible = false
 
@@ -16,7 +17,9 @@
       }
     }
     setTimeout(() => {
-      isVisible = true
+      if (!$isRunning && !$isPaused) {
+        isVisible = true
+      }
     }, 1)
   })
 </script>

@@ -1,4 +1,4 @@
-import { countBy, last, random, sortBy, sum, take, times } from "lodash";
+import { countBy, delay, last, random, sortBy, sum, take, times } from "lodash";
 import type { Run, Scenario, Tree, TreeSpecies } from "../types";
 
 onmessage = (msg) => {
@@ -36,7 +36,7 @@ let sendLiveTreeUpdates = false
 const width = 392
 const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-let growthMultiplier = 0.8; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
+let growthMultiplier = 0.75; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 const maxSeedlings = 1;
 
@@ -157,48 +157,60 @@ const getAverageBiodiversity = () => {
   return averageBiodiversity
 }
 
+export const stepOneYear = () => {
+  year++
+    
+  if (enableSelectiveHarvesting) {
+    selectivelyHarvestTrees()
+  }
+  calculateTreeHealth()
+  propagateSeeds()
+
+  const newCarbon = calculateCarbon()
+
+  yearlyCarbon.push(newCarbon)
+  yearlyTrees.push(trees.length)
+  yearlyBiodiversity.push(getBiodiversity())
+
+  // const sendLiveUpdates = true
+
+  // if (sendLiveUpdates) {
+    const updatedRun: Run = {
+      // trees,
+      trees: sendLiveTreeUpdates ? trees : [],
+      // trees: [],
+      deadTrees: [],
+      initialTrees: [],
+      id: currentRunId,
+      yearlyData: {
+        carbon: yearlyCarbon,
+        trees: yearlyTrees,
+        biodiversity: yearlyBiodiversity,
+      },
+      scenario: scenario,
+      fitness: 0,
+      isAllocated: true,
+      averageBiodiversity: getAverageBiodiversity(),
+    }
+
+    postMessage({type: 'updatedRun', value: updatedRun})
+  // }
+}
+
 export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
 
-  for (let index = 0; index < numYears; index++) {
-
-    year++
-    
-    if (enableSelectiveHarvesting) {
-      selectivelyHarvestTrees()
-    }
-    calculateTreeHealth()
-    propagateSeeds()
-
-    const newCarbon = calculateCarbon()
-
-    yearlyCarbon.push(newCarbon)
-    yearlyTrees.push(trees.length)
-    yearlyBiodiversity.push(getBiodiversity())
-
-    const sendLiveUpdates = true
-
-    if (sendLiveUpdates) {
-      const updatedRun: Run = {
-        // trees,
-        trees: sendLiveTreeUpdates ? trees : [],
-        // trees: [],
-        deadTrees: [],
-        initialTrees: [],
-        id: currentRunId,
-        yearlyData: {
-          carbon: yearlyCarbon,
-          trees: yearlyTrees,
-          biodiversity: yearlyBiodiversity,
-        },
-        scenario: scenario,
-        fitness: 0,
-        isAllocated: true,
-        averageBiodiversity: getAverageBiodiversity(),
-      }
-
-      postMessage({type: 'updatedRun', value: updatedRun})
+  if (year < numYears) {
+    if (sendLiveTreeUpdates) { // slow down the simulation if running in live tree-growth showcase mode
+      delay(() => {
+        stepOneYear()
+        stepNYears(numYears)
+      }, 66)
+    } else {
+      stepOneYear()
+      stepNYears(numYears)
     }
   }
+  else {
 
   const runData: Run = {
     id: currentRunId,
@@ -218,6 +230,7 @@ export const stepNYears = (numYears: number, currentRunYear: number = 0) => {
   }
 
   postMessage({type: 'runData', value: runData})
+  }
 }
 
 
@@ -239,7 +252,7 @@ const selectivelyHarvestTrees = () => {
   let numTreesToHarvest = Math.floor(eligibleTrees.length * scenario.coppiceChance)
   trees = trees.map(tree => {
     if (numTreesToHarvest > 0) {
-      const isHarvestable = tree.radius >= scenario.coppiceMinRadius
+      const isHarvestable = tree.radius >= scenario.coppiceMinRadius && tree.radius <= scenario.coppiceMinRadius + scenario.coppiceRadiusSpread
       if (isHarvestable) {
         const nearestTree = getNearestNTreesForTree(tree, 1)?.[0]
         if (nearestTree) {
