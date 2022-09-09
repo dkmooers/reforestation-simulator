@@ -3,14 +3,11 @@ import { times, sortBy, take, countBy, last, reverse, first, sum, random, withou
 import { treeSpecies } from "$lib/treeSpecies";
 import SimulationWorker from '../lib/simulation.worker?worker'
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
-import type { Run, Scenario, Tree, TreeSpecies } from "../types";
-import { createEventDispatcher } from "svelte";
+import type { Run, Scenario, Tree } from "../types";
 import { browser } from "$app/environment";
 import { dispatch } from "$lib/dispatcher";
 
-// const dispatch = createEventDispatcher()
-
-export const useMultithreading = writable(true) // disable this and set workers to 1 to show live tree updates during growth
+export const useMultithreading = writable(true) // when false, we show live tree growth updates every year
 const numWorkers = derived(
   useMultithreading,
   useMultithreading => {
@@ -25,8 +22,8 @@ export const allWorkersReady = derived(
 )
 export const bestRun = writable<Run>()
 export const numYearsPerRun = 100
-export const maxRounds = 1
-export const populationSize = 3
+export const maxRounds = 20
+export const populationSize = 20
 const numElites = 2
 const preserveEliteRunData = true // if true, don't re-run elite scenarios in the next round - re-use their tree growth run data and fitness from previous round
 const crossoverFraction = 0.7
