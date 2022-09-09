@@ -35,7 +35,7 @@ import { browser } from "$app/environment";
     <div class="modal-content max-w-full rounded-lg shadow-lg flex relative">
       <div style="background: var(--accentColor); transition: width {duration/1000}s" class="!bg-orange-500 absolute inset-0 rounded opacity-10 w-[0%]"
       class:!w-full={isCountingDown}></div>
-      <div class="px-6 py-4">Waiting for workers to finish current rounds...</div>
+      <div class="px-6 py-4">Waiting for workers to finish current scenarios...</div>
       <div on:click={() => isVisible = false} class="relative z-20 font-mono border-l text-[#ad8c6a] text-opacity-70 bg-black bg-opacity-10 border-white border-opacity-10 px-6 py-2 hover:bg-opacity-30 transition-colors rounded-r cursor-pointer text-lg flex items-center">x</div>
     </div>
   </div>  

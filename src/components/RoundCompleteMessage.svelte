@@ -8,6 +8,7 @@
 
   const trigger = () => {
     isVisible = true
+    isCountingDown = false
     setTimeout(() => {
       isCountingDown = true
     }, 10)
