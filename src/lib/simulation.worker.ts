@@ -50,9 +50,9 @@ let sendLiveTreeUpdates = false
 const width = 392
 const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-let growthMultiplier = 0.7; // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
-const seedScatterDistanceMultiplier = 3; // 2 is within the radius of the parent tree
-const seedDensity = 0.4;
+let growthMultiplier = 1; // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
+const seedScatterDistanceMultiplier = 4; // 2 is within the radius of the parent tree
+const seedDensity = 1.5;
 
 let deadTreeCarbon = 0
 
@@ -66,6 +66,7 @@ const getBiodiversity = () => {
   const numTrees = trees.length
   // new flow:
   // get num of trees by species
+  // TODO instead get biomass of each species for biodiversity calc
   const numTreesBySpecies = treeSpecies.map(species => {
     return trees.filter(tree => tree.speciesId === species.id).length
   })
@@ -80,7 +81,7 @@ const getBiodiversity = () => {
   // invert it => 1 / (sum + 1)
   const invertedSumOfVariances = 1 / (sumOfVariancesFromTarget + 1)
   // square it (optional) - to steepen the curve, and spread out values more (i.e. to weight biodiversity more strongly)
-  const biodiversity = Math.pow(invertedSumOfVariances, 2)
+  const biodiversity = Math.pow(invertedSumOfVariances, 1.5)
   // const biodiversity = invertedSumOfVariances
   return biodiversity
 }
@@ -315,14 +316,14 @@ const calculateTreeHealth = () => {
       totalOverlapArea += 0.433 * (triangleSideLength * triangleSideLength) * 2
     })
     const baseTreeArea = Math.PI * baseTree.radius * baseTree.radius
-    const shadeFraction = Math.min(1, totalOverlapArea / baseTreeArea) || 0
+    const shadeFraction = Math.min(1, totalOverlapArea / baseTreeArea || 0)
     const species = treeSpecies.find(species => species.id === baseTree.speciesId) as TreeSpecies
     let health = baseTree.health
     if (shadeFraction > species.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
       if (baseTree.stemAge < 10 && shadeFraction > 0.6) {
         // Don't penalize seedlings for shading, since they will receive mycorrhizal delivery of nutrients and energy from parent trees that are shading them
-        // health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.02
+        health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.01
       } else {
         health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.5
       }

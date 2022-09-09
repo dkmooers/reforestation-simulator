@@ -263,11 +263,14 @@
 
   path.biodiversity {
     stroke: #af62ff;
-    opacity: 0.3;
+    opacity: 0.2;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;
     fill: none;
+  }
+  path.biodiversity.active {
+    opacity: 0.8 !important;
   }
 
   .focus {

@@ -53,8 +53,10 @@
   $: currentRunBiodiversity = Math.round(($currentRun?.averageBiodiversity || 0) * 100)
   const dispatch = createEventDispatcher()
 
-  $: runsDisplayedInTable = ($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1}))
-  // $: runsDisplayedInTable = reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', ))
+  // use this to NOT sort leaderboard by fitness:
+  // $: runsDisplayedInTable = ($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1}))
+  // use this to sort leaderboard by fitness:
+  $: runsDisplayedInTable = reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', ))
 
   const toggleSelectiveHarvesting = () => {
     reset();
