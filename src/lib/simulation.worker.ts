@@ -16,6 +16,8 @@ onmessage = (msg) => {
   } else if (type === 'ping') {
     postMessage({ type: 'ready' })
     console.log('Worker ready! 👋');
+  } else if (type === 'reset') {
+    reset()
   }
 };
 

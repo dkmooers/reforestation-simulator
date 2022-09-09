@@ -159,14 +159,22 @@ export const isPaused = writable(false)
 export const isComplete = writable(false)
 export const runs = writable<Run[]>([])
 
-export const progressPercent = derived(
+export const progressPercentOverall = derived(
   [rounds, runs],
   ([rounds, runs]) => {
     const completedRounds = rounds.length
     const baseCompletedFraction = completedRounds / maxRounds
     const completedRunsThisRound = runs.filter(run => run.isComplete)?.length || 0
     const thisRoundAdditionToCompletedFraction = completedRunsThisRound / populationSize / maxRounds
+    // const inProgressRunsAdditionToCompletedFraction = sum(runs.filter(run => run.isAllocated && !run.isComplete).map(run => run.yearlyData.carbon.length)) / (populationSize * numYearsPerRun)
     return (baseCompletedFraction + thisRoundAdditionToCompletedFraction) * 100
+  }
+)
+
+export const progressPercentThisGeneration = derived(
+  runs,
+  runs => {    
+    return sum(runs.map(run => run.yearlyData.carbon.length)) / (populationSize * numYearsPerRun) * 100
   }
 )
 
@@ -317,6 +325,9 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   rounds.set([])
   currentRound.set(0)
   fitnessImprovement.set(0)
+  workers.forEach(worker => {
+    worker.postMessage({type: 'reset'})
+  })
 
   runs.update(prevRuns => [...prevRuns, getEmptyRun()])
 
@@ -559,6 +570,10 @@ const attemptToRunNextRound = () => {
     bestRun.set(bestRunInLastRound)
   }
 
+  if (get(rounds).length) {
+    window.postMessage({type: 'roundComplete'})
+  }
+
   // save last round
   const lastRound = get(runs).map(run => ({
     ...run,
@@ -568,7 +583,7 @@ const attemptToRunNextRound = () => {
   if (lastRound.length) {
     rounds.update(prevRounds => [...prevRounds, lastRound])
   }
-  window.postMessage({type: 'roundComplete'})
+
 
   // updateFitnessImprovement()
 

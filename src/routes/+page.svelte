@@ -31,7 +31,8 @@
     fitnessImprovement,
     bestFitnessByRound,
     maxRounds,
-    progressPercent,
+    progressPercentOverall,
+    progressPercentThisGeneration,
     populationSize,
     enableSelectiveHarvesting,
 	} from '../stores/store';
@@ -109,11 +110,11 @@
 
     <!-- Progress bar (entire simulation) -->
     <div class="h-[3px] w-full bg-black relative">
-      <div class="bg-yellow-500 absolute left-0 top-0 h-full" style="width: {$progressPercent}%; transition: width 1s;" />
+      <div class="bg-yellow-500 absolute left-0 top-0 h-full" style="width: {$progressPercentOverall}%; transition: width 1s;" />
     </div>
     <!-- Progress bar (this round) -->
     <div class="h-[3px] w-full bg-black relative">
-      <div class="bg-subtle absolute left-0 top-0 h-full" style="width: {$runs.filter(run => run.isComplete)?.length / populationSize * 100}%; transition: width 1s;" />
+      <div class="bg-subtle absolute left-0 top-0 h-full" style="width: {$progressPercentThisGeneration}%; transition: width 1s;" />
     </div>
 
     <div class="p-4 flex-grow flex flex-col">
