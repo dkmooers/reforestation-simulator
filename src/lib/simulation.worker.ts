@@ -51,7 +51,7 @@ let sendLiveTreeUpdates = false
 const width = 392
 const height = 112
 const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-let growthMultiplier = 0.75; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
+let growthMultiplier = 0.5; // initially set to 2; 1 results in way slower tree growth and slower runs; not sure what's a realistic number. 1.5 seems like a good compromise of slower speed but still decent run
 const seedDistanceMultiplier = 4; // 2 is within the radius of the parent tree
 const maxSeedlings = 1;
 
@@ -86,8 +86,9 @@ const getBiodiversity = () => {
   return biodiversity
 }
 
+// This is a placeholder carbon calculation for prototyping purposes - should be replaced at some point with a more physically accurate DBH-based calculation.
 const getCarbonFromTree = (tree: Tree) => {
-  return Math.pow(tree.radius, 3) * 0.3
+  return Math.pow(tree.radius, 3)
 }
 
 const calculateCarbon = () => {

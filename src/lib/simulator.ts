@@ -61,12 +61,11 @@ const handleMessage = (e: MessageEvent) => {
     updateOverallFitnessImprovement()
     displayRun(runData.id)
 
-    // KEEP RUNNING WORKERS UNTIL WE GET TO MAX RUNS
+    // ask this worker to do another run if there are any unallocated runs waiting to be run
     const numUnallocatedRuns = get(runs).filter(run => !run.isAllocated)?.length
     const numUnfinishedRuns = get(runs).filter(run => !run.isComplete)?.length
-    // ask this worker to do another run if there are any unallocated runs waiting to be run
-    // if paused, put next items in a queue to be run on unpause
     if (!get(isRunning)) {
+      // if paused, put next items in a queue to be run on unpause
       pauseQueue.push({fn: dispatchNextRunToWorker, args: e.srcElement})
     }
     else if (numUnallocatedRuns > 0) {
