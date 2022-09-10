@@ -12,10 +12,8 @@
 		year,
 		carbon,
     runIdWithHighestCarbon,
-    runIdWithHighestBiodiversity,
     runIdWithHighestFitness,
     runs,
-    rounds,
     displayRun,
     currentRunId,
     currentRun,
@@ -26,9 +24,6 @@
     allWorkersReady,
     currentRound,
     numYearsPerRun,
-    roundIndexViewedInTable,
-    fitnessImprovement,
-    bestFitnessByRound,
     maxRounds,
     progressPercentOverall,
     progressPercentThisGeneration,
@@ -36,32 +31,22 @@
 	} from '../lib/simulator';
   import { treeSpecies } from '$lib/treeSpecies';
   import PauseMessage from '../components/PauseMessage.svelte';
-  import { sortBy, reverse, rest } from 'lodash';
-  import { last } from 'lodash';
   import Tooltip from '../components/Tooltip.svelte';
   import Loader from '../components/Loader.svelte';
   import { createEventDispatcher, run } from 'svelte/internal';
   import Toggle from '../components/Toggle.svelte';
   import SuccessModal from '../components/SuccessModal.svelte';
-  import RoundCompleteMessage from '../components/RoundCompleteMessage.svelte';
+  import Statistic from '../components/Statistic.svelte';
+  import Sidebar from '../components/Sidebar.svelte';
+  import Diagram from '../components/Diagram.svelte';
+  import ProgressBar from '../components/ProgressBar.svelte';
 
   let showIntro: () => {};
 	let renderGraphics = true;
   let showTreeLabels = true;
   let colorMode = 'colorized';
-  let isSidebarOpen = true;
   $: currentRunBiodiversity = Math.round(($currentRun?.averageBiodiversity || 0) * 100)
   const dispatch = createEventDispatcher()
-
-  // use this to NOT sort leaderboard by fitness:
-  // $: runsDisplayedInTable = ($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1}))
-  // use this to sort leaderboard by fitness:
-  $: runsDisplayedInTable = reverse(sortBy(($roundIndexViewedInTable === $rounds.length ? $runs : $rounds[$roundIndexViewedInTable])?.map((run, index) => ({...run, index: index + 1})), 'fitness', ))
-
-  const toggleSelectiveHarvesting = () => {
-    reset();
-    $enableSelectiveHarvesting = !$enableSelectiveHarvesting
-  }
 
   onMount(() => {
     window.addEventListener('keydown', function(event) {
@@ -87,7 +72,6 @@
     <Modal bind:trigger={showIntro} />
     <SuccessModal />
     <PauseMessage />
-    <!-- <RoundCompleteMessage /> -->
     {#if !$allWorkersReady && !$isRunning && !$isPaused}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
@@ -98,9 +82,8 @@
     {/if}
 
     <!-- Progress bar (entire simulation) -->
-    <div class="h-[3px] w-full bg-black relative">
-      <div class="bg-yellow-500 absolute left-0 top-0 h-full" style="width: {$progressPercentOverall}%; transition: width 1s;" />
-    </div>
+    <ProgressBar percentComplete={$progressPercentOverall} />
+    <ProgressBar percentComplete={$progressPercentThisGeneration} />
 
     <!-- Progress bar (this round) -->
     <div class="h-[3px] w-full bg-black relative">
@@ -194,59 +177,56 @@
 
       <!-- Statistics -->
       <div class="flex -ml-6">
-        <div class="statistic !w-36 border-r border-subtle">
-          <div class="flex items-center justify-center mt-[-2px]">
-            <label>generation</label>
-            <Tooltip>Each generation consists of 20 individual reforestation scenarios. Each scenario is simulated for 100 years of tree growth and propagation, which equals one "run".</Tooltip>
-
-          </div>
-          <span>{$currentRound} / {maxRounds}</span>
-        </div>
-        <div class="statistic !w-20f">
-          <label>year</label>
-          <span>{$year}</span>
-        </div>
-        <div class="statistic !w-24">
-          <label>trees planted</label>
-          <span>{$currentRun?.initialTrees.length || 0}</span>
-        </div>
-        <div class="statistic !w-24">
-          <div class="flex items-center justify-center mt-[-2px]">
-            <label>final trees</label>
-            <Tooltip>This can be much larger than trees planted due to seed-based propagation.</Tooltip>
-          </div>
-          <span>{($trees.length || 0).toLocaleString('en-US')}</span>
-        </div>
-        <div class="statistic !w-24">
-          <label>final species</label>
-          <span>{$numSpecies}</span>
-        </div>
-        <div class="statistic !w-24">
-          <div class="flex items-center justify-center">
-            <label>biodiversity </label>
-          </div>
-          <span class="text-[#af62ff]">{currentRunBiodiversity}%</span>
-        </div>
-        <div class="statistic !w-24">
-          <div class="flex items-center justify-center mt-[-2px]">
-            <label>carbon (t) </label>
-            <Tooltip position="left">This is a guesstimate for prototyping purposes, in lieu of a more physically accurate DBH-based calculation.</Tooltip>
-          </div>
-          <span style="color: var(--accentColor)">{Math.round($carbon / 2000).toLocaleString('en-US')}</span>
-        </div>
-        <div class="statistic !w-20">
-          <label>tons / year</label>
-          <span>{($carbon / 2000 / $year || 0).toFixed(1).toLocaleString('en-US')}</span>
-        </div>
-        <div class="statistic !w-24">
-          <div class="flex items-center justify-center mt-[-2px]">
-            <label>fitness </label>
-            <Tooltip position="left">Fitness is evaluated based on maximizing carbon sequestration and biodiversity.</Tooltip>
-          </div>
-          <span class="text-yellow-500">{$currentRun?.fitness?.toLocaleString('en-US') || 0}</span>
-        </div>
+        <Statistic
+          label="Generation"
+          tooltip='Each generation consists of 20 individual reforestation scenarios. Each scenario is simulated for 100 years of tree growth and propagation, which equals one "run".'
+          value="{$currentRound} / {maxRounds}"
+          width="9rem"
+          class="border-r border-subtle"
+        />
+        <Statistic
+          label="Year"
+          value={$year}
+        />
+        <Statistic
+          label="Trees Planted"
+          value={$currentRun?.initialTrees.length || 0}
+        />
+        <Statistic
+          label="Final Trees"
+          tooltip="This can be much larger than trees planted due to seed-based propagation."
+          value={($trees.length || 0).toLocaleString('en-US')}
+        />
+        <Statistic
+          label="Final Species"
+          value={$numSpecies}
+        />
+        <Statistic
+          label="Biodiversity"
+          labelColor="#af62ff"
+          value="{currentRunBiodiversity}%"
+        />
+        <Statistic
+          label="Carbon (t)"
+          labelColor="var(--accentColor)"
+          tooltip="This is a rough estimate for prototyping purposes, in lieu of a more physically accurate DBH-based calculation."
+          value={Math.round($carbon / 2000).toLocaleString('en-US')}
+        />
+        <Statistic
+          label="Tons / Year"
+          width="5rem"
+          value={($carbon / 2000 / $year || 0).toFixed(1).toLocaleString('en-US')}
+        />
+        <Statistic
+          label="Fitness"
+          labelColor="rgb(234, 179, 8)"
+          tooltip="Fitness is evaluated based on maximizing carbon sequestration and biodiversity."
+          tooltipPosition="left"
+          value={$currentRun?.fitness?.toLocaleString('en-US') || 0}
+        />
       </div>
 
+      <!-- Current Run Tabs -->
       <div class="flex space-x-2 items-end">
         <div class="opacity-80 text-sm pb-[5px]">Run:</div>
         {#if $runs.length === 0}
@@ -283,114 +263,7 @@
         {/if}
       </div>
 
-      <!-- Diagram -->
-      <div class="mb-2 flex bg-[#efe1db] rounded z-10">
-        <div class="flex-grow rounded-lg flex items-center justify-center relative">
-          {#if $currentRound === 0}
-            <div class="w-full h-full absolute inset-0 flex items-center align-center flex-grow p-6">
-              <div class="flex-grow items-center flex-initial flex flex-col">
-                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">This simulation uses multithreaded web workers. A four-core CPU is recommended for best performance.</div>
-                <div class="text-dark max-w-md text-center mx-auto mb-4 opacity-70 text-sm">Depending on your computer's speed, the simulation can take up to 10 minutes to complete. Feel free to pause it at any time.</div>
-                <button
-                  class="button-primary mx-auto mb-4 text-black text-opacity-75 transition-opacity hover:opacity-80 text-xl px-6 py-2 {false ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''}"
-                  on:click={() => {
-                    toggleRunSimulation();
-                  }}
-                >
-                  <span class="w-8">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                      </svg>
-                  </span>
-
-                  <span class="font-light">Run</span>
-                </button>
-              </div>
-            </div>
-          {/if}
-          {#if $currentRound === 1 && $runs.filter(run => run.isAllocated).length === 0}
-            <div class="flex-col w-full h-full absolute inset-0 flex items-center justify-center flex-grow">
-              <Loader size="4rem" />
-            </div>
-          {/if}
-          <svg viewBox="0 0 392 112" class="w-full">
-            <defs>
-              <radialGradient id="treeGradient">
-                <stop offset="0%" stop-color="rgba(20,100,20,1)" />
-                <stop offset="70%" stop-color="rgba(0,150,0,0.5)" />
-                <stop offset="100%" stop-color="rgba(20,100,0,0.0)" />
-              </radialGradient>
-            </defs>
-          
-            {#key $currentRunId}  
-              <g in:fade={{delay: 50}} out:fade={{duration: 50}}>
-                {#if renderGraphics}
-                  <!-- trunks -->
-                  <!-- {#each $trees as tree}
-                    <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
-                  {/each} -->
-                  <!-- foliage canopies -->
-                  {#each $trees as tree}
-                    {#if colorMode === 'colorized'}
-                      <circle cx={tree.x} cy={tree.y} r={tree.radius} fill={tree.color} opacity="0.3" />
-                    {:else if colorMode === 'shaded'}
-                      <circle
-                        cx={tree.x}
-                        cy={tree.y}
-                        r={tree.radius}
-                        fill="url('#treeGradient')"
-                        style="z-index: 1"
-                        opacity="0.75"
-                      />
-                    {/if}
-                  {/each}
-                  <!-- tree outlines and text overlays -->
-                  {#each $trees as tree}
-                    <circle
-                      cx={tree.x}
-                      cy={tree.y}
-                      r={tree.radius}
-                      stroke="rgba(0,50,0,0.2)"
-                      style="z-index: 1"
-                      fill="transparent"
-                      stroke-width="0.25"
-                    />
-                    {#if showTreeLabels}
-                      <text
-                        x={tree.x - tree.speciesId.length}
-                        y={tree.y}
-                        style="z-index: 10; font-family: monospace; font-size: 3px;">{tree.speciesId}</text
-                      >
-                      <!-- <text
-                        x={tree.x - 5}
-                        y={tree.y + 2}
-                        style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.age} y</text
-                      > -->
-                      <!-- <text
-                        x={tree.x - 5}
-                        y={tree.y + 6}
-                        style="z-index: 10; font-family: monospace; font-size: 4px;">{Math.round(tree.radius * 2)} ft</text -->
-                      >
-                      <!-- <text
-                        x={tree.x - 4}
-                        y={tree.y + 5}
-                        style="z-index: 10; font-family: monospace; font-size: 4px;"
-                        >{tree.health.toFixed(1)}</text
-                      > -->
-                    {/if}
-                      <!-- <text
-                      x={tree.x - 6}
-                      y={tree.y + 6}
-                      style="z-index: 10; font-family: monospace; font-size: 4px;">{tree.radius.toFixed(1) * 2}ft</text
-                    > -->
-                  {/each}
-                {/if}
-              </g>
-            {/key}
-
-          </svg>
-        </div>
-      </div>
+      <Diagram />
 
       <!-- Species breakdown bar chart -->
       <div class="text-xs mb-1 flex items-center opacity-0 transition-opacity" class:!opacity-100={$runs?.filter(run => run.isComplete).length > 0}>
@@ -426,147 +299,5 @@
     
   </div>
 
-  <!-- Sidebar -->
-  <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
-    <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[19.6rem]' : 'w-[13.3rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
-      <div class="px-4 flex-grow">
-
-        <div class="flex items-center mb-3 text-sm">
-          <label class="mr-2 text-subtle">Generation:</label>
-          <select bind:value={$roundIndexViewedInTable} class="text-sm">
-            {#if !$rounds.length}
-              <option value={0} label="1" />
-            {:else}
-              {#each $rounds as round, index}
-                <option value={index} label={String(index + 1)} />
-              {/each}
-              {#if $isRunning}
-                <option value={$rounds.length} label={String($rounds.length + 1)} />
-              {/if}
-            {/if}
-          </select>
-        </div>
-
-        <table class="border-collapse text-xs">
-          <thead>
-            <th class="w-[1.4rem] text-center">#
-              <Tooltip padIcon={false} position="left">Run Number</Tooltip>
-            </th>
-            <th class="min-w-[2.3rem]">Fit
-              <Tooltip padIcon={false} position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
-            </th>
-            <th class="min-w-[2.3rem]">C
-              <Tooltip padIcon={false} position="left">Carbon sequestered</Tooltip>
-            </th>
-            <th class="min-w-[2.3rem]">Bio
-              <Tooltip padIcon={false} position="left">Biodiversity</Tooltip>
-            </th>
-            {#if $enableSelectiveHarvesting}
-              <th class="min-w-[2.8rem]">R<sub>min</sub><br />
-                <Tooltip padIcon={false} position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
-              </th>
-              <th class="min-w-[3rem]">R<sub>max</sub><br />
-                <Tooltip padIcon={false} position="left">Harvest Max Radius: The maximum tree canopy radius at which trees can be harvested.</Tooltip>
-              </th>
-              <th class="min-w-[2.5rem] text-center">H%<br />
-                <Tooltip padIcon={false} position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
-              </th>
-            {/if}
-          </thead>
-          {#each runsDisplayedInTable as run, index}
-          <!-- {#each reverse(sortBy($runs.filter(run => run.isAllocated).map((run, index) => ({...run, index: index + 1})), 'fitness', )) as run, index} -->
-            <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
-              <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
-              <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
-              <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round(last(run.yearlyData.carbon)/2000)}</td>
-              <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
-              {#if $enableSelectiveHarvesting}
-                <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
-                <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>                  
-                <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
-              {/if}
-            </tr>
-          {/each}
-        </table>
-
-        <div class="statistic !w-full mt-5 text-center">
-          <label>Total fitness improvement</label>
-          <div class="h-[1.8rem]">
-            <span class="text-yellow-500">{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%</span>
-          </div>
-        </div>
-        <div class="flex items-center justify-center text-center mt-4 mb-1 text-subtle text-xs uppercase">
-          <span>Best fitness by generation</span>
-        </div>
-        <div class="grid grid-cols-2">
-          {#each $bestFitnessByRound as fitness, index}
-            <div class="text-xs">
-              <span class="text-subtle w-5 inline-block">{index + 1}:</span>
-              <span>{fitness}</span>
-              {#if index > 0}
-                {@const improvement = Math.round(100 * (fitness / $bestFitnessByRound[index - 1] - 1))}
-                {#if improvement > 0}
-                  <span class="font-mono text-yellow-500 text-[0.65rem]">+{improvement}%</span>
-                {/if}    
-              {/if}
-            </div>
-          {/each}
-        </div>
-
-      </div>
-      <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
-    </div>
-
-    <div class="absolute -left-8 w-8 top-[4.1rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20"  style="background: var(--backgroundColor)" on:click={() => isSidebarOpen = !isSidebarOpen}>
-      <div class="rotate-90 mt-[1.3rem] text-xs">Ranking</div>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="mt-5 mb-1 w-5 h-5 transition-transform {isSidebarOpen ? '' : 'rotate-180'}">
-        <path fill-rule="evenodd" d="M4.72 3.97a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06-1.06L11.69 12 4.72 5.03a.75.75 0 010-1.06zm6 0a.75.75 0 011.06 0l7.5 7.5a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 11-1.06-1.06L17.69 12l-6.97-6.97a.75.75 0 010-1.06z" clip-rule="evenodd" />
-      </svg>
-    </div>
-  </div>
+  <Sidebar />
 </div>
-
-<style>
-	.statistics {
-		display: inline-flex;
-		margin-left: 1rem;
-	}
-	.statistic {
-		display: flex;
-		flex-direction: column;
-		text-align: center;
-    width: 4rem;
-    margin-right: 1rem;
-    flex-shrink: 0;
-	}
-	.statistic label {
-    flex-shrink: 0;
-		line-height: 1.5;
-    color: #ad8c6a;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-	}
-	.statistic span {
-		font-size: 1.8rem;
-    flex-shrink: 0;
-		font-weight: 100;
-		line-height: 1;
-	}
-  th {
-    padding: 0.2rem 0.4rem;
-  }
-  td, th {
-    border: 1px solid #ad8c6a99;
-  }
-  td {
-    color: #ad8c6a;
-    transition: color 0.2s;
-    padding: 0 0.4rem;
-  }
-  tr.current-run {
-    color: white !important;
-  }
-  tr.current-run td {
-    color: white;
-  }
-</style>
