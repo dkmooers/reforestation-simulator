@@ -230,7 +230,7 @@
 
   path.trees {
     stroke: #aea798;
-    opacity: 0.28;
+    opacity: 0.3;
     transition: opacity 0.2s stroke-width 0.2s;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -263,7 +263,7 @@
 
   path.biodiversity {
     stroke: #af62ff;
-    opacity: 0.27;
+    opacity: 0.3;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;

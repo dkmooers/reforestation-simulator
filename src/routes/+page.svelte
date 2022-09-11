@@ -203,12 +203,12 @@
         />
         <Statistic
           label="Biodiversity"
-          labelColor="#af62ff"
+          valueColor="#af62ff"
           value="{currentRunBiodiversity}%"
         />
         <Statistic
           label="Carbon (t)"
-          labelColor="var(--accentColor)"
+          valueColor="var(--accentColor)"
           tooltip="This is a rough estimate for prototyping purposes, in lieu of a more physically accurate DBH-based calculation."
           value={Math.round($carbon / 2000).toLocaleString('en-US')}
         />
@@ -219,7 +219,7 @@
         />
         <Statistic
           label="Fitness"
-          labelColor="rgb(234, 179, 8)"
+          valueColor="rgb(234, 179, 8)"
           tooltip="Fitness is evaluated based on maximizing carbon sequestration and biodiversity."
           tooltipPosition="left"
           value={$currentRun?.fitness?.toLocaleString('en-US') || 0}

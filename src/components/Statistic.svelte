@@ -5,17 +5,17 @@
   export let value: number | string
   export let width = '6rem' // any valid CSS units
   export let tooltip = ''
-  export let labelColor = 'inherit'
+  export let valueColor = 'inherit'
 </script>
 
 <div class="statistic {$$props.class || ''}" style="width: {width};">
-  <div class="flex items-center justify-center" style="color: {labelColor}" class:mt-[-2px]={!!tooltip}>
+  <div class="flex items-center justify-center" class:mt-[-2px]={!!tooltip}>
     <label>{label}</label>
     {#if tooltip}
       <Tooltip>{tooltip}</Tooltip>
     {/if}
   </div>
-  <span>{value}</span>
+  <span style="color: {valueColor}">{value}</span>
 </div>
 
 <style>

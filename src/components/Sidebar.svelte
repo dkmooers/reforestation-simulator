@@ -15,6 +15,7 @@
     runs,
   } from "$lib/simulator"
   import { last, reverse, sortBy } from "lodash";
+  import Statistic from "./Statistic.svelte";
 
   let isSidebarOpen = true;
 
@@ -84,12 +85,13 @@
         {/each}
       </table>
 
-      <div class="statistic !w-full mt-5 text-center">
-        <label>Total fitness improvement</label>
-        <div class="h-[1.8rem]">
-          <span class="text-yellow-500">{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%</span>
-        </div>
-      </div>
+      <Statistic
+        class="mt-5"
+        valueColor="rgb(234, 179, 8)"
+        label="Total fitness improvement"
+        width="100%"
+        value="{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%"
+      />
       <div class="flex items-center justify-center text-center mt-4 mb-1 text-subtle text-xs uppercase">
         <span>Best fitness by generation</span>
       </div>
