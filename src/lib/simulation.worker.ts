@@ -1,4 +1,4 @@
-import { countBy, delay, last, random, sortBy, sum, take, times } from "lodash";
+import { delay, last, random, sortBy, sum, take, times } from "lodash";
 import type { Run, Scenario, Tree, TreeSpecies } from "../types";
 
 let pauseQueue: Array<{
@@ -8,9 +8,36 @@ let pauseQueue: Array<{
 
 let isPaused = false
 
+let currentRunId = 0
+let enableSelectiveHarvesting = true
+let treeSpecies: TreeSpecies[] = []
+let numYearsPerRun = 0
+let yearlyCarbon = [0]
+let yearlyTrees = [0]
+let yearlyBiodiversity = [0]
+let averageBiodiversity = 0
+let sendLiveTreeUpdates = false
+
+// 1 acre: 112x392 feet
+// 1 hectare: 612x176 feet, or 418x258, or 490x220, or 328x328, 
+const width = 392
+const height = 112
+const minReproductiveAge = 5 // to account for seedlings being a couple years old already when planted
+const minCoppiceAge = 15
+let growthMultiplier = 1.1 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
+const seedScatterDistanceMultiplier = 4 // 2 is within the radius of the parent tree
+const seedDensity = 1.2
+
+let deadTreeCarbon = 0
+
+let scenario: Scenario
+let deadTrees: Tree[] = []
+let trees: Tree[] = []
+let initialTrees: Tree[] = []
+let year = 0
+
 onmessage = (msg) => {
   const { type, value } = msg.data
-
   if (type === 'runScenario') {
     reset()
     scenario = value.scenario
@@ -35,37 +62,8 @@ onmessage = (msg) => {
   }
 };
 
-let currentRunId = 0
-let enableSelectiveHarvesting = true
-let treeSpecies: TreeSpecies[] = []
-let numYearsPerRun = 0
-let yearlyCarbon = [0]
-let yearlyTrees = [0]
-let yearlyBiodiversity = [0]
-let averageBiodiversity = 0
-let sendLiveTreeUpdates = false
-
-// 1 acre: 112x392 feet
-// 1 hectare: 612x176 feet, or 418x258, or 490x220, or 328x328, 
-const width = 392
-const height = 112
-const minReproductiveAge = 5; // to account for seedlings being a couple years old already when planted
-let growthMultiplier = 1; // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
-const seedScatterDistanceMultiplier = 4; // 2 is within the radius of the parent tree
-const seedDensity = 1.5;
-
-let deadTreeCarbon = 0
-
-let scenario: Scenario
-let trees: Tree[] = []
-let initialTrees: Tree[] = []
-let deadTrees: Tree[] = []
-let year = 0
-
 const getBiodiversity = () => {
   const numTrees = trees.length
-  // new flow:
-  // get num of trees by species
   // TODO instead get biomass of each species for biodiversity calc
   const numTreesBySpecies = treeSpecies.map(species => {
     return trees.filter(tree => tree.speciesId === species.id).length
@@ -80,7 +78,7 @@ const getBiodiversity = () => {
   const sumOfVariancesFromTarget = sum(absVariancesFromTarget)
   // invert it => 1 / (sum + 1)
   const invertedSumOfVariances = 1 / (sumOfVariancesFromTarget + 1)
-  // square it (optional) - to steepen the curve, and spread out values more (i.e. to weight biodiversity more strongly)
+  // take it to an exponent (optional) to steepen the curve, and spread out values more (i.e. to weight biodiversity more strongly)
   const biodiversity = Math.pow(invertedSumOfVariances, 1.5)
   // const biodiversity = invertedSumOfVariances
   return biodiversity
@@ -273,8 +271,9 @@ const selectivelyHarvestTrees = () => {
   let numTreesToHarvest = Math.floor(eligibleTrees.length * scenario.coppiceChance)
   trees = trees.map(tree => {
     if (numTreesToHarvest > 0) {
-      const isHarvestable = tree.radius >= scenario.coppiceMinRadius && tree.radius <= scenario.coppiceMinRadius + scenario.coppiceRadiusSpread
-      if (isHarvestable) {
+      const isHarvestableSize = tree.radius >= scenario.coppiceMinRadius && tree.radius <= scenario.coppiceMinRadius + scenario.coppiceRadiusSpread
+      const isHarvestableAge = tree.stemAge >= minCoppiceAge
+      if (isHarvestableSize && isHarvestableAge) {
         const nearestTree = getNearestNTreesForTree(tree, 1)?.[0]
         if (nearestTree) {
           const isCrowded = nearestTree?.distance < tree.radius / 4

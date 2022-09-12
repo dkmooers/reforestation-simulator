@@ -83,12 +83,8 @@
 
     <!-- Progress bar (entire simulation) -->
     <ProgressBar percentComplete={$progressPercentOverall} />
-    <ProgressBar percentComplete={$progressPercentThisGeneration} />
-
     <!-- Progress bar (this round) -->
-    <div class="h-[3px] w-full bg-black relative">
-      <div class="bg-subtle absolute left-0 top-0 h-full" style="width: {$progressPercentThisGeneration}%; transition: width 1s;" />
-    </div>
+    <ProgressBar percentComplete={$progressPercentThisGeneration} color="#ad8c6a" />
 
     <div class="p-4 flex-grow flex flex-col">
       <div class="flex items-center space-x-6 -mt-2">

@@ -381,7 +381,7 @@ const generateCrossoverFromParents = (parent1: Run, parent2: Run): Scenario => {
   }))
 
   // do random mutations on crossover children
-  // child = generateMutantFromParent(child)
+  child = generateMutantFromParent(child)
 
   return child as Scenario
 }
@@ -498,7 +498,7 @@ const updateOverallFitnessImprovement = () => {
   if (get(rounds).length > 0) {
     const firstRoundMaxFitness = last(sortBy(first(get(rounds)), 'fitness'))?.fitness
     let lastRoundMaxFitness = 0
-    if (get(rounds).length > 1) {
+    if (get(rounds).length === maxRounds) {
       lastRoundMaxFitness = last(sortBy(last(get(rounds)), 'fitness'))?.fitness || 0
     } else {
       lastRoundMaxFitness = last(sortBy(get(runs), 'fitness'))?.fitness || 0
