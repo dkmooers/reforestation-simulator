@@ -61,7 +61,7 @@
     <!-- {/if} -->
     <span class="swatch biodiversity ml-6" class:active={showBiodiversity}  on:click={() => showBiodiversity = !showBiodiversity}></span>
     Biodiversity
-    <Tooltip>On its own scale, from 0 - 100% vertically.</Tooltip>
+    <Tooltip padIcon={false} iconClass="ml-1">On its own scale, from 0 - 100% vertically.</Tooltip>
   </div>
   <Pancake.Chart x1={minx} x2={maxx} y1={miny} y2={maxy}>
 
