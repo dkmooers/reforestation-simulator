@@ -25,6 +25,12 @@ Here's the basic process the algorithm goes through:
 - Preserves 2 elites with the highest fitness to move to the next generation
 - Selects the remaining 18 individuals for the next generation using mutation and crossover. For crossover, it chooses parents preferentially from higher-fitness individuals, with an exponentially decreasing but nonzero chance of choosing lower-fitness individuals. Mutation is applied to crossover individuals, and the rate is aggressively high to try to prevent getting stuck in local optima (but perhaps too high? hyperparameter tuning could shed light on this).
 
+## Caveats
+
+I am not an expert in tree growth dynamics or ecology, so there are many assumptions and simplifications in this model, made for prototyping purposes, that do not reflect reality. For instance, the tree shading algorithm does not account for the sun's elevation, but instead assumes overhead sun, and uses a rough approximation of vertically varying shading caused by different tree heights and canopy spreads. A more physically accurate implementation might be to render a bitmap of shadows for all trees (a shade map), and then when calculating the sunlight available to a single tree, subtract that tree's shadow from the overall shade map and use the result to calculate the sun available to that tree.
+
+Also, currently each scenario is only run once, but should be run multiple times (perhasps 5-10 times?), and than have the resulting fitnesses averaged together before selection of the next generation, to account for the random variation in initial tree placement, tree seeding, and selective harvesting on each individual run (which could erroneously send lower-quality scenarios to the next generation if they chanced upon a unusually good confluence of random parameters in a single run).
+
 ## Controls
 
 If you disable multithreading via the UI toggle, you can run the app in single-worker mode, during which you'll be able to see year-by-year tree growth updates, rather than just the final result of 100 years of tree growth for each scenario.
