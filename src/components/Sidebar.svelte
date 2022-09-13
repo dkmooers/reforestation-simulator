@@ -7,6 +7,7 @@
     enableSelectiveHarvesting,
     fitnessImprovement,
     isRunning,
+    isPaused,
     roundIndexViewedInTable,
     rounds,
     runIdWithHighestBiodiversity,
@@ -24,7 +25,7 @@
 </script>
 
 <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
-  <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[19.6rem]' : 'w-[13.3rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
+  <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[19.6rem]' : 'w-[11.5rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
     <div class="px-4 flex-grow">
 
       <div class="flex items-center mb-3 text-sm">
@@ -36,7 +37,7 @@
             {#each $rounds as round, index}
               <option value={index} label={String(index + 1)} />
             {/each}
-            {#if $isRunning}
+            {#if $isRunning || $isPaused}
               <option value={$rounds.length} label={String($rounds.length + 1)} />
             {/if}
           {/if}
@@ -92,6 +93,7 @@
         width="100%"
         value="{Math.max(0, Math.round((($fitnessImprovement || 1) - 1) * 100))}%"
       />
+
       <div class="flex items-center justify-center text-center mt-4 mb-1 text-subtle text-xs uppercase">
         <span>Best fitness by generation</span>
       </div>

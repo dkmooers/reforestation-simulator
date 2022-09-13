@@ -1,14 +1,9 @@
 <script lang="ts">
-import { random } from "lodash";
-
-
+  import { random } from "lodash";
   export let checked: boolean
   export let label: string = ""
   export let disabled: boolean = false
-  // export let id = ""
-  let id = String(random(1, 1000000000))
-
-  $: console.log(checked)
+  export let id = String(random(1, 1000000000))
 </script>
 
 <label for={id} class="inline-flex relative items-center cursor-pointer">
