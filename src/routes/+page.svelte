@@ -72,6 +72,7 @@
     <Modal bind:trigger={showIntro} />
     <SuccessModal />
     <PauseMessage />
+    
     {#if !$allWorkersReady && !$isRunning && !$isPaused}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">

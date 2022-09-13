@@ -24,9 +24,9 @@ const width = 392
 const height = 112
 const minReproductiveAge = 5 // to account for seedlings being a couple years old already when planted
 const minCoppiceAge = 15
-let growthMultiplier = 1.1 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
+let growthMultiplier = 1.15 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
 const seedScatterDistanceMultiplier = 4 // 2 is within the radius of the parent tree
-const seedDensity = 1.2
+const seedDensity = 1.15
 
 let deadTreeCarbon = 0
 
