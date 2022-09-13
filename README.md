@@ -2,13 +2,15 @@
 
 A reforestation simulator that uses a genetic algorithm to try to find reforestation scenarios that maximize both carbon sequestration *and* biodiversity.
 
-### **[Live Demo](https://reforestationsimulator.netlify.app/)**
 
 Uses multithreading via web workers.
 
-Built with SvelteKit, Tailwind, and TypeScript.
+Built with SvelteKit, Tailwind, and TypeScript as a frontend dev portfolio project by [Devin Mooers](https://devinmooers.com).
 
-This is a frontend dev portfolio project by [Devin Mooers](https://devinmooers.com)
+## [Live Demo »](https://reforestationsimulator.netlify.app/)  
+
+## Screenshot
+![Screenshot](static/screenshot.png)
 
 ## Genetic Algorithm Overview
 
