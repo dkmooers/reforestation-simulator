@@ -225,7 +225,7 @@
         <Statistic
           label="Fitness"
           valueColor="rgb(234, 179, 8)"
-          tooltip="Fitness is evaluated based on maximizing carbon sequestration and biodiversity."
+          tooltip="Fitness is evaluated based on maximizing carbon sequestration, biodiversity, and food production."
           tooltipPosition="left"
           value={$currentRun?.fitness?.toLocaleString('en-US') || 0}
         />

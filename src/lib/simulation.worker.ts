@@ -28,6 +28,7 @@ const minCoppiceAge = 15
 let growthMultiplier = 1.15 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
 const seedScatterDistanceMultiplier = 4 // 2 is within the radius of the parent tree
 const seedDensity = 1.15
+const minFoodProducingCanopyRadius = 6 // feet
 
 let deadTreeCarbon = 0
 let foodTonsHarvested = 0
@@ -309,7 +310,8 @@ const harvestFood = () => {
   trees.forEach(tree => {
     const species = treeSpecies.find(species => species.id === tree.speciesId) as TreeSpecies
     if (species.foodProductivity) {
-      const foodPoundsHarvested = species.foodProductivity * Math.pow(tree.radius, 2)
+      const adjustedRadius = Math.max(tree.radius - minFoodProducingCanopyRadius, 0)
+      const foodPoundsHarvested = species.foodProductivity * Math.pow(adjustedRadius, 2)
       foodTonsHarvested += foodPoundsHarvested / 2000
     }
   })

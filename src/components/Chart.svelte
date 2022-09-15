@@ -54,17 +54,26 @@
 </script>
 
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
+
+  <!-- Legend -->
   <div class="z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-13px] text-[#ad8c6a] text-sm flex items-center">
+
     <span class="swatch carbon" class:active={showCarbon} on:click={() => showCarbon = !showCarbon}></span>
-    Carbon sequestered by run<span class="font-light ml-1">(tons)</span>
-    <!-- {#if showTrees} -->
-      <span class="swatch trees ml-6" class:active={showTrees} on:click={() => showTrees = !showTrees}></span>
-      Number of trees
-    <!-- {/if} -->
+    Carbon sequestered <span class="font-light ml-1">(tons)</span>
+
+    <span class="swatch trees ml-6" class:active={showTrees} on:click={() => showTrees = !showTrees}></span>
+    Number of trees
+
+    <span class="swatch food ml-6" class:active={showFood} on:click={() => showFood = !showFood}></span>
+    Food harvested (tons)
+
     <span class="swatch biodiversity ml-6" class:active={showBiodiversity}  on:click={() => showBiodiversity = !showBiodiversity}></span>
     Biodiversity
     <Tooltip padIcon={false} iconClass="ml-1">On its own scale, from 0 - 100% vertically.</Tooltip>
+
   </div>
+
+
   <Pancake.Chart x1={minx} x2={maxx} y1={miny} y2={maxy}>
 
     <Pancake.Grid horizontal count={3} let:value let:last>
@@ -234,7 +243,12 @@
   .swatch.trees.active {
     background-color: #aea798;
   }
-
+  .swatch.food {
+    border-color: rgb(243 73 168);
+  }
+  .swatch.food.active {
+    background-color: rgb(243 73 168);
+  }
   .swatch.biodiversity {
     border-color: #af62ff;
   }

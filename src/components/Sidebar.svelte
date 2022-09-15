@@ -50,7 +50,7 @@
             <Tooltip padIcon={false} position="left">Run Number</Tooltip>
           </th>
           <th class="min-w-[2.3rem]">Fit
-            <Tooltip padIcon={false} position="left">Fitness: Carbon sequestered &times; Biodiversity</Tooltip>
+            <Tooltip padIcon={false} position="left">Fitness: A weighted calculation based on carbon sequestered, biodiversity, and food harvested</Tooltip>
           </th>
           <th class="min-w-[2.3rem]">C
             <Tooltip padIcon={false} position="left">Carbon sequestered</Tooltip>
@@ -78,7 +78,7 @@
           <tr class="bg-transparent transition-colors {run.id === $currentRunId ? 'current-run' : ''} " style={run.id === $currentRunId ? 'background-color: #0006; bingo: #ad8c6a22; color: white;' : ''}>
             <td class="cursor-pointer text-right  hover:!text-white transition-colors " on:click={() => displayRun(run.id)}>{run.index}</td>
             <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
-            <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round((last(run.yearlyData.carbon) || 0)/2000)}</td>
+            <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round((last(run.yearlyData.carbon) || 0))}</td>
             <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
             <td class="text-right">{Math.round(run.food || 0)}</td>
             {#if $enableSelectiveHarvesting}

@@ -34,7 +34,7 @@ export const treeSpecies: TreeSpecies[] = [
     growthRate: 0.7,
     maxRadius: 5,
     shadeTolerance: 0.55,
-    foodProductivity: 1,
+    foodProductivity: 0.5,
     lifespan: 80,
   },
   // {
