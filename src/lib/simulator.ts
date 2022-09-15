@@ -160,7 +160,7 @@ export const currentRun = derived(
 
 export const carbonTonsPerYearForCurrentRun = derived(
   currentRun,
-  currentRun => last(currentRun?.carbon) / currentRun?.yearlyData.carbon.length
+  currentRun => (currentRun?.carbon || 0) / (currentRun?.yearlyData.carbon.length || 1)
 )
 
 export const averageCarbonAcrossRuns = derived(
@@ -288,7 +288,7 @@ const generateScenario = (): Scenario => {
     coppiceChance: random(0, 0.2),
     coppiceMinRadius: random(5, 15),
     coppiceRadiusSpread: random(2, 15), // The difference between coppiceMinRadius and the max harvestable radius (defined this way instead of defining a max radius, because with mutation and crossover, that could result in a max radius that's lower than the min radius)
-    coppiceFoodTrees: getRandomArrayElement([true, false])
+    // coppiceFoodTrees: getRandomArrayElement([true, false])
   }
 }
 
@@ -382,9 +382,9 @@ const generateMutantFromParent = (parent: Scenario): Scenario => {
     probability * getRandomMutationMultiplier()
   )))
   // 10% chance of flipping coppiceFoodTrees gene
-  if (Math.random() < 0.1) {
-    mutant.coppiceFoodTrees = !mutant.coppiceFoodTrees
-  }
+  // if (Math.random() < 0.1) {
+  //   mutant.coppiceFoodTrees = !mutant.coppiceFoodTrees
+  // }
   return mutant
 }
 

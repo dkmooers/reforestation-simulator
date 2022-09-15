@@ -201,7 +201,7 @@
           label="Food"
           valueColor="rgb(243 73 168)"
           width="4rem"
-          tooltip="Food tons harvested"
+          tooltip="Food tons harvested (for human consumption)"
           tooltipPosition="left"
           value={Math.round($currentRun?.food || 0)}
         />

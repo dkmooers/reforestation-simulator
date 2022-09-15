@@ -287,10 +287,10 @@ const selectivelyHarvestTrees = () => {
       const isHarvestableAge = tree.stemAge >= minCoppiceAge
       const species = getTreeSpeciesById(tree.speciesId)
       let isHarvestableSpecies = true
-      const isSpeciesFoodProducing = !!species.foodProductivity
-      if (isSpeciesFoodProducing && !scenario.coppiceFoodTrees) {
-        isHarvestableSpecies = false
-      }
+      // const isSpeciesFoodProducing = !!species.foodProductivity
+      // if (isSpeciesFoodProducing && !scenario.coppiceFoodTrees) {
+      //   isHarvestableSpecies = false
+      // }
       if (isHarvestableSize && isHarvestableAge && isHarvestableSpecies) {
         const nearestTree = getNearestNTreesForTree(tree, 1)?.[0]
         if (nearestTree) {

@@ -47,29 +47,32 @@
       <table class="border-collapse text-xs">
         <thead>
           <th class="w-[1.4rem] text-center">#
-            <Tooltip padIcon={false} position="left">Run Number</Tooltip>
+            <Tooltip padIcon={false} position="left" iconSize="small">Run Number</Tooltip>
           </th>
           <th class="min-w-[2.3rem]">Fit
-            <Tooltip padIcon={false} position="left">Fitness: A weighted calculation based on carbon sequestered, biodiversity, and food harvested</Tooltip>
+            <Tooltip padIcon={false} position="left" iconSize="small">Fitness: A weighted calculation based on carbon sequestered, biodiversity, and food harvested</Tooltip>
           </th>
           <th class="min-w-[2.3rem]">C
-            <Tooltip padIcon={false} position="left">Carbon sequestered</Tooltip>
+            <Tooltip padIcon={false} position="left" iconSize="small">Carbon sequestered</Tooltip>
           </th>
           <th class="min-w-[2.3rem]">Bio
-            <Tooltip padIcon={false} position="left">Biodiversity</Tooltip>
+            <Tooltip padIcon={false} position="left" iconSize="small">Biodiversity</Tooltip>
           </th>
           <th class="min-w-[2.3rem]">Food
-            <Tooltip padIcon={false} position="left">Food Tons Harvested</Tooltip>
+            <Tooltip padIcon={false} position="left" iconSize="small">Food tons harvested</Tooltip>
           </th>
+          <!-- <th class="min-w-[2rem]">HFT
+            <Tooltip padIcon={false} position="left">Harvest food trees</Tooltip>
+          </th> -->
           {#if $enableSelectiveHarvesting}
             <th class="min-w-[2.8rem]">R<sub>min</sub><br />
-              <Tooltip padIcon={false} position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
+              <Tooltip padIcon={false} position="left" iconSize="small">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
             </th>
             <th class="min-w-[3rem]">R<sub>max</sub><br />
-              <Tooltip padIcon={false} position="left">Harvest Max Radius: The maximum tree canopy radius at which trees can be harvested.</Tooltip>
+              <Tooltip padIcon={false} position="left" iconSize="small">Harvest Max Radius: The maximum tree canopy radius at which trees can be harvested.</Tooltip>
             </th>
             <th class="min-w-[2.5rem] text-center">H%<br />
-              <Tooltip padIcon={false} position="left">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
+              <Tooltip padIcon={false} position="left" iconSize="small">Harvest Chance: The chance that any given eligible tree will be harvested each year.</Tooltip>
             </th>
           {/if}
         </thead>
@@ -81,6 +84,7 @@
             <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round((last(run.yearlyData.carbon) || 0))}</td>
             <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
             <td class="text-right">{Math.round(run.food || 0)}</td>
+            <!-- <td class="text-right">{run.scenario.coppiceFoodTrees ? 'yes' : 'no'}</td> -->
             {#if $enableSelectiveHarvesting}
               <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
               <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>                  
@@ -131,6 +135,7 @@
 <style>
   th {
     padding: 0.2rem 0.4rem;
+    font-weight: normal;
   }
   td, th {
     border: 1px solid #ad8c6a99;
