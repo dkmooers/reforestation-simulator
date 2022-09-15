@@ -5,6 +5,7 @@
   export let value: number | string
   export let width = '6rem' // any valid CSS units
   export let tooltip = ''
+  export let tooltipPosition: 'left' | 'right' = 'right'
   export let valueColor = 'inherit'
 </script>
 
@@ -12,7 +13,7 @@
   <div class="flex items-center justify-center" class:mt-[-2px]={!!tooltip}>
     <label>{label}</label>
     {#if tooltip}
-      <Tooltip>{tooltip}</Tooltip>
+      <Tooltip position={tooltipPosition}>{tooltip}</Tooltip>
     {/if}
   </div>
   <span style="color: {valueColor}">{value}</span>

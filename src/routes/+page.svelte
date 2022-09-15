@@ -9,15 +9,13 @@
 		toggleRunSimulation,
 		reset,
     numSpecies,
-		year,
-		carbon,
+    carbonTonsPerYearForCurrentRun,
     runIdWithHighestCarbon,
     runIdWithHighestFitness,
     runs,
     displayRun,
     currentRunId,
     currentRun,
-    trees,
     isRunning,
     isPaused,
     isComplete,
@@ -183,7 +181,8 @@
         />
         <Statistic
           label="Year"
-          value={$year}
+          value={$currentRun?.yearlyData?.carbon?.length || 0}
+          width="4rem"
         />
         <Statistic
           label="Trees Planted"
@@ -192,11 +191,19 @@
         <Statistic
           label="Final Trees"
           tooltip="This can be much larger than trees planted due to seed-based propagation."
-          value={($trees.length || 0).toLocaleString('en-US')}
+          value={($currentRun?.trees.length || 0).toLocaleString('en-US')}
         />
         <Statistic
           label="Final Species"
           value={$numSpecies}
+        />
+        <Statistic
+          label="Food"
+          valueColor="rgb(243 73 168)"
+          width="4rem"
+          tooltip="Food tons harvested"
+          tooltipPosition="left"
+          value={Math.round($currentRun?.food || 0)}
         />
         <Statistic
           label="Biodiversity"
@@ -207,12 +214,13 @@
           label="Carbon (t)"
           valueColor="var(--accentColor)"
           tooltip="This is a rough estimate for prototyping purposes, in lieu of a more physically accurate DBH-based calculation."
-          value={Math.round($carbon / 2000).toLocaleString('en-US')}
+          tooltipPosition="left"
+          value={Math.round($currentRun?.carbon || 0).toLocaleString('en-US')}
         />
         <Statistic
-          label="Tons / Year"
+          label="C Tons / Year"
           width="5rem"
-          value={($carbon / 2000 / $year || 0).toFixed(1).toLocaleString('en-US')}
+          value={($carbonTonsPerYearForCurrentRun || 0).toFixed(1).toLocaleString('en-US')}
         />
         <Statistic
           label="Fitness"

@@ -1,4 +1,4 @@
-// import type { TreeSpecies } from "../types";
+import type { TreeSpecies } from "src/types"
 
 export const treeSpecies: TreeSpecies[] = [
   {
@@ -28,14 +28,15 @@ export const treeSpecies: TreeSpecies[] = [
     lifespan: 500,
     // isCoppiceable: true,
   },
-  // {
-  //   id: 'hazel',
-  //   color: '#2196f3',
-  //   growthRate: 0.5,
-  //   maxRadius: 15,
-  //   shadeTolerance: 0.55,
-  //   lifespan: 80,
-  // },
+  {
+    id: 'hazel',
+    color: '#2196f3',
+    growthRate: 0.7,
+    maxRadius: 5,
+    shadeTolerance: 0.55,
+    foodProductivity: 1,
+    lifespan: 80,
+  },
   // {
   //   id: 'birch',
   //   color: '#666666',
@@ -68,13 +69,13 @@ export const treeSpecies: TreeSpecies[] = [
     shadeTolerance: 0.5,
     lifespan: 300,
   },
-  // {
-  //   id: 'apple',
-  //   color: 'darkred',
-  //   growthRate: 0.5,
-  //   foodPerYear: (radius: number) => {  },
-  //   maxRadius: 40,
-  //   shadeTolerance: 0.5,
-  //   lifespan: 300,
-  // },
+  {
+    id: 'apple',
+    color: '#f349a8', // fuchsia
+    growthRate: 0.5,
+    foodProductivity: 1,
+    maxRadius: 25,
+    shadeTolerance: 0.5,
+    lifespan: 300,
+  },
 ]

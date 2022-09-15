@@ -1,5 +1,5 @@
 import { derived, get, writable } from "svelte/store"
-import { times, sortBy, take, countBy, last, reverse, first, sum, random, without } from "lodash"
+import { times, sortBy, take, countBy, last, reverse, first, sum, random, without, update } from "lodash"
 import { treeSpecies } from "$lib/treeSpecies";
 import SimulationWorker from '../lib/simulation.worker?worker'
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
@@ -84,18 +84,19 @@ const handleMessage = (e: MessageEvent) => {
     // update tree graphics every year if we're in single threaded mode
     if (!get(useMultithreading)) {
       currentRunId.set(updatedRun.id)
-      year.set(updatedRun.yearlyData.biodiversity.length)
-      yearlyTrees.set(updatedRun.yearlyData.trees)
-      yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
-      yearlyCarbon.set(updatedRun.yearlyData.carbon)
-      if (limitFramerateOfLiveTreeUpdates) {
-        // only render trees every Nth year step to avoid choking the graphics engine
-        if (updatedRun.yearlyData.carbon.length % 4 === 0) {
-          trees.set(updatedRun.trees)
-        }
-      } else {
-        trees.set(updatedRun.trees)
-      }
+      // year.set(updatedRun.yearlyData.biodiversity.length)
+      // yearlyTrees.set(updatedRun.yearlyData.trees)
+      // yearlyBiodiversity.set(updatedRun.yearlyData.biodiversity)
+      // yearlyCarbon.set(updatedRun.yearlyData.carbon)
+      // yearlyFood.set(updatedRun.yearlyData.food)
+      // if (limitFramerateOfLiveTreeUpdates) {
+      //   // only render trees every Nth year step to avoid choking the graphics engine
+      //   if (updatedRun.yearlyData.carbon.length % 4 === 0) {
+      //     trees.set(updatedRun.trees)
+      //   }
+      // } else {
+      //   trees.set(updatedRun.trees)
+      // }
     }
 
     runs.update(prevRuns => prevRuns.map((run, index) => {
@@ -151,10 +152,17 @@ export const progressPercentThisGeneration = derived(
 )
 
 export const currentRunId = writable<number>(0)
+
 export const currentRun = derived(
   [runs, currentRunId],
   ([runs, currentRunId]) => runs.find(run => run.id === currentRunId)
 )
+
+export const carbonTonsPerYearForCurrentRun = derived(
+  currentRun,
+  currentRun => last(currentRun?.carbon) / currentRun?.yearlyData.carbon.length
+)
+
 export const averageCarbonAcrossRuns = derived(
   runs, 
   runs => runs.reduce((runningTotal, run) => (last(run.yearlyData.carbon) || 0) + runningTotal, 0) / (runs.length || 1)
@@ -204,32 +212,9 @@ export const runIdWithHighestFitness = derived(
   }
 )
 
-export const yearlyCarbon = writable([0])
-export const yearlyTrees = writable([0])
-export const yearlyBiodiversity = writable([0])
-
-export const trees = writable<Tree[]>([])
 export const numSpecies = derived(
-  trees,
-  trees => Object.keys(countBy(trees, 'speciesId'))?.length || 0
-)
-const deadTrees = writable<Tree[]>([])
-export const initialTrees = writable<Tree[]>([])
-export const year = writable(0);
-export const carbon = derived(
-  yearlyCarbon,
-  yearlyCarbon => last(yearlyCarbon) ?? 0
-)
-export const biodiversity = derived(
-  trees,
-  trees => {
-    const numTreesBySpecies = countBy(trees, 'speciesId')
-    const numTrees = trees.length
-    const arrayOfSpeciesCounts = Object.keys(numTreesBySpecies).map(key => numTreesBySpecies[key])
-    const scaledArrayOfSpeciesCounts = arrayOfSpeciesCounts.map(count => count / numTrees)
-    const rawBiodiversity = scaledArrayOfSpeciesCounts.reduce((acc, o) => acc * o, 1)
-    return Math.pow(1 - rawBiodiversity, 500)
-  }
+  currentRun,
+  currentRun => currentRun?.trees ? Object.keys(countBy(currentRun.trees, 'speciesId'))?.length || 0 : 0
 )
 
 export const displayRun = (runId: number) => {
@@ -238,14 +223,7 @@ export const displayRun = (runId: number) => {
 }
 
 const loadRun = (runId: number) => {
-  const run = get(runs).find(run => run.id === runId)
-  if (run) {
-    yearlyCarbon.set(run.yearlyData.carbon)
-    yearlyTrees.set(run.yearlyData.trees)
-    yearlyBiodiversity.set(run.yearlyData.biodiversity)
-    trees.set(run.trees)
-    year.set(run.yearlyData.carbon.length)
-  }
+  currentRunId.set(runId)
 }
 
 const getEmptyRun = (): Run => ({
@@ -254,7 +232,9 @@ const getEmptyRun = (): Run => ({
     carbon: [0],
     trees: [0],
     biodiversity: [0],
+    food: [0],
   },
+  food: 0,
   trees: [],
   deadTrees: [],
   scenario: generateScenario(),
@@ -264,7 +244,6 @@ const getEmptyRun = (): Run => ({
 })
 
 export const reset = (opts?: { initialTrees?: Tree[]} ) => {
-
   isPaused.set(false)
   isComplete.set(false)
   isRunning.set(false)
@@ -276,18 +255,8 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   workers.forEach(worker => {
     worker.postMessage({type: 'reset'})
   })
-
   runs.update(prevRuns => [...prevRuns, getEmptyRun()])
-
   currentRunId.set(newRunId)
-  yearlyCarbon.set([])
-  yearlyTrees.set([])
-  yearlyBiodiversity.set([])
-
-  trees.set(opts?.initialTrees ?? [])
-  deadTrees.set([])
-
-  year.set(0)
   clearRunHistory()
 }
 
@@ -296,7 +265,6 @@ export const clearRunHistory = () => {
   currentRunId.set(0)
 }
 
-const msPerFrame = 1
 const startTime = writable(0)
 export const elapsedTime = writable(0)
 

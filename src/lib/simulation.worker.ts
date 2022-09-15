@@ -15,6 +15,7 @@ let numYearsPerRun = 0
 let yearlyCarbon = [0]
 let yearlyTrees = [0]
 let yearlyBiodiversity = [0]
+let yearlyFood = [0]
 let averageBiodiversity = 0
 let sendLiveTreeUpdates = false
 
@@ -29,6 +30,7 @@ const seedScatterDistanceMultiplier = 4 // 2 is within the radius of the parent 
 const seedDensity = 1.15
 
 let deadTreeCarbon = 0
+let foodTonsHarvested = 0
 
 let scenario: Scenario
 let deadTrees: Tree[] = []
@@ -86,7 +88,7 @@ const getBiodiversity = () => {
 
 // This is a placeholder carbon calculation for prototyping purposes - should be replaced at some point with a more physically accurate DBH-based calculation.
 const getCarbonFromTree = (tree: Tree) => {
-  return Math.pow(tree.radius, 3) * 0.75 // multiply by empirical scalar to get in the ballpark of actual forest carbon sequestration rates
+  return Math.pow(tree.radius, 3) * 0.75 / 2000 // multiply by empirical scalar to get in the ballpark of actual forest carbon sequestration rates, then convert to tons
 }
 
 const calculateCarbon = () => {
@@ -142,6 +144,7 @@ export const reset = (opts?: { initialTrees?: Tree[]} ) => {
   initialTrees = []
   year = 0
   deadTreeCarbon = 0
+  foodTonsHarvested = 0
 }
 
 // const msPerFrame = 33.33
@@ -150,12 +153,14 @@ export const elapsedTime = 0
 
 const calculateFitness = (): number => {
   averageBiodiversity = sum(yearlyBiodiversity) / yearlyBiodiversity.length
-  const biodiversityTimesCarbonTons = averageBiodiversity * last(yearlyCarbon) / 2000
+  const biodiversityTimesCarbonTons = averageBiodiversity * last(yearlyCarbon)
+
+  const fitness = biodiversityTimesCarbonTons * Math.pow(foodTonsHarvested / 20, 0.5)
   // const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
   // const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
   // const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
   // return Math.round(fitnessAdjustedForTreesPlanted) || 0
-  return Math.round(biodiversityTimesCarbonTons) || 0
+  return Math.round(fitness) || 0
 }
 
 const runScenario = () => {
@@ -177,6 +182,7 @@ export const stepOneYear = () => {
   if (enableSelectiveHarvesting) {
     selectivelyHarvestTrees()
   }
+  harvestFood()
   calculateTreeHealth()
   propagateSeeds()
 
@@ -185,6 +191,7 @@ export const stepOneYear = () => {
   yearlyCarbon.push(newCarbon)
   yearlyTrees.push(trees.length)
   yearlyBiodiversity.push(getBiodiversity())
+  yearlyFood.push(foodTonsHarvested)
 
   const updatedRun: Run = {
     // trees,
@@ -193,11 +200,9 @@ export const stepOneYear = () => {
     deadTrees: [],
     initialTrees: [],
     id: currentRunId,
-    yearlyData: {
-      carbon: yearlyCarbon,
-      trees: yearlyTrees,
-      biodiversity: yearlyBiodiversity,
-    },
+    yearlyData: getYearlyData(),
+    carbon: last(yearlyCarbon),
+    food: foodTonsHarvested,
     scenario: scenario,
     fitness: 0,
     isAllocated: true,
@@ -221,6 +226,15 @@ const step = () => {
   }
 }
 
+const getYearlyData = () => {
+  return {
+    carbon: yearlyCarbon,
+    trees: yearlyTrees,
+    biodiversity: yearlyBiodiversity,
+    food: yearlyFood,
+  }
+}
+
 export const stepNYears = (numYears: number) => {
 
   if (year < numYears) {
@@ -235,17 +249,15 @@ export const stepNYears = (numYears: number) => {
 
   const runData: Run = {
     id: currentRunId,
-    yearlyData: {
-      carbon: yearlyCarbon,
-      trees: yearlyTrees,
-      biodiversity: yearlyBiodiversity,
-    },
+    yearlyData: getYearlyData(),
     trees: trees,
     deadTrees: [],
     initialTrees: initialTrees,
     scenario: scenario,
     fitness: calculateFitness(),
+    carbon: last(yearlyCarbon) || 0,
     averageBiodiversity: averageBiodiversity,
+    food: foodTonsHarvested,
     isComplete: true,
     isAllocated: true,
   }
@@ -290,6 +302,16 @@ const selectivelyHarvestTrees = () => {
       }
     }
     return tree
+  })
+}
+
+const harvestFood = () => {
+  trees.forEach(tree => {
+    const species = treeSpecies.find(species => species.id === tree.speciesId) as TreeSpecies
+    if (species.foodProductivity) {
+      const foodPoundsHarvested = species.foodProductivity * Math.pow(tree.radius, 2)
+      foodTonsHarvested += foodPoundsHarvested / 2000
+    }
   })
 }
 

@@ -25,7 +25,7 @@
 </script>
 
 <div class="py-4 flex-shrink relative bg-[#2a2421] border-l border-[#ad8c6a] border-opacity-50 mr-[-1px] h-screen">
-  <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[19.6rem]' : 'w-[11.5rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
+  <div class="{isSidebarOpen ? `${$enableSelectiveHarvesting ? 'w-[22rem]' : 'w-[13.8rem]'} overflow-visible` : 'w-0 overflow-hidden'} flex flex-col min-h-full" style="transition: width 0.2s; ">
     <div class="px-4 flex-grow">
 
       <div class="flex items-center mb-3 text-sm">
@@ -58,6 +58,9 @@
           <th class="min-w-[2.3rem]">Bio
             <Tooltip padIcon={false} position="left">Biodiversity</Tooltip>
           </th>
+          <th class="min-w-[2.3rem]">Food
+            <Tooltip padIcon={false} position="left">Food Tons Harvested</Tooltip>
+          </th>
           {#if $enableSelectiveHarvesting}
             <th class="min-w-[2.8rem]">R<sub>min</sub><br />
               <Tooltip padIcon={false} position="left">Harvest Min Radius: The minimum tree canopy radius at which trees can be harvested.</Tooltip>
@@ -77,6 +80,7 @@
             <td class="text-right" class:!text-yellow-500={run.id === $runIdWithHighestFitness}>{run.fitness ?? '--'}</td>
             <td class="text-right" class:!text-green-400={run.id === $runIdWithHighestCarbon}>{Math.round((last(run.yearlyData.carbon) || 0)/2000)}</td>
             <td class="text-right" class:!text-[#af62ff]={run.id === $runIdWithHighestBiodiversity}>{Math.round((run.averageBiodiversity || 0) * 100)}%</td>
+            <td class="text-right">{Math.round(run.food || 0)}</td>
             {#if $enableSelectiveHarvesting}
               <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
               <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>                  

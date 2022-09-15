@@ -15,6 +15,7 @@
   }> = []
   let showCarbon = true
   let showBiodiversity = true
+  let showFood = true
   let showTrees = true
 
   let minx = 0;
@@ -24,7 +25,7 @@
 
   $: {
     const carbonValuesOfEachRun = $runs.map(run => last(run.yearlyData.carbon))
-    let maxCarbon = max(carbonValuesOfEachRun) / 2000
+    let maxCarbon = max(carbonValuesOfEachRun)
     let maxTrees = 0
     if (showTrees) {
       maxTrees = max($runs?.map(run => max(run.yearlyData.trees))) || 0
@@ -35,9 +36,10 @@
 
   $: runsData = $runs.map(run => run.yearlyData.carbon.map((carbonValue, index) => ({
     date: index + 1,
-    carbon: carbonValue / 2000,
+    carbon: carbonValue,
     trees: run.yearlyData.trees[index],
     biodiversity: run.yearlyData.biodiversity[index],
+    food: run.yearlyData.food[index],
     id: run.id
   })))
 
@@ -78,6 +80,7 @@
       <Pancake.Svg>
         {#each runsData as data}
 
+          <!-- Leading dots for real-time drawing indicators -->
           {#if data.length < numYearsPerRun}
             {#if showCarbon}
               <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.carbon}" let:d>
@@ -89,6 +92,11 @@
                 <path class="biodiversity scatter" {d} />
               </Pancake.SvgScatterplot>
             {/if}
+            {#if showFood}
+              <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.food}" let:d>
+                <path class="food scatter" {d} />
+              </Pancake.SvgScatterplot>
+            {/if}
             {#if showTrees}
               <Pancake.SvgScatterplot data={[last(data)]} x="{d => d.date}" y="{d => d.trees}" let:d>
                 <path class="trees scatter" {d} />
@@ -96,6 +104,7 @@
             {/if}
           {/if}
 
+          <!-- Main dataset lines -->
           {#if showCarbon}
             <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.carbon}" let:d>
               <path class="carbon" class:active={data?.[0].id === $currentRunId} {d} />
@@ -104,6 +113,11 @@
           {#if showBiodiversity}
             <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.biodiversity * maxy}" let:d>
               <path class="biodiversity" class:active={data?.[0].id === $currentRunId} {d} />
+            </Pancake.SvgLine>
+          {/if}
+          {#if showFood}
+            <Pancake.SvgLine data={data} x="{d => d.date}" y="{d => d.food}" let:d>
+              <path class="food" class:active={data?.[0].id === $currentRunId} {d} />
             </Pancake.SvgLine>
           {/if}
           {#if showTrees}
@@ -228,24 +242,8 @@
     background-color: #af62ff;
   }
 
-  path.trees {
-    stroke: #aea798;
-    opacity: 0.3;
+  path {
     transition: opacity 0.2s stroke-width 0.2s;
-    stroke-linejoin: round;
-    stroke-linecap: round;
-    stroke-width: 1px;
-    fill: none;
-  }
-
-  path.scatter {
-    opacity: 1 !important;
-    stroke-width: 2.5px !important;
-  }
-
-  path.carbon {
-    stroke: #16c264;
-    opacity: 0.33;
     stroke-linejoin: round;
     stroke-linecap: round;
     stroke-width: 1px;
@@ -257,6 +255,21 @@
     opacity: 1 !important;
   }
 
+  path.trees {
+    stroke: #aea798;
+    opacity: 0.3;
+  }
+
+  path.scatter {
+    opacity: 1 !important;
+    stroke-width: 2.5px !important;
+  }
+
+  path.carbon {
+    stroke: #16c264;
+    opacity: 0.33;
+  }
+
   path.trees.active {
     opacity: 0.8 !important;
   }
@@ -264,12 +277,16 @@
   path.biodiversity {
     stroke: #af62ff;
     opacity: 0.3;
-    stroke-linejoin: round;
-    stroke-linecap: round;
-    stroke-width: 1px;
-    fill: none;
   }
   path.biodiversity.active {
+    opacity: 0.8 !important;
+  }
+
+  path.food {
+    stroke: rgb(243 73 168);
+    opacity: 0.3;
+  }
+  path.food.active {
     opacity: 0.8 !important;
   }
 

@@ -3,9 +3,9 @@
   import {
     currentRound,
     currentRunId,
+    currentRun,
     runs,
     toggleRunSimulation,
-    trees,
   } from "$lib/simulator"
   import Loader from "./Loader.svelte";
 
@@ -57,7 +57,7 @@
               <circle cx={tree.x} cy={tree.y} r={tree.radius / 10} fill="#3d2311" opacity="0.4" />
             {/each} -->
             <!-- foliage canopies -->
-            {#each $trees as tree}
+            {#each $currentRun?.trees || [] as tree}
               {#if colorMode === 'colorized'}
                 <circle cx={tree.x} cy={tree.y} r={tree.radius} fill={tree.color} opacity="0.3" />
               {:else if colorMode === 'shaded'}
@@ -72,7 +72,7 @@
               {/if}
             {/each}
             <!-- tree outlines and text overlays -->
-            {#each $trees as tree}
+            {#each $currentRun?.trees || [] as tree}
               <circle
                 cx={tree.x}
                 cy={tree.y}

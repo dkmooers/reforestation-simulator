@@ -14,6 +14,7 @@ type TreeSpecies = {
   maxRadius: number
   shadeTolerance: number // 0 to 1
   lifespan: number
+  foodProductivity?: number
 }
 
 export type Tree = {
@@ -35,13 +36,16 @@ type Run = {
     carbon: number[]
     trees: number[]
     biodiversity: number[]
+    food: number[]
   }
   trees: Tree[]
   deadTrees: Tree[]
   initialTrees: Tree[]
   scenario: Scenario
   fitness: number
+  carbon: number
   averageBiodiversity: number
+  food: number
   isAllocated?: boolean
   isComplete?: boolean
 }
