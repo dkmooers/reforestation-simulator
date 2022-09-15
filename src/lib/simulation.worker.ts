@@ -155,8 +155,7 @@ export const elapsedTime = 0
 const calculateFitness = (): number => {
   averageBiodiversity = sum(yearlyBiodiversity) / yearlyBiodiversity.length
   const biodiversityTimesCarbonTons = averageBiodiversity * last(yearlyCarbon)
-
-  const fitness = biodiversityTimesCarbonTons * Math.pow(foodTonsHarvested / 20, 0.5)
+  const fitness = biodiversityTimesCarbonTons * Math.pow(foodTonsHarvested, 0.5) / 10
   // const biodiversityTimesCarbonTons = Math.pow(get(biodiversity), 2) * get(carbon) / 2000
   // const penaltyForTreesPlanted = Math.pow(get(scenario)?.numTrees / 100, 1/3) // cube root of (initial trees planted / 100)
   // const fitnessAdjustedForTreesPlanted = biodiversityTimesCarbonTons / penaltyForTreesPlanted
@@ -286,7 +285,13 @@ const selectivelyHarvestTrees = () => {
     if (numTreesToHarvest > 0) {
       const isHarvestableSize = tree.radius >= scenario.coppiceMinRadius && tree.radius <= scenario.coppiceMinRadius + scenario.coppiceRadiusSpread
       const isHarvestableAge = tree.stemAge >= minCoppiceAge
-      if (isHarvestableSize && isHarvestableAge) {
+      const species = getTreeSpeciesById(tree.speciesId)
+      let isHarvestableSpecies = true
+      const isSpeciesFoodProducing = !!species.foodProductivity
+      if (isSpeciesFoodProducing && !scenario.coppiceFoodTrees) {
+        isHarvestableSpecies = false
+      }
+      if (isHarvestableSize && isHarvestableAge && isHarvestableSpecies) {
         const nearestTree = getNearestNTreesForTree(tree, 1)?.[0]
         if (nearestTree) {
           const isCrowded = nearestTree?.distance < tree.radius / 4

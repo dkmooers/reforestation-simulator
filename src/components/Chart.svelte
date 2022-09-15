@@ -56,20 +56,28 @@
 <div transition:fade class="relative chart flex flex-col text-[rgb(230 201 166)] p-2">
 
   <!-- Legend -->
-  <div class="z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-13px] text-[#ad8c6a] text-sm flex items-center">
+  <div class="legend z-10 bg-black bg-opacity-50 rounded-[12px] py-[3px] px-2 mx-auto font-light mb-[-13px] text-[#ad8c6a] text-sm flex items-center">
 
-    <span class="swatch carbon" class:active={showCarbon} on:click={() => showCarbon = !showCarbon}></span>
-    Carbon sequestered <span class="font-light ml-1">(tons)</span>
+    <div on:click={() => showCarbon = !showCarbon}>
+      <span class="swatch carbon" class:active={showCarbon}></span>
+      Carbon sequestered <span class="font-light ml-1">(tons)</span>
+    </div>
 
-    <span class="swatch trees ml-6" class:active={showTrees} on:click={() => showTrees = !showTrees}></span>
-    Number of trees
+    <div on:click={() => showTrees = !showTrees}>
+      <span class="swatch trees ml-6" class:active={showTrees}></span>
+      Number of trees
+    </div>
 
-    <span class="swatch food ml-6" class:active={showFood} on:click={() => showFood = !showFood}></span>
-    Food harvested (tons)
+    <div on:click={() => showFood = !showFood}>
+      <span class="swatch food ml-6" class:active={showFood}></span>
+      Food harvested (tons)
+    </div>
 
-    <span class="swatch biodiversity ml-6" class:active={showBiodiversity}  on:click={() => showBiodiversity = !showBiodiversity}></span>
-    Biodiversity
-    <Tooltip padIcon={false} iconClass="ml-1">On its own scale, from 0 - 100% vertically.</Tooltip>
+    <div on:click={() => showBiodiversity = !showBiodiversity}>
+      <span class="swatch biodiversity ml-6" class:active={showBiodiversity}></span>
+      Biodiversity
+      <Tooltip padIcon={false} iconClass="ml-1">On its own scale, from 0 - 100% vertically.</Tooltip>
+    </div>
 
   </div>
 
@@ -159,6 +167,13 @@
 </div>
 
 <style>
+
+  .legend > div {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    user-select: none;
+  }
   .chart {
     height: 100%;
     padding: 0 0 2em 2em;

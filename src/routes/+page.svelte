@@ -193,10 +193,10 @@
           tooltip="This can be much larger than trees planted due to seed-based propagation."
           value={($currentRun?.trees.length || 0).toLocaleString('en-US')}
         />
-        <Statistic
+        <!-- <Statistic
           label="Final Species"
           value={$numSpecies}
-        />
+        /> -->
         <Statistic
           label="Food"
           valueColor="rgb(243 73 168)"

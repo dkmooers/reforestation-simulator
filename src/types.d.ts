@@ -5,6 +5,7 @@ type Scenario = {
   coppiceMinRadius: number
   coppiceChance: number
   coppiceRadiusSpread: number
+  coppiceFoodTrees: boolean
 }
 
 type TreeSpecies = {

@@ -24,7 +24,7 @@ export const allWorkersReady = derived(
 
 export const bestRun = writable<Run>()
 export const numYearsPerRun = 100
-export const maxRounds = 20
+export const maxRounds = 50
 export const populationSize = 20
 const numElites = 2
 const preserveEliteRunData = true // if true, don't re-run elite scenarios in the next round - re-use their tree growth run data and fitness from previous round
@@ -288,6 +288,7 @@ const generateScenario = (): Scenario => {
     coppiceChance: random(0, 0.2),
     coppiceMinRadius: random(5, 15),
     coppiceRadiusSpread: random(2, 15), // The difference between coppiceMinRadius and the max harvestable radius (defined this way instead of defining a max radius, because with mutation and crossover, that could result in a max radius that's lower than the min radius)
+    coppiceFoodTrees: getRandomArrayElement([true, false])
   }
 }
 
@@ -370,9 +371,9 @@ const generateMutantFromParent = (parent: Scenario): Scenario => {
     ...parent
   }
   // randomly mutate all numerical properties (not speciesProbabilities which is an array)
-  without(Object.keys(mutant), 'speciesProbabilities').forEach(prop => {
+  without(Object.keys(mutant), 'speciesProbabilities', 'coppiceFoodTrees').forEach(prop => {
     mutant[prop] *= getRandomMutationMultiplier()
-    // cap coppice chance at 1 (100%)
+    // cap coppice chance at max 1.0 (100%)
     if (prop === 'coppiceChance') {
       mutant[prop] = Math.min(1, mutant[prop])
     }
@@ -380,6 +381,10 @@ const generateMutantFromParent = (parent: Scenario): Scenario => {
   mutant.speciesProbabilities = normalizeSpeciesProbabilities(mutant.speciesProbabilities.map(probability => (
     probability * getRandomMutationMultiplier()
   )))
+  // 10% chance of flipping coppiceFoodTrees gene
+  if (Math.random() < 0.1) {
+    mutant.coppiceFoodTrees = !mutant.coppiceFoodTrees
+  }
   return mutant
 }
 
