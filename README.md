@@ -25,6 +25,17 @@ Here's the basic process the algorithm goes through:
 - Preserves 2 elites with the highest fitness to move to the next generation
 - Selects the remaining 18 individuals for the next generation using mutation and crossover. For crossover, it chooses parents preferentially from higher-fitness individuals, with an exponentially decreasing but nonzero chance of choosing lower-fitness individuals. Mutation is applied to crossover individuals, and the rate is aggressively high to try to prevent getting stuck in local optima (but perhaps too high? hyperparameter tuning could shed light on this).
 
+## Todos
+
+- Implement quadtree algorithm for finding nearest tree neighbors when calculating shading for each tree to speed up simulation
+- Implement a shade map algorithm:
+  - At each year step, build a shade map from the shade of each tree (perhaps multiple z-layers of shade maps to approximate vertical shading / height differences)
+  - For each tree, to calculate its own shading, subtract its shade from the shade map, and sum the total sunlight available to it over its own canopy area; Use this value for calculating yearly growth, food production, seed production, and health
+  - This may be significantly slower than the current implementation, but it's hard to say - the current approach takes a lot of time to find the nearest trees. The bitmap appraoch could perhaps be greatly sped up by using a GPU-accelerated approach (e.g. <canvas> rendering)
+- Add more accurate carbon calculation based on DBH (diameter at breast height)
+- Refine existing logistic tree growth equation with actual empirical constants for each tree species
+- Individually track DBH and canopy spread of trees, rather than just canopy spread, understanding that trees tend to grow bushier in full sunlight, and taller/skinnier in restricted sunlight
+
 ## Caveats
 
 I am not an expert in tree growth dynamics or ecology, so there are many assumptions and simplifications in this model, made for prototyping purposes, that do not reflect reality. For instance, the tree shading algorithm does not account for the sun's elevation, but instead assumes overhead sun, and uses a rough approximation of vertically varying shading caused by different tree heights and canopy spreads. A more physically accurate implementation might be to render a bitmap of shadows for all trees (a shade map), and then when calculating the sunlight available to a single tree, subtract that tree's shadow from the overall shade map and use the result to calculate the sun available to that tree.
