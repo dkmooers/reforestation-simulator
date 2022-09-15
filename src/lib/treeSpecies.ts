@@ -74,7 +74,7 @@ export const treeSpecies: TreeSpecies[] = [
     color: '#f349a8', // fuchsia
     growthRate: 0.5,
     foodProductivity: 1,
-    maxRadius: 25,
+    maxRadius: 15,
     shadeTolerance: 0.5,
     lifespan: 300,
   },
