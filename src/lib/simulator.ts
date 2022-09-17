@@ -7,6 +7,7 @@ import type { Run, Scenario, Tree } from "../types";
 import { browser } from "$app/environment";
 import { dispatch } from "$lib/dispatcher";
 
+export const devMode = true
 export const useMultithreading = writable(true) // when false, we show live tree growth updates every year
 const numWorkers = 3
 const numActiveWorkers = derived(

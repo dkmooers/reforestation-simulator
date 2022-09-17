@@ -1,11 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { isRunning, isPaused } from "../lib/simulator";
+  import { isRunning, isPaused, devMode } from "../lib/simulator";
   import { fly } from "svelte/transition"
   let isVisible = false
 
   export const trigger = () => {
-    isVisible = true
+    if (!devMode) {
+      isVisible = true
+    }
   }
 
   onMount(() => {
@@ -13,12 +15,12 @@
     window.onmessage = (msg) => {
       console.log(msg)
       if (msg.data.type === 'show-intro') {
-        isVisible = true
+        trigger()
       }
     }
     setTimeout(() => {
       if (!$isRunning && !$isPaused) {
-        isVisible = true
+        trigger()
       }
     }, 1)
   })
