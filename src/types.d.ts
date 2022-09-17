@@ -29,6 +29,7 @@ export type Tree = {
   sizeMultiplier: number
   health: number // 0 to 1
   isDead?: boolean
+  currentSunIntensity: number
 }
 
 type Run = {

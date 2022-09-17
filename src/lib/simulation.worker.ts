@@ -1,5 +1,6 @@
 import { delay, last, random, sortBy, sum, take, times } from "lodash";
 import type { Run, Scenario, Tree, TreeSpecies } from "../types";
+import { createShadeMap, recalculateShadeMapWithTrees } from "./shadeMap";
 
 let pauseQueue: Array<{
   fn: Function,
@@ -10,6 +11,7 @@ let isPaused = false
 
 let currentRunId = 0
 let enableSelectiveHarvesting = true
+let useFastShadeCalculation = true
 let treeSpecies: TreeSpecies[] = []
 let numYearsPerRun = 0
 let yearlyCarbon = [0]
@@ -25,9 +27,9 @@ const width = 392
 const height = 112
 const minReproductiveAge = 5 // to account for seedlings being a couple years old already when planted
 const minCoppiceAge = 15
-let growthMultiplier = 1.15 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
+let growthMultiplier = 3 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
 const seedScatterDistanceMultiplier = 4 // 2 is within the radius of the parent tree
-const seedDensity = 1.15
+const seedDensity = 0.5
 const minFoodProducingCanopyRadius = 6 // feet
 
 let deadTreeCarbon = 0
@@ -38,6 +40,8 @@ let deadTrees: Tree[] = []
 let trees: Tree[] = []
 let initialTrees: Tree[] = []
 let year = 0
+
+const shadeMap = createShadeMap(width, height)
 
 onmessage = (msg) => {
   const { type, value } = msg.data
@@ -183,6 +187,11 @@ export const stepOneYear = () => {
     selectivelyHarvestTrees()
   }
   harvestFood()
+
+  if (!useFastShadeCalculation) {
+    recalculateShadeMapWithTrees(shadeMap, trees)
+  }
+
   calculateTreeHealth()
   propagateSeeds()
 
@@ -332,36 +341,49 @@ const calculateTreeHealth = () => {
   // then summing the overlaps...
 
   const newTrees = trees.map(baseTree => {
-    const overlappingTrees = getOverlappingTreesForTree(baseTree);
-    // calculate overlaps
-    let totalOverlapArea = 0;
-    const treesThatActuallyShadeThisOne = overlappingTrees.filter(overlappingTree => {
-      return overlappingTree.stemAge > 0.75 * baseTree.stemAge
-    })
-    treesThatActuallyShadeThisOne.forEach(overlappingTree => {
-      const distance = getDistanceBetweenTwoTrees(baseTree, overlappingTree)
-      const triangleSideLength = overlappingTree.radius + baseTree.radius - distance
-      totalOverlapArea += 0.433 * (triangleSideLength * triangleSideLength) * 2
-    })
-    const baseTreeArea = Math.PI * baseTree.radius * baseTree.radius
-    const shadeFraction = Math.min(1, totalOverlapArea / baseTreeArea || 0)
+    
+    let shadeIntensity: number
+
+    // OLD SHADE CALCULATION
+    if (useFastShadeCalculation) {
+      const overlappingTrees = getOverlappingTreesForTree(baseTree);
+      // calculate overlaps
+      let totalOverlapArea = 0;
+      const treesThatActuallyShadeThisOne = overlappingTrees.filter(overlappingTree => {
+        return overlappingTree.stemAge > 0.75 * baseTree.stemAge
+      })
+      treesThatActuallyShadeThisOne.forEach(overlappingTree => {
+        const distance = getDistanceBetweenTwoTrees(baseTree, overlappingTree)
+        const triangleSideLength = overlappingTree.radius + baseTree.radius - distance
+        totalOverlapArea += 0.433 * (triangleSideLength * triangleSideLength) * 2
+      })
+      const baseTreeArea = Math.PI * baseTree.radius * baseTree.radius
+      shadeIntensity = Math.min(1, totalOverlapArea / baseTreeArea || 0)
+    } else {
+      shadeIntensity = 1 - baseTree.currentSunIntensity
+    }
+
+    // shadeIntensity = Math.min(1, shadeIntensity + 0.2)
+
     const species = treeSpecies.find(species => species.id === baseTree.speciesId) as TreeSpecies
     let health = baseTree.health
-    if (shadeFraction > species.shadeTolerance) {
+    if (shadeIntensity > species.shadeTolerance) {
       // adjust this for age - the older it is, the less affected by shade it will be due to being taller
-      if (baseTree.stemAge < 10 && shadeFraction > 0.6) {
-        // Don't penalize seedlings for shading, since they will receive mycorrhizal delivery of nutrients and energy from parent trees that are shading them
-        health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.01
+      // if (baseTree.stemAge < 10 && shadeIntensity > 0.6) {
+      //   // Don't penalize seedlings for shading, since they will receive mycorrhizal delivery of nutrients and energy from parent trees that are shading them
+      if (useFastShadeCalculation) {
+        health -= (shadeIntensity - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.1
       } else {
-        health -= (shadeFraction - species?.shadeTolerance) / Math.pow(baseTree.stemAge, 0.3) * 0.5
+        health -= Math.pow(shadeIntensity - species?.shadeTolerance, 2) / Math.pow(baseTree.stemAge, 0.3) * 1
       }
     } else {
-      health += species.shadeTolerance - shadeFraction
-      health = Math.min(1, health)
+      // health = 1
+      health += Math.pow(species.shadeTolerance - shadeIntensity, 0.25) // steepen the curve here - trees should retain health very quickly after sun is restored
+      // health = Math.min(1, health)
     }
 
     // calculate tree growth based on shade fraction
-    const radius = baseTree.radius < species?.maxRadius * baseTree.sizeMultiplier ? baseTree.radius + species?.growthRate * growthMultiplier * baseTree.sizeMultiplier * (1 - shadeFraction) : baseTree.radius
+    const radius = baseTree.radius < species?.maxRadius * baseTree.sizeMultiplier ? baseTree.radius + species?.growthRate * growthMultiplier * baseTree.sizeMultiplier * (1 - shadeIntensity) : baseTree.radius
 
     return {
       ...baseTree,
@@ -376,6 +398,7 @@ const calculateTreeHealth = () => {
   });
 
   const newlyDeadTrees = newTrees.filter(tree => tree.isDead)
+  // console.log(newlyDeadTrees.length)
   const livingTrees = newTrees.filter(tree => !tree.isDead)
 
   trees = livingTrees
@@ -453,9 +476,10 @@ const areAnyOverlappingTrees = () => {
 }
 
 export const declusterTrees = () => {
-  times(5, () => {
+  times(3, () => {
 
     const currentTrees = trees
+
     currentTrees.forEach(baseTree => {
       const nearestTrees = getNearestNTreesForTree(baseTree, 3)
             
@@ -478,7 +502,9 @@ export const declusterTrees = () => {
             // move away from nearTree
             // the repulsion strength should be based on the overlap amount at the final mature tree size - we don't need to repulse tiny trees that will not be overlapping at mature size, for instance.
             // const repulsion = 1
-            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * 0.1//get(scenario)?.declusteringStrength
+            const repulsion = getMatureOverlapBetweenTwoTrees(nearTree, baseTree) * 0.1 //get(scenario)?.declusteringStrength
+            // console.log(Ma)
+            // const repulsion = 0.1
             if (repulsion > 0) {
               // const repulsion = getTreeSpeciesById(near)
               prevTree.x -= normalizedVector.x * repulsion
@@ -532,11 +558,16 @@ export const calculateOverlaps = () => {
 
 export const addNRandomTrees = (numTrees: number): Tree[] => {
 
-  let remainingTreesToPlant = numTrees - trees.length
+  // let remainingTreesToPlant = numTrees - trees.length
 
   const newTrees: Tree[] = [];
-  for (let index = 0; index < remainingTreesToPlant; index++) {
+  
+  // 
+
+  for (let index = 0; index < numTrees; index++) {
+
     const species = getRandomTreeSpecies();
+
     newTrees.push({
       speciesId: species.id,
       color: species.color,
@@ -547,12 +578,18 @@ export const addNRandomTrees = (numTrees: number): Tree[] => {
       age: 0,
       stemAge: 0,
       sizeMultiplier: 1,
+      currentSunIntensity: 0,
     })
+
   }
   trees = [...trees, ...newTrees]
+
   declusterTrees()
-  if (remainingTreesToPlant > 0) {
-    addNRandomTrees(remainingTreesToPlant)
+
+  const minTreesPerAcre = 100
+
+  if (trees.length < minTreesPerAcre) {
+    addNRandomTrees(minTreesPerAcre - trees.length)
   }
 
   return trees

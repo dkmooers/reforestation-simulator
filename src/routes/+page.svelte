@@ -38,6 +38,7 @@
   import Sidebar from '../components/Sidebar.svelte';
   import Diagram from '../components/Diagram.svelte';
   import ProgressBar from '../components/ProgressBar.svelte';
+	import ShadeMap from '../components/ShadeMap.svelte';
 
   let showIntro: () => {};
 	let renderGraphics = true;
@@ -300,6 +301,8 @@
       <div class="flex-grow rounded pt-3 pb-0 pr-2">
           <Chart />
       </div>
+      <!-- <ShadeMap /> -->
+
     </div>
     
   </div>
