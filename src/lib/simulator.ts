@@ -4,10 +4,10 @@ import { treeSpecies } from "$lib/treeSpecies";
 import SimulationWorker from '../lib/simulation.worker?worker'
 import { getRandomArrayElement, getRandomId } from "$lib/helpers";
 import type { Run, Scenario, Tree } from "../types";
-import { browser } from "$app/environment";
+import { browser, dev } from "$app/environment";
 import { dispatch } from "$lib/dispatcher";
 
-export const devMode = true
+export const devMode = !!dev
 export const useMultithreading = writable(true) // when false, we show live tree growth updates every year
 const numWorkers = 3
 const numActiveWorkers = derived(
@@ -107,7 +107,7 @@ const handleMessage = (e: MessageEvent) => {
         return run
       }
     }))
-  } 
+  }
   else if (e.data.type === 'ready') {
     // log this worker as ready
     numWorkersReady.update(num => num + 1)
@@ -165,7 +165,7 @@ export const carbonTonsPerYearForCurrentRun = derived(
 )
 
 export const averageCarbonAcrossRuns = derived(
-  runs, 
+  runs,
   runs => runs.reduce((runningTotal, run) => (last(run.yearlyData.carbon) || 0) + runningTotal, 0) / (runs.length || 1)
 )
 export const runIdWithHighestCarbon = derived(
@@ -418,7 +418,7 @@ const selectNewPopulation = () => {
     //     scenario: generateScenario()
     //   })
     // })
-    
+
     // generate crossovers and add to next generation
     const numCrossovers = Math.floor((populationSize - numElites) * crossoverFraction)
     times(numCrossovers, () => {
@@ -455,7 +455,7 @@ const selectNewPopulation = () => {
 }
 
 const completeSimulation = () => {
-  const endTime = new Date().getTime()  
+  const endTime = new Date().getTime()
   elapsedTime.set(((endTime - get(startTime)) / 1000))
   console.log(get(elapsedTime))
   console.log('complete simulation!')
@@ -554,4 +554,3 @@ export const toggleRunSimulation = () => {
     attemptToRunNextRound()
   }
 }
-
