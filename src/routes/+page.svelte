@@ -71,7 +71,7 @@
     <Modal bind:trigger={showIntro} />
     <SuccessModal />
     <PauseMessage />
-    
+
     {#if !$allWorkersReady && !$isRunning && !$isPaused}
       <div transition:fade class="z-30 fixed inset-0 bg-black bg-opacity-10 backdrop-blur flex items-center justify-center">
         <div class="flex flex-col justify-center items-center space-y-3">
@@ -98,7 +98,7 @@
             <button class="button-primary my-4 font-normal" on:click|preventDefault|stopPropagation={() => {
               showIntro()
             }}>More Information</button>
-            <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+            <div class="mt-2">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="https://www.devinmooers.dev" target="_blank">Devin Mooers</a></div>
           </Tooltip>
         </h1>
 
@@ -246,7 +246,7 @@
         {:else}
           {#each $runs as run, index}
             <div class="flex flex-col items-center justify-end">
-              
+
               <!-- Indicator Dots for highest carbon and highest fitness runs -->
               <div class="flex leading-tight">
                 <div style="color: var(--accentColor);" class="opacity-100 transition-opacity" class:!opacity-10={run.id !== $runIdWithHighestCarbon}>•</div>
@@ -304,7 +304,7 @@
       <!-- <ShadeMap /> -->
 
     </div>
-    
+
   </div>
 
   <Sidebar />

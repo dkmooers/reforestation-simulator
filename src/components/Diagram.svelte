@@ -82,11 +82,11 @@
                 fill="transparent"
                 stroke-width="0.25"
               />
-              <!-- <text
+              <text
                 x={tree.x - tree.speciesId.length}
                 y={tree.y}
                 style="z-index: 10; font-family: monospace; font-size: 3px;">{tree.speciesId}</text
-              > -->
+              >
               <!-- 
               <text
                 x={tree.x - 5}

@@ -87,7 +87,7 @@
             <!-- <td class="text-right">{run.scenario.coppiceFoodTrees ? 'yes' : 'no'}</td> -->
             {#if $enableSelectiveHarvesting}
               <td class="text-right">{Math.round(run.scenario.coppiceMinRadius || 0)} ft</td>
-              <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>                  
+              <td class="text-right">{Math.round((run.scenario.coppiceMinRadius + run.scenario.coppiceRadiusSpread) || 0)} ft</td>
               <td class="text-right">{Math.round((run.scenario.coppiceChance || 0) * 100)}%</td>
             {/if}
           </tr>
@@ -114,14 +114,14 @@
               {@const improvement = Math.round(100 * (fitness / $bestFitnessByRound[index - 1] - 1))}
               {#if improvement > 0}
                 <span class="font-mono text-yellow-500 text-[0.65rem]">+{improvement}%</span>
-              {/if}    
+              {/if}
             {/if}
           </div>
         {/each}
       </div>
 
     </div>
-    <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="http://devinmooers.com" target="_blank">Devin Mooers</a></div>
+    <div class="mt-auto mx-auto px-4 whitespace-nowrap">Built by <a style="color: var(--accentColor); transition: border 0.2s;" class="border-b font-normal border-[#16c264] border-opacity-0 hover:border-opacity-100" href="https://www.devinmooers.dev" target="_blank">Devin Mooers</a></div>
   </div>
 
   <div class="absolute -left-8 w-8 top-[4.1rem] flex flex-col rounded-l items-center justify-center bg-[#ad8c6a] bg-opacity-10 border border-[#ad8c6a] border-r-0 text-[#ad8c6a] cursor-pointer hover:bg-opacity-20"  style="background: var(--backgroundColor)" on:click={() => isSidebarOpen = !isSidebarOpen}>

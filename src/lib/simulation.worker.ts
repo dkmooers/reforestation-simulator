@@ -27,9 +27,9 @@ const width = 392
 const height = 112
 const minReproductiveAge = 5 // to account for seedlings being a couple years old already when planted
 const minCoppiceAge = 15
-let growthMultiplier = 3 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
+let growthMultiplier = 2 // decreasing this slows the simulation down dramatically because of an increased number of trees - to avoid this, we'd have to decrease the seeding rate in tandem
 const seedScatterDistanceMultiplier = 4 // 2 is within the radius of the parent tree
-const seedDensity = 0.5
+const seedDensity = 0.7
 const minFoodProducingCanopyRadius = 6 // feet
 
 let deadTreeCarbon = 0
@@ -289,6 +289,9 @@ const selectivelyHarvestTrees = () => {
   // find eligible trees
   const eligibleTrees = trees.filter(tree => tree.radius >= scenario.coppiceMinRadius)
 
+  let numTreesHarvested = 0
+  let numTreesThatDied = 0
+
   let numTreesToHarvest = Math.floor(eligibleTrees.length * scenario.coppiceChance)
   trees = trees.map(tree => {
     if (numTreesToHarvest > 0) {
@@ -306,18 +309,29 @@ const selectivelyHarvestTrees = () => {
           const isCrowded = nearestTree?.distance < tree.radius / 4
           if (isCrowded) {
             numTreesToHarvest--
+            numTreesHarvested++
             deadTreeCarbon += getCarbonFromTree(tree)
-            return {
-              ...tree,
-              radius: 0,
-              stemAge: 0,
+            // if small, high chance of surviving
+            // if large, lower chance of surviving
+            const willNotSurviveHarvesting = Math.random() / Math.sqrt(tree.radius) < 0.05
+            if (willNotSurviveHarvesting) {
+              tree.isDead = true
+              console.log('tree did not survive harvesting')
+              numTreesThatDied++
+            } else {
+              tree = {
+                ...tree,
+                radius: 0,
+                stemAge: 0,
+              }
             }
           } 
         }
       }
     }
     return tree
-  })
+  }).filter(tree => !tree.isDead)
+  console.log('% trees died during harvesting:', Math.round(numTreesThatDied / (numTreesHarvested || 1) * 100))
 }
 
 const harvestFood = () => {
